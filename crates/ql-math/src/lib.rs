@@ -1,4 +1,11 @@
 //! # ql-math
 //!
 //! Numerical library: interpolation, root-finding, optimization, distributions,
-//! random number generation, and linear algebra utilities.
+//! numerical integration, and linear algebra utilities.
+
+pub mod distributions;
+pub mod integration;
+pub mod interpolation;
+pub mod matrix;
+pub mod optimization;
+pub mod solvers1d;
