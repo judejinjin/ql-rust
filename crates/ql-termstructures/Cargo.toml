@@ -1,0 +1,15 @@
+[package]
+name = "ql-termstructures"
+version = "0.1.0"
+edition = "2021"
+description = "Term structure traits and implementations (yield, volatility, default, inflation)"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+ql-core = { workspace = true }
+ql-time = { workspace = true }
+ql-math = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+approx = { workspace = true }

@@ -1,0 +1,19 @@
+[package]
+name = "ql-methods"
+version = "0.1.0"
+edition = "2021"
+description = "Numerical pricing methods: Monte Carlo, finite differences, lattices"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+ql-core = { workspace = true }
+ql-time = { workspace = true }
+ql-math = { workspace = true }
+nalgebra = { workspace = true }
+rand = { workspace = true }
+rand_distr = { workspace = true }
+rayon = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+approx = { workspace = true }

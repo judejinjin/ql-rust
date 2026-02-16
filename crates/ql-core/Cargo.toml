@@ -1,0 +1,14 @@
+[package]
+name = "ql-core"
+version = "0.1.0"
+edition = "2021"
+description = "Foundational types, errors, observer pattern, handles, and settings for ql-rust"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+thiserror = { workspace = true }
+serde = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+approx = { workspace = true }

@@ -1,0 +1,47 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/ql-core",
+    "crates/ql-time",
+    "crates/ql-math",
+    "crates/ql-currencies",
+    "crates/ql-indexes",
+    "crates/ql-termstructures",
+    "crates/ql-cashflows",
+    "crates/ql-instruments",
+    "crates/ql-processes",
+    "crates/ql-models",
+    "crates/ql-pricingengines",
+    "crates/ql-methods",
+    "crates/ql-persistence",
+]
+
+[workspace.dependencies]
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+approx = "0.5"
+chrono = { version = "0.4", features = ["serde"] }
+nalgebra = "0.33"
+rand = "0.9"
+rand_distr = "0.5"
+rayon = "1.10"
+statrs = "0.18"
+criterion = { version = "0.5", features = ["html_reports"] }
+bincode = "1"
+
+# Internal crate dependencies
+ql-core = { path = "crates/ql-core" }
+ql-time = { path = "crates/ql-time" }
+ql-math = { path = "crates/ql-math" }
+ql-currencies = { path = "crates/ql-currencies" }
+ql-indexes = { path = "crates/ql-indexes" }
+ql-termstructures = { path = "crates/ql-termstructures" }
+ql-cashflows = { path = "crates/ql-cashflows" }
+ql-instruments = { path = "crates/ql-instruments" }
+ql-processes = { path = "crates/ql-processes" }
+ql-models = { path = "crates/ql-models" }
+ql-pricingengines = { path = "crates/ql-pricingengines" }
+ql-methods = { path = "crates/ql-methods" }
+ql-persistence = { path = "crates/ql-persistence" }

@@ -1,0 +1,14 @@
+[package]
+name = "ql-pricingengines"
+version = "0.1.0"
+edition = "2021"
+description = "Pricing engine traits and implementations for ql-rust"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+ql-core = { workspace = true }
+ql-time = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+approx = { workspace = true }

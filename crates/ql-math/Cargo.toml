@@ -1,0 +1,17 @@
+[package]
+name = "ql-math"
+version = "0.1.0"
+edition = "2021"
+description = "Interpolation, root-finding, optimization, distributions, and RNG for ql-rust"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+ql-core = { workspace = true }
+nalgebra = { workspace = true }
+rand = { workspace = true }
+rand_distr = { workspace = true }
+statrs = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+approx = { workspace = true }
