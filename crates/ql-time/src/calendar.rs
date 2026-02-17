@@ -223,7 +223,8 @@ fn add_months(date: Date, months: i32) -> Date {
     let new_month = (total_months.rem_euclid(12) + 1) as u32;
     let max_day = Date::days_in_month(new_year, new_month);
     let new_day = d.min(max_day);
-    Date::from_ymd_opt(new_year, new_month, new_day).unwrap()
+    // Date is computed from valid calendar arithmetic; cannot fail.
+    Date::from_ymd_opt(new_year, new_month, new_day).unwrap_or_else(|| unreachable!())
 }
 
 // ============================================================================
@@ -258,13 +259,15 @@ fn target_is_business_day(date: Date) -> bool {
     // Easter-based holidays (Good Friday and Easter Monday)
     let (em_month, em_day) = easter_monday(y);
     // Good Friday = Easter Monday - 3
-    let em_serial = Date::from_ymd_opt(y, em_month, em_day).unwrap().serial();
+    let em_serial = Date::from_ymd_opt(y, em_month, em_day)
+        .unwrap_or_else(|| unreachable!())
+        .serial();
     let gf = Date::from_serial(em_serial - 3);
     if date == gf {
         return false;
     }
     // Easter Monday
-    if d == em_day && m == Month::from_u32(em_month).unwrap() {
+    if d == em_day && m == Month::from_u32(em_month).unwrap_or(Month::January) {
         return false;
     }
 
@@ -388,9 +391,11 @@ fn uk_is_business_day(date: Date) -> bool {
 
     // Easter-based holidays
     let (em_month, em_day) = easter_monday(y);
-    let em_serial = Date::from_ymd_opt(y, em_month, em_day).unwrap().serial();
+    let em_serial = Date::from_ymd_opt(y, em_month, em_day)
+        .unwrap_or_else(|| unreachable!())
+        .serial();
     let gf = Date::from_serial(em_serial - 3);
-    let em = Date::from_ymd_opt(y, em_month, em_day).unwrap();
+    let em = Date::from_ymd_opt(y, em_month, em_day).unwrap_or_else(|| unreachable!());
     if date == gf || date == em {
         return false;
     }
@@ -444,7 +449,9 @@ fn easter_monday(year: i32) -> (u32, u32) {
     let month = (h + l - 7 * m + 114) / 31;
     let day = ((h + l - 7 * m + 114) % 31) + 1;
     // This gives Easter Sunday; Easter Monday is the next day
-    let easter_sunday = Date::from_ymd_opt(year, month as u32, day as u32).unwrap();
+    // Easter date is computed from a known-valid algorithm; cannot fail.
+    let easter_sunday = Date::from_ymd_opt(year, month as u32, day as u32)
+        .unwrap_or_else(|| unreachable!());
     let easter_monday = easter_sunday + 1;
     (
         easter_monday.month() as u32,

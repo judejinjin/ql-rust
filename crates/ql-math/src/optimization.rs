@@ -74,10 +74,12 @@ pub struct Simplex {
 }
 
 impl Simplex {
+    /// Create a Nelder-Mead optimizer with the given initial simplex size.
     pub fn new(lambda: f64) -> Self {
         Self { lambda }
     }
 
+    /// Minimize a cost function starting from the given initial point.
     pub fn minimize<C: CostFunction>(
         &self,
         cost: &C,
@@ -115,7 +117,7 @@ impl Simplex {
         for iter in 0..criteria.max_iterations {
             // Sort vertices by value
             let mut order: Vec<usize> = (0..=n).collect();
-            order.sort_by(|&a, &b| values[a].partial_cmp(&values[b]).unwrap());
+            order.sort_by(|&a, &b| values[a].total_cmp(&values[b]));
 
             let best_idx = order[0];
             let worst_idx = order[n];
@@ -221,9 +223,9 @@ impl Simplex {
         let best_idx = values
             .iter()
             .enumerate()
-            .min_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
+            .min_by(|(_, a), (_, b)| a.total_cmp(b))
             .map(|(i, _)| i)
-            .unwrap();
+            .unwrap_or(0);
 
         Ok(OptimizationResult {
             parameters: vertices[best_idx].clone(),
@@ -253,10 +255,12 @@ impl Default for LevenbergMarquardt {
 }
 
 impl LevenbergMarquardt {
+    /// Create a Levenberg-Marquardt optimizer with the given initial damping.
     pub fn new(initial_lambda: f64) -> Self {
         Self { initial_lambda }
     }
 
+    /// Minimize a least-squares cost function starting from the given initial point.
     pub fn minimize<C: LeastSquaresCostFunction>(
         &self,
         cost: &C,

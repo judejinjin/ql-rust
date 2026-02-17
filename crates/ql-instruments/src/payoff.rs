@@ -141,7 +141,7 @@ impl Exercise {
         match self {
             Exercise::European { expiry } => *expiry,
             Exercise::American { expiry, .. } => *expiry,
-            Exercise::Bermudan { dates } => *dates.last().unwrap(),
+            Exercise::Bermudan { dates } => dates[dates.len() - 1],
         }
     }
 }

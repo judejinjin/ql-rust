@@ -20,8 +20,10 @@ pub struct NormalDistribution {
 impl NormalDistribution {
     /// Standard normal N(0,1).
     pub fn standard() -> Self {
+        // Parameters (0.0, 1.0) are always valid for Normal::new.
         Self {
-            inner: statrs::distribution::Normal::new(0.0, 1.0).unwrap(),
+            inner: statrs::distribution::Normal::new(0.0, 1.0)
+                .unwrap_or_else(|_| unreachable!()),
         }
     }
 
@@ -84,6 +86,7 @@ pub struct PoissonDistribution {
 }
 
 impl PoissonDistribution {
+    /// Create a Poisson distribution with rate parameter `lambda`.
     pub fn new(lambda: f64) -> QLResult<Self> {
         statrs::distribution::Poisson::new(lambda)
             .map(|inner| Self { inner })
@@ -112,20 +115,24 @@ pub struct ChiSquaredDistribution {
 }
 
 impl ChiSquaredDistribution {
+    /// Create a chi-squared distribution with `dof` degrees of freedom.
     pub fn new(dof: f64) -> QLResult<Self> {
         statrs::distribution::ChiSquared::new(dof)
             .map(|inner| Self { inner })
             .map_err(|e| QLError::InvalidArgument(format!("invalid chi-squared dof: {e}")))
     }
 
+    /// Cumulative distribution function: P(X ≤ x).
     pub fn cdf(&self, x: f64) -> f64 {
         ContinuousCDF::cdf(&self.inner, x)
     }
 
+    /// Probability density function.
     pub fn pdf(&self, x: f64) -> f64 {
         self.inner.pdf(x)
     }
 
+    /// Inverse CDF (quantile function): returns x such that CDF(x) = p.
     pub fn inverse_cdf(&self, p: f64) -> QLResult<f64> {
         if !(0.0..=1.0).contains(&p) {
             return Err(QLError::InvalidArgument(format!(

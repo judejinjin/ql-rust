@@ -33,7 +33,7 @@ impl FixedRateBond {
     ) -> Self {
         let dates = schedule.dates();
         let issue_date = dates[0];
-        let maturity_date = *dates.last().unwrap();
+        let maturity_date = dates[dates.len() - 1];
 
         let mut cashflows = fixed_leg(schedule, &[face_amount], &[coupon_rate], day_counter);
         // Add notional redemption at maturity

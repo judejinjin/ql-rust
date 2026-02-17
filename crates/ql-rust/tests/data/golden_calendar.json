@@ -1,0 +1,77 @@
+{
+  "description": "Calendar holiday and schedule golden values cross-validated against QuantLib C++ 1.34",
+  "test_cases": {
+    "target_holidays_2025": {
+      "description": "TARGET calendar holidays for year 2025",
+      "calendar": "TARGET",
+      "year": 2025,
+      "holidays": [
+        "2025-01-01",
+        "2025-04-18",
+        "2025-04-21",
+        "2025-05-01",
+        "2025-12-25",
+        "2025-12-26"
+      ],
+      "business_days_jan": 22,
+      "business_days_full_year": 252
+    },
+    "us_settlement_holidays_2025": {
+      "description": "US Settlement calendar holidays for year 2025",
+      "calendar": "US_Settlement",
+      "year": 2025,
+      "holidays": [
+        "2025-01-01",
+        "2025-01-20",
+        "2025-02-17",
+        "2025-05-26",
+        "2025-06-19",
+        "2025-07-04",
+        "2025-09-01",
+        "2025-10-13",
+        "2025-11-11",
+        "2025-11-27",
+        "2025-12-25"
+      ]
+    },
+    "uk_holidays_2025": {
+      "description": "UK calendar holidays for year 2025",
+      "calendar": "UK",
+      "year": 2025,
+      "holidays": [
+        "2025-01-01",
+        "2025-04-18",
+        "2025-04-21",
+        "2025-05-05",
+        "2025-05-26",
+        "2025-08-25",
+        "2025-12-25",
+        "2025-12-26"
+      ]
+    },
+    "day_count_fractions": {
+      "description": "Day count fraction computations",
+      "start_date": "2025-01-15",
+      "end_date": "2025-07-15",
+      "fractions": {
+        "Actual360": 0.50277778,
+        "Actual365Fixed": 0.49589041,
+        "Thirty360": 0.50000000
+      }
+    },
+    "schedule_semiannual_forward": {
+      "description": "Semiannual schedule, forward generation, unadjusted",
+      "effective_date": "2025-01-15",
+      "termination_date": "2027-01-15",
+      "frequency": "Semiannual",
+      "rule": "Forward",
+      "expected_dates": [
+        "2025-01-15",
+        "2025-07-15",
+        "2026-01-15",
+        "2026-07-15",
+        "2027-01-15"
+      ]
+    }
+  }
+}

@@ -47,7 +47,7 @@ pub trait Observable {
 
     /// Register an observer. Returns an ID that can be used to unregister.
     fn register_observer(&self, observer: &Arc<dyn Observer>) -> ObserverId {
-        let mut state = self.observable_state().write().unwrap();
+        let mut state = self.observable_state().write().unwrap_or_else(|p| p.into_inner());
         let id = state.next_id;
         state.next_id += 1;
         state.observers.push((id, Arc::downgrade(observer)));
@@ -56,7 +56,7 @@ pub trait Observable {
 
     /// Unregister an observer by its ID.
     fn unregister_observer(&self, id: ObserverId) {
-        let mut state = self.observable_state().write().unwrap();
+        let mut state = self.observable_state().write().unwrap_or_else(|p| p.into_inner());
         state.observers.retain(|(oid, _)| *oid != id);
     }
 
@@ -66,7 +66,7 @@ pub trait Observable {
     /// silently removed.
     fn notify_observers(&self) {
         let observers: Vec<Arc<dyn Observer>> = {
-            let mut state = self.observable_state().write().unwrap();
+            let mut state = self.observable_state().write().unwrap_or_else(|p| p.into_inner());
             // Purge dead weak references while collecting live ones.
             let mut live = Vec::new();
             let mut upgraded = Vec::new();

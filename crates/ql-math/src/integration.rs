@@ -29,6 +29,7 @@ pub struct SimpsonIntegral {
 }
 
 impl SimpsonIntegral {
+    /// Create a Simpson integrator with the given number of intervals (rounded up to even).
     pub fn new(intervals: usize) -> Self {
         // Ensure even
         let intervals = if intervals.is_multiple_of(2) {
@@ -78,6 +79,7 @@ pub struct GaussLobattoIntegral {
 }
 
 impl GaussLobattoIntegral {
+    /// Create an adaptive Gauss-Lobatto integrator.
     pub fn new(max_evaluations: usize, absolute_accuracy: f64) -> Self {
         Self {
             max_evaluations,

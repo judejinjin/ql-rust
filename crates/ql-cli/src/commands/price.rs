@@ -6,6 +6,7 @@ use ql_pricingengines::price_european;
 
 use crate::PriceInstrument;
 
+/// Execute the `price` subcommand (option pricing via Black-Scholes).
 pub fn run(instrument: PriceInstrument) -> Result<()> {
     match instrument {
         PriceInstrument::VanillaOption {

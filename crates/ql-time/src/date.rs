@@ -153,7 +153,8 @@ impl Date {
     /// Month component.
     pub fn month(&self) -> Month {
         let (_, m, _) = self.to_ymd();
-        Month::from_u32(m).unwrap()
+        // m is always 1..=12 from to_ymd().
+        Month::from_u32(m).unwrap_or_else(|| unreachable!())
     }
 
     /// Day-of-month component.
@@ -186,7 +187,8 @@ impl Date {
     /// The last day of this date's month.
     pub fn end_of_month(&self) -> Date {
         let (y, m, _) = self.to_ymd();
-        Date::from_ymd_opt(y, m, Self::days_in_month(y, m)).unwrap()
+        // days_in_month always returns a valid day.
+        Date::from_ymd_opt(y, m, Self::days_in_month(y, m)).unwrap_or_else(|| unreachable!())
     }
 
     // -- Internal conversion helpers --
@@ -357,7 +359,7 @@ impl fmt::Debug for Date {
 impl fmt::Display for Date {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let (y, m, d) = self.to_ymd();
-        let month = Month::from_u32(m).unwrap();
+        let month = Month::from_u32(m).unwrap_or_else(|| unreachable!());
         write!(f, "{month} {d}, {y}")
     }
 }

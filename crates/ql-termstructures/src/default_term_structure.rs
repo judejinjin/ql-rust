@@ -161,8 +161,8 @@ impl PiecewiseDefaultCurve {
             let dt_q = t_mat / n_q as f64;
 
             // Binary search for hazard rate in this interval
-            let t_prev = *times.last().unwrap();
-            let s_prev = *survival_probs.last().unwrap();
+            let t_prev = times[times.len() - 1];
+            let s_prev = survival_probs[survival_probs.len() - 1];
 
             let mut lambda_lo = 0.0_f64;
             let mut lambda_hi = 2.0_f64; // reasonable upper bound

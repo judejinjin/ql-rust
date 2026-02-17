@@ -38,6 +38,7 @@ pub struct FlatZeroInflationCurve {
 }
 
 impl FlatZeroInflationCurve {
+    /// Create a flat zero-coupon inflation curve.
     pub fn new(reference_date: Date, rate: f64, base_cpi: f64, day_counter: DayCounter) -> Self {
         Self {
             reference_date,
@@ -47,6 +48,7 @@ impl FlatZeroInflationCurve {
         }
     }
 
+    /// The base CPI level at the reference date.
     pub fn base_cpi(&self) -> f64 {
         self.base_cpi
     }
@@ -174,6 +176,7 @@ pub struct ZeroCouponInflationSwap {
 }
 
 impl ZeroCouponInflationSwap {
+    /// Create a new zero-coupon inflation swap.
     pub fn new(
         notional: f64,
         fixed_rate: f64,

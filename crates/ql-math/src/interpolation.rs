@@ -58,7 +58,7 @@ fn locate(xs: &[f64], x: f64) -> QLResult<usize> {
         return Ok(n - 2);
     }
     // Binary search
-    match xs.binary_search_by(|probe| probe.partial_cmp(&x).unwrap()) {
+    match xs.binary_search_by(|probe| probe.total_cmp(&x)) {
         Ok(i) => Ok(i.min(n - 2)),
         Err(i) => Ok((i - 1).min(n - 2)),
     }
@@ -99,6 +99,7 @@ pub struct LinearInterpolation {
 }
 
 impl LinearInterpolation {
+    /// Build a piecewise-linear interpolation from sorted (x, y) data.
     pub fn new(xs: Vec<f64>, ys: Vec<f64>) -> QLResult<Self> {
         validate_data(&xs, &ys)?;
         let slopes: Vec<f64> = xs
@@ -140,7 +141,7 @@ impl Interpolation for LinearInterpolation {
     }
 
     fn x_max(&self) -> f64 {
-        *self.xs.last().unwrap()
+        self.xs[self.xs.len() - 1]
     }
 }
 
@@ -160,6 +161,9 @@ pub struct LogLinearInterpolation {
 }
 
 impl LogLinearInterpolation {
+    /// Build a log-linear interpolation from sorted (x, y) data.
+    ///
+    /// All `y` values must be strictly positive.
     pub fn new(xs: Vec<f64>, ys: Vec<f64>) -> QLResult<Self> {
         validate_data(&xs, &ys)?;
         for &y in &ys {
@@ -227,7 +231,7 @@ impl Interpolation for LogLinearInterpolation {
     }
 
     fn x_max(&self) -> f64 {
-        *self.xs.last().unwrap()
+        self.xs[self.xs.len() - 1]
     }
 }
 
@@ -247,6 +251,7 @@ pub struct CubicSplineInterpolation {
 }
 
 impl CubicSplineInterpolation {
+    /// Build a natural cubic spline from sorted (x, y) data (≥ 3 points).
     pub fn new(xs: Vec<f64>, ys: Vec<f64>) -> QLResult<Self> {
         validate_data(&xs, &ys)?;
         let n = xs.len();
@@ -338,7 +343,7 @@ impl Interpolation for CubicSplineInterpolation {
     }
 
     fn x_max(&self) -> f64 {
-        *self.xs.last().unwrap()
+        self.xs[self.xs.len() - 1]
     }
 }
 

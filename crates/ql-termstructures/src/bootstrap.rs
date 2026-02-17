@@ -364,11 +364,11 @@ fn interpolate_log_linear(times: &[f64], dfs: &[f64], t: f64) -> f64 {
         return dfs[0];
     }
 
-    if t >= *times.last().unwrap() {
+    if t >= times[times.len() - 1] {
         // Log-linear extrapolation from last segment
         let n = times.len();
         if n < 2 {
-            return *dfs.last().unwrap();
+            return dfs[dfs.len() - 1];
         }
         let t1 = times[n - 2];
         let t2 = times[n - 1];

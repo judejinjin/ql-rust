@@ -49,7 +49,7 @@ impl<T: ?Sized> Handle<T> {
     pub fn get(&self) -> QLResult<Arc<T>> {
         self.link
             .read()
-            .unwrap()
+            .unwrap_or_else(|p| p.into_inner())
             .inner
             .as_ref()
             .cloned()
@@ -58,12 +58,12 @@ impl<T: ?Sized> Handle<T> {
 
     /// Whether this handle is empty (not linked to any object).
     pub fn is_empty(&self) -> bool {
-        self.link.read().unwrap().inner.is_none()
+        self.link.read().unwrap_or_else(|p| p.into_inner()).inner.is_none()
     }
 
     /// Register an observer to be notified when this handle is relinked.
     pub fn register_observer(&self, observer: &Arc<dyn Observer>) -> ObserverId {
-        let mut link = self.link.write().unwrap();
+        let mut link = self.link.write().unwrap_or_else(|p| p.into_inner());
         let id = link.observable_state.next_id;
         link.observable_state.next_id += 1;
         link.observable_state
@@ -112,7 +112,7 @@ impl<T: ?Sized> RelinkableHandle<T> {
     /// Relink all associated handles to a new object and notify observers.
     pub fn link_to(&self, obj: Arc<T>) {
         {
-            let mut link = self.handle.link.write().unwrap();
+            let mut link = self.handle.link.write().unwrap_or_else(|p| p.into_inner());
             link.inner = Some(obj);
         }
         // Notify observers outside the write lock
@@ -121,7 +121,7 @@ impl<T: ?Sized> RelinkableHandle<T> {
 
     fn notify_observers_internal(&self) {
         let observers: Vec<Arc<dyn Observer>> = {
-            let mut link = self.handle.link.write().unwrap();
+            let mut link = self.handle.link.write().unwrap_or_else(|p| p.into_inner());
             let mut live = Vec::new();
             let mut upgraded = Vec::new();
             for (id, weak) in link.observable_state.observers.drain(..) {

@@ -120,51 +120,61 @@ impl ScheduleBuilder {
         }
     }
 
+    /// Set the effective (start) date.
     pub fn effective_date(mut self, date: Date) -> Self {
         self.effective_date = Some(date);
         self
     }
 
+    /// Set the termination (end) date.
     pub fn termination_date(mut self, date: Date) -> Self {
         self.termination_date = Some(date);
         self
     }
 
+    /// Set the coupon frequency.
     pub fn frequency(mut self, freq: Frequency) -> Self {
         self.frequency = freq;
         self
     }
 
+    /// Set the business-day calendar.
     pub fn calendar(mut self, cal: Calendar) -> Self {
         self.calendar = cal;
         self
     }
 
+    /// Set the business-day convention for intermediate dates.
     pub fn convention(mut self, conv: BusinessDayConvention) -> Self {
         self.convention = conv;
         self
     }
 
+    /// Set the business-day convention for the termination date.
     pub fn termination_convention(mut self, conv: BusinessDayConvention) -> Self {
         self.termination_convention = Some(conv);
         self
     }
 
+    /// Set the date-generation rule (Forward, Backward, etc.).
     pub fn rule(mut self, rule: DateGenerationRule) -> Self {
         self.rule = rule;
         self
     }
 
+    /// Whether to adjust dates to end-of-month.
     pub fn end_of_month(mut self, eom: bool) -> Self {
         self.end_of_month = eom;
         self
     }
 
+    /// Set an explicit first coupon date (short/long front stub).
     pub fn first_date(mut self, date: Date) -> Self {
         self.first_date = Some(date);
         self
     }
 
+    /// Set an explicit next-to-last date (short/long back stub).
     pub fn next_to_last_date(mut self, date: Date) -> Self {
         self.next_to_last_date = Some(date);
         self
@@ -177,10 +187,10 @@ impl ScheduleBuilder {
     pub fn build(self) -> Schedule {
         let effective = self
             .effective_date
-            .expect("ScheduleBuilder: effective_date is required");
+            .unwrap_or_else(|| panic!("ScheduleBuilder: effective_date is required"));
         let termination = self
             .termination_date
-            .expect("ScheduleBuilder: termination_date is required");
+            .unwrap_or_else(|| panic!("ScheduleBuilder: termination_date is required"));
         let term_conv = self.termination_convention.unwrap_or(self.convention);
 
         assert!(
@@ -238,7 +248,7 @@ impl ScheduleBuilder {
             }
         }
 
-        let seed = *dates.last().unwrap();
+        let seed = dates[dates.len() - 1];
         let mut periods = 1;
         loop {
             let next = add_period(seed, &tenor, periods, self.end_of_month);
@@ -256,7 +266,7 @@ impl ScheduleBuilder {
         }
 
         if let Some(ntl) = self.next_to_last_date {
-            if ntl > *dates.last().unwrap() && ntl < termination {
+            if ntl > dates[dates.len() - 1] && ntl < termination {
                 dates.push(ntl);
             }
         }
@@ -280,7 +290,7 @@ impl ScheduleBuilder {
             }
         }
 
-        let seed = *dates.last().unwrap();
+        let seed = dates[dates.len() - 1];
         let mut periods = 1;
         loop {
             let prev = sub_period(seed, &tenor, periods, self.end_of_month);
@@ -297,7 +307,7 @@ impl ScheduleBuilder {
         }
 
         if let Some(first) = self.first_date {
-            if first > effective && first < *dates.last().unwrap() {
+            if first > effective && first < dates[dates.len() - 1] {
                 dates.push(first);
             }
         }
@@ -369,7 +379,8 @@ fn add_months_raw(date: Date, months: i32) -> Date {
     let new_year = total.div_euclid(12);
     let new_month = (total.rem_euclid(12) + 1) as u32;
     let max_day = Date::days_in_month(new_year, new_month);
-    Date::from_ymd_opt(new_year, new_month, d.min(max_day)).unwrap()
+    // Date is computed from valid calendar arithmetic.
+    Date::from_ymd_opt(new_year, new_month, d.min(max_day)).unwrap_or_else(|| unreachable!())
 }
 
 #[cfg(test)]

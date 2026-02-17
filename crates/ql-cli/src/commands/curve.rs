@@ -70,6 +70,7 @@ struct CurveNode {
     zero_rate: f64,
 }
 
+/// Execute the `curve` subcommand (e.g., bootstrap a yield curve).
 pub fn run(action: CurveAction) -> Result<()> {
     match action {
         CurveAction::Bootstrap { input, output } => bootstrap(&input, output.as_deref()),

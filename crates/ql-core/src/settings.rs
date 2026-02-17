@@ -38,39 +38,39 @@ impl Settings {
     /// If no evaluation date has been set, returns `None` (callers should
     /// fall back to today's date).
     pub fn evaluation_date_serial(&self) -> Option<i32> {
-        *self.evaluation_date.read().unwrap()
+        *self.evaluation_date.read().unwrap_or_else(|p| p.into_inner())
     }
 
     /// Set the evaluation date (as a serial number) and notify observers.
     pub fn set_evaluation_date_serial(&self, serial: i32) {
-        *self.evaluation_date.write().unwrap() = Some(serial);
+        *self.evaluation_date.write().unwrap_or_else(|p| p.into_inner()) = Some(serial);
         self.observable.notify_observers();
     }
 
     /// Clear the evaluation date (revert to "today").
     pub fn clear_evaluation_date(&self) {
-        *self.evaluation_date.write().unwrap() = None;
+        *self.evaluation_date.write().unwrap_or_else(|p| p.into_inner()) = None;
         self.observable.notify_observers();
     }
 
     /// Whether events on the reference date should be included.
     pub fn include_reference_date_events(&self) -> bool {
-        *self.include_reference_date_events.read().unwrap()
+        *self.include_reference_date_events.read().unwrap_or_else(|p| p.into_inner())
     }
 
     /// Set whether events on the reference date should be included.
     pub fn set_include_reference_date_events(&self, include: bool) {
-        *self.include_reference_date_events.write().unwrap() = include;
+        *self.include_reference_date_events.write().unwrap_or_else(|p| p.into_inner()) = include;
     }
 
     /// Whether today's cash flows should be included.
     pub fn include_todays_cashflows(&self) -> Option<bool> {
-        *self.include_todays_cashflows.read().unwrap()
+        *self.include_todays_cashflows.read().unwrap_or_else(|p| p.into_inner())
     }
 
     /// Set whether today's cash flows should be included.
     pub fn set_include_todays_cashflows(&self, include: Option<bool>) {
-        *self.include_todays_cashflows.write().unwrap() = include;
+        *self.include_todays_cashflows.write().unwrap_or_else(|p| p.into_inner()) = include;
     }
 }
 

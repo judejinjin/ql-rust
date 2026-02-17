@@ -48,7 +48,7 @@ impl SimpleQuote {
     /// Returns the previous value (if any).
     pub fn set_value(&self, new_value: f64) -> Option<f64> {
         let old = {
-            let mut v = self.value.write().unwrap();
+            let mut v = self.value.write().unwrap_or_else(|p| p.into_inner());
             let old = *v;
             *v = Some(new_value);
             old
@@ -59,7 +59,7 @@ impl SimpleQuote {
 
     /// Clear the value (make it invalid) and notify observers.
     pub fn reset(&self) {
-        *self.value.write().unwrap() = None;
+        *self.value.write().unwrap_or_else(|p| p.into_inner()) = None;
         self.notify_observers();
     }
 }
@@ -74,12 +74,12 @@ impl Quote for SimpleQuote {
     fn value(&self) -> QLResult<f64> {
         self.value
             .read()
-            .unwrap()
+            .unwrap_or_else(|p| p.into_inner())
             .ok_or(QLError::MissingResult { field: "quote value" })
     }
 
     fn is_valid(&self) -> bool {
-        self.value.read().unwrap().is_some()
+        self.value.read().unwrap_or_else(|p| p.into_inner()).is_some()
     }
 }
 

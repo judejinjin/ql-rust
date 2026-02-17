@@ -7,6 +7,7 @@ use ql_persistence::{
 
 use crate::TradeAction;
 
+/// Execute the `trade` subcommand (book, list, or inspect trades).
 pub fn run(action: TradeAction) -> Result<()> {
     match action {
         TradeAction::Book {

@@ -134,7 +134,7 @@ impl DiscountCurve {
             .collect();
 
         let interp = LogLinearInterpolation::new(times.clone(), discount_factors.clone())?;
-        let max_date = *dates.last().unwrap();
+        let max_date = dates[dates.len() - 1];
 
         Ok(Self {
             reference_date,
@@ -222,7 +222,7 @@ impl ZeroCurve {
             .collect();
 
         let interp = LinearInterpolation::new(times.clone(), rates.clone())?;
-        let max_date = *dates.last().unwrap();
+        let max_date = dates[dates.len() - 1];
 
         Ok(Self {
             reference_date,

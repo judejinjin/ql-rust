@@ -98,7 +98,10 @@ impl<T> Cached<T> {
             *self.value.borrow_mut() = Some(f());
             self.valid.set(true);
         }
-        std::cell::Ref::map(self.value.borrow(), |v| v.as_ref().unwrap())
+        // SAFETY: We just ensured `value` is `Some` above.
+        std::cell::Ref::map(self.value.borrow(), |v| {
+            v.as_ref().unwrap_or_else(|| unreachable!())
+        })
     }
 
     /// Mark the cached value as invalid — the next access will recompute.

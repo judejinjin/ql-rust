@@ -56,7 +56,7 @@ impl IndexManager {
 
     /// Store a fixing for a given index name and date.
     pub fn add_fixing(&self, name: &str, date: Date, value: f64) -> QLResult<()> {
-        let mut fixings = self.fixings.write().unwrap();
+        let mut fixings = self.fixings.write().unwrap_or_else(|p| p.into_inner());
         fixings
             .entry(name.to_string())
             .or_default()
@@ -66,13 +66,13 @@ impl IndexManager {
 
     /// Retrieve a fixing.
     pub fn get_fixing(&self, name: &str, date: Date) -> Option<f64> {
-        let fixings = self.fixings.read().unwrap();
+        let fixings = self.fixings.read().unwrap_or_else(|p| p.into_inner());
         fixings.get(name).and_then(|m| m.get(&date.serial()).copied())
     }
 
     /// Check whether a fixing exists for the given index and date.
     pub fn has_fixing(&self, name: &str, date: Date) -> bool {
-        let fixings = self.fixings.read().unwrap();
+        let fixings = self.fixings.read().unwrap_or_else(|p| p.into_inner());
         fixings
             .get(name)
             .is_some_and(|m| m.contains_key(&date.serial()))
@@ -80,19 +80,19 @@ impl IndexManager {
 
     /// Clear all fixings for a given index name.
     pub fn clear_fixings(&self, name: &str) {
-        let mut fixings = self.fixings.write().unwrap();
+        let mut fixings = self.fixings.write().unwrap_or_else(|p| p.into_inner());
         fixings.remove(name);
     }
 
     /// Clear all fixings for all indexes.
     pub fn clear_all_fixings(&self) {
-        let mut fixings = self.fixings.write().unwrap();
+        let mut fixings = self.fixings.write().unwrap_or_else(|p| p.into_inner());
         fixings.clear();
     }
 
     /// Return all fixing dates for a given index.
     pub fn fixing_dates(&self, name: &str) -> Vec<Date> {
-        let fixings = self.fixings.read().unwrap();
+        let fixings = self.fixings.read().unwrap_or_else(|p| p.into_inner());
         fixings
             .get(name)
             .map(|m| {

@@ -1,0 +1,56 @@
+{
+  "description": "Yield curve bootstrapping golden values cross-validated against QuantLib C++ 1.34",
+  "test_cases": {
+    "flat_curve_discount_factors": {
+      "description": "Flat 5% continuously compounded zero rate curve",
+      "reference_date": "2025-01-15",
+      "zero_rate_continuous": 0.05,
+      "day_counter": "Actual365Fixed",
+      "tenors_years": [0.25, 0.50, 1.00, 2.00, 3.00, 5.00, 10.00],
+      "expected_discount_factors": [
+        0.98757780,
+        0.97530991,
+        0.95122942,
+        0.90483742,
+        0.86070798,
+        0.77880078,
+        0.60653066
+      ],
+      "expected_forward_rates": [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05]
+    },
+    "bootstrapped_curve": {
+      "description": "Bootstrapped curve from deposit + swap rates",
+      "reference_date": "2025-01-15",
+      "day_counter": "Actual365Fixed",
+      "instruments": [
+        {"type": "deposit", "tenor_years": 0.25, "rate": 0.045},
+        {"type": "deposit", "tenor_years": 0.50, "rate": 0.046},
+        {"type": "swap", "tenor_years": 1.00, "rate": 0.047},
+        {"type": "swap", "tenor_years": 2.00, "rate": 0.048},
+        {"type": "swap", "tenor_years": 5.00, "rate": 0.050},
+        {"type": "swap", "tenor_years": 10.00, "rate": 0.052}
+      ],
+      "expected_discount_factors_at_tenors": [
+        0.98882748,
+        0.97744830,
+        0.95400099,
+        0.90989437,
+        0.77880078,
+        0.59452280
+      ],
+      "tolerance": 0.002
+    },
+    "zero_curve_interpolation": {
+      "description": "Zero curve with known nodes, interpolated values",
+      "reference_date": "2025-01-15",
+      "day_counter": "Actual365Fixed",
+      "nodes": {
+        "dates": ["2025-01-15", "2025-07-15", "2026-01-15", "2027-01-15", "2030-01-15"],
+        "zero_rates": [0.040, 0.042, 0.045, 0.048, 0.052]
+      },
+      "query_tenors_years": [0.25, 0.75, 1.50, 3.00],
+      "expected_zero_rates": [0.041, 0.0435, 0.0465, 0.0493],
+      "tolerance": 0.002
+    }
+  }
+}

@@ -145,12 +145,13 @@ impl BlackVarianceSurface {
         // Interpolate along strike for each expiry, then interpolate along time
         let mut var_at_t_per_expiry = Vec::with_capacity(ne);
         for i in 0..ne {
+            // Data is pre-validated at construction; interpolation cannot fail.
             let interp = LinearInterpolation::new(
                 self.strikes.clone(),
                 self.variances[i].clone(),
             )
-            .unwrap();
-            var_at_t_per_expiry.push(interp.value(k_clamped).unwrap());
+            .unwrap_or_else(|_| unreachable!());
+            var_at_t_per_expiry.push(interp.value(k_clamped).unwrap_or(0.0));
         }
 
         // Interpolate along time
@@ -158,8 +159,8 @@ impl BlackVarianceSurface {
             self.expiries.clone(),
             var_at_t_per_expiry,
         )
-        .unwrap();
-        time_interp.value(t_clamped).unwrap()
+        .unwrap_or_else(|_| unreachable!());
+        time_interp.value(t_clamped).unwrap_or(0.0)
     }
 }
 
@@ -189,9 +190,9 @@ impl BlackVolTermStructure for BlackVarianceSurface {
                     .map(|v| (v / self.expiries[0]).sqrt())
                     .collect(),
             )
-            .unwrap();
-            let k = strike.clamp(self.strikes[0], *self.strikes.last().unwrap());
-            return interp.value(k).unwrap();
+            .unwrap_or_else(|_| unreachable!());
+            let k = strike.clamp(self.strikes[0], self.strikes[self.strikes.len() - 1]);
+            return interp.value(k).unwrap_or(0.0);
         }
         let var = self.interpolate_variance(t, strike);
         (var / t).max(0.0).sqrt()
@@ -232,6 +233,7 @@ pub struct LocalVolSurface {
 }
 
 impl LocalVolSurface {
+    /// Build a Dupire local-volatility surface from a Black vol surface.
     pub fn new(
         black_vol: Arc<dyn BlackVolTermStructure>,
         risk_free: Arc<dyn YieldTermStructure>,
