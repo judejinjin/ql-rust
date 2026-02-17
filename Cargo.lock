@@ -420,7 +420,11 @@ name = "ql-models"
 version = "0.1.0"
 dependencies = [
  "approx",
+ "nalgebra",
  "ql-core",
+ "ql-math",
+ "ql-processes",
+ "ql-termstructures",
  "ql-time",
  "serde",
 ]
@@ -441,11 +445,14 @@ name = "ql-pricingengines"
 version = "0.1.0"
 dependencies = [
  "approx",
+ "nalgebra",
  "ql-cashflows",
  "ql-core",
  "ql-indexes",
  "ql-instruments",
  "ql-math",
+ "ql-models",
+ "ql-processes",
  "ql-termstructures",
  "ql-time",
  "serde",
@@ -458,6 +465,8 @@ dependencies = [
  "approx",
  "nalgebra",
  "ql-core",
+ "ql-math",
+ "ql-termstructures",
  "ql-time",
  "serde",
 ]
