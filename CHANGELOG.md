@@ -2,6 +2,21 @@
 
 All notable changes to the ql-rust project are documented in this file.
 
+## [0.1.1] — 2026-02-17
+
+### Quality — Definition of Done Completion
+- Removed all 67 `unwrap()`/`expect()` calls from production code (20 files)
+- Added `///` doc comments to 31 remaining public functions
+- 13 golden cross-validation tests (calendar, yield curve, Black-Scholes)
+- Heston calibration integration test (synthetic vol surface, params ± 1e-4)
+- 4 new benchmarks: Heston analytic, Heston calibration, calendar advance, interpolation
+- 3 standalone examples: `price_european_option`, `bootstrap_yield_curve`, `calibrate_heston`
+- Updated README and CHANGELOG
+
+### Test Summary
+- 542+ tests total (502 unit + 16 integration + 11 property + 13 golden)
+- Zero clippy warnings, zero doc warnings
+
 ## [0.1.0] — 2025-07-19
 
 ### Phase 0 — Workspace & Core Foundation
@@ -96,7 +111,7 @@ All notable changes to the ql-rust project are documented in this file.
 - Zero-inflation term structures and swaps
 
 ### Quality & Hardening
-- 529 tests total (502 unit + 16 integration + 11 property-based)
+- 529 unit/integration/property tests at time of release
 - Integration test suites: yield curve pipeline, swap pricing pipeline, option pricing pipeline, persistence round-trip
 - Property-based tests (proptest): put-call parity, price bounds, Greeks ranges, discount factor monotonicity, American ≥ European
 - 14 Criterion benchmarks covering all major operations

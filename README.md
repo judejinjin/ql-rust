@@ -3,7 +3,7 @@
 A modern Rust reimplementation of the [QuantLib](https://www.quantlib.org/) quantitative finance library.
 
 [![Build](https://img.shields.io/badge/build-passing-brightgreen)]()
-[![Tests](https://img.shields.io/badge/tests-529_passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-542_passing-brightgreen)]()
 [![Rust](https://img.shields.io/badge/rust-2021_edition-orange)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
 
@@ -218,7 +218,7 @@ ql-cli list --book equity
 ## Testing
 
 ```bash
-# Run all 529 tests
+# Run all 542 tests
 cargo test --workspace
 
 # Run integration tests only
@@ -238,6 +238,7 @@ cargo bench -p ql-rust
 | Unit tests | 502 | Per-crate functionality |
 | Integration tests | 16 | Cross-crate pipelines (yield curve, swap, option, persistence) |
 | Property-based tests | 11 | Mathematical invariants via proptest (put-call parity, bounds, monotonicity) |
+| Golden cross-validation | 13 | Calendar, yield curve, and Black-Scholes vs analytical reference values |
 
 ### Benchmarks
 
@@ -252,6 +253,11 @@ cargo bench -p ql-rust
 | `binomial_crr/{100,500,1000}_steps` | CRR lattice at various step counts |
 | `fixed_rate_bond_pricing` | Bond NPV + clean/dirty prices |
 | `vanilla_swap_pricing` | Swap NPV + fair rate |
+| `heston_analytic_price` | Heston semi-analytic pricing (Fourier) |
+| `heston_calibration_5_helpers` | 5-point Heston model calibration |
+| `calendar_advance_30bd` | Calendar.advance 30 business days |
+| `interpolation_linear_lookup` | Linear interpolation point lookup |
+| `interpolation_cubic_spline_lookup` | Cubic spline interpolation point lookup |
 | `date_add_days` | Date + integer days arithmetic |
 | `day_counter_year_fraction` | Year fraction calculation |
 

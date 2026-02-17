@@ -7,13 +7,18 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion, Benchmark
 use ql_cashflows::fixed_leg;
 use ql_indexes::IborIndex;
 use ql_instruments::{FixedRateBond, OptionType, VanillaOption, SwapType, VanillaSwap};
+use ql_math::interpolation::{CubicSplineInterpolation, Interpolation, LinearInterpolation};
+use ql_math::optimization::EndCriteria;
 use ql_methods::{binomial_crr, fd_black_scholes, mc_european};
-use ql_pricingengines::{implied_volatility, price_bond, price_european, price_swap};
+use ql_models::{CalibrationHelper, HestonModel, calibrate};
+use ql_pricingengines::{heston_price, implied_volatility, price_bond, price_european, price_swap};
 use ql_termstructures::{
     DepositRateHelper, FlatForward, PiecewiseYieldCurve, RateHelper, SwapRateHelper,
     YieldTermStructure,
 };
-use ql_time::{Date, DayCounter, Month, Schedule};
+use ql_time::{
+    BusinessDayConvention, Calendar, Date, DayCounter, Month, Period, Schedule,
+};
 
 // ── Black-Scholes analytic pricing + Greeks ──────────────────────────────────
 
@@ -246,6 +251,120 @@ fn bench_date_arithmetic(c: &mut Criterion) {
     });
 }
 
+// ── Heston analytic pricing ──────────────────────────────────────────────────
+
+fn bench_heston_analytic(c: &mut Criterion) {
+    let model = HestonModel::new(100.0, 0.05, 0.02, 0.04, 2.0, 0.04, 0.3, -0.5);
+
+    c.bench_function("heston_analytic_price", |b| {
+        b.iter(|| {
+            heston_price(
+                black_box(&model),
+                black_box(105.0),
+                black_box(1.0),
+                black_box(true),
+            )
+        })
+    });
+}
+
+// ── Heston calibration ──────────────────────────────────────────────────────
+
+/// CalibrationHelper for benchmarking Heston calibration.
+struct BenchHestonHelper {
+    spot: f64,
+    rate: f64,
+    dividend: f64,
+    strike: f64,
+    time_to_expiry: f64,
+    market_price: f64,
+}
+
+impl CalibrationHelper for BenchHestonHelper {
+    fn market_value(&self) -> f64 {
+        self.market_price
+    }
+    fn model_value_with_params(&self, params: &[f64]) -> f64 {
+        let model = HestonModel::new(
+            self.spot, self.rate, self.dividend,
+            params[0], params[1], params[2], params[3], params[4],
+        );
+        heston_price(&model, self.strike, self.time_to_expiry, true).npv
+    }
+}
+
+fn bench_heston_calibration(c: &mut Criterion) {
+    let true_model = HestonModel::new(100.0, 0.05, 0.02, 0.04, 2.0, 0.04, 0.3, -0.5);
+    let strikes = [90.0, 95.0, 100.0, 105.0, 110.0];
+
+    let helpers: Vec<Box<dyn CalibrationHelper>> = strikes
+        .iter()
+        .map(|&k| {
+            let mkt_price = heston_price(&true_model, k, 1.0, true).npv;
+            Box::new(BenchHestonHelper {
+                spot: 100.0,
+                rate: 0.05,
+                dividend: 0.02,
+                strike: k,
+                time_to_expiry: 1.0,
+                market_price: mkt_price,
+            }) as Box<dyn CalibrationHelper>
+        })
+        .collect();
+
+    let criteria = EndCriteria {
+        max_iterations: 500,
+        max_stationary_iterations: 50,
+        ..EndCriteria::default()
+    };
+
+    c.bench_function("heston_calibration_5_helpers", |b| {
+        b.iter(|| {
+            let mut model = HestonModel::new(
+                100.0, 0.05, 0.02, 0.06, 1.0, 0.06, 0.5, -0.3,
+            );
+            calibrate(black_box(&mut model), black_box(&helpers), black_box(&criteria))
+        })
+    });
+}
+
+// ── Calendar advance ─────────────────────────────────────────────────────────
+
+fn bench_calendar_advance(c: &mut Criterion) {
+    let cal = Calendar::UnitedStates(ql_time::calendar::USMarket::NYSE);
+    let d = Date::from_ymd(2025, Month::January, 15);
+    let period = Period::months(1);
+
+    c.bench_function("calendar_advance_30bd", |b| {
+        b.iter(|| {
+            cal.advance(
+                black_box(d),
+                black_box(period),
+                black_box(BusinessDayConvention::ModifiedFollowing),
+                black_box(false),
+            )
+        })
+    });
+}
+
+// ── Interpolation ────────────────────────────────────────────────────────────
+
+fn bench_interpolation(c: &mut Criterion) {
+    let xs: Vec<f64> = (0..100).map(|i| i as f64 * 0.1).collect();
+    let ys: Vec<f64> = xs.iter().map(|&x| (x * 0.5).sin()).collect();
+
+    let linear = LinearInterpolation::new(xs.clone(), ys.clone()).unwrap();
+    let cubic = CubicSplineInterpolation::new(xs, ys).unwrap();
+
+    c.bench_function("interpolation_linear_lookup", |b| {
+        b.iter(|| linear.value(black_box(4.73)))
+    });
+
+    c.bench_function("interpolation_cubic_spline_lookup", |b| {
+        b.iter(|| cubic.value(black_box(4.73)))
+    });
+}
+
 criterion_group!(
     benches,
     bench_bs_pricing,
@@ -258,5 +377,9 @@ criterion_group!(
     bench_bond_pricing,
     bench_swap_pricing,
     bench_date_arithmetic,
+    bench_heston_analytic,
+    bench_heston_calibration,
+    bench_calendar_advance,
+    bench_interpolation,
 );
 criterion_main!(benches);
