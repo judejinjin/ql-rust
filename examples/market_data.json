@@ -1,0 +1,12 @@
+{
+    "reference_date": "2025-01-15",
+    "day_counter": "Actual365Fixed",
+    "deposits": [
+        { "rate": 0.045, "maturity_months": 3 },
+        { "rate": 0.046, "maturity_months": 6 }
+    ],
+    "swaps": [
+        { "rate": 0.048, "tenor_years": 2, "frequency": 1 },
+        { "rate": 0.050, "tenor_years": 5, "frequency": 1 }
+    ]
+}

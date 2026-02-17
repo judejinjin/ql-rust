@@ -14,6 +14,8 @@ members = [
     "crates/ql-pricingengines",
     "crates/ql-methods",
     "crates/ql-persistence",
+    "crates/ql-rust",
+    "crates/ql-cli",
 ]
 
 [workspace.dependencies]
@@ -33,6 +35,8 @@ bincode = "1"
 redb = "2"
 uuid = { version = "1", features = ["v4", "serde"] }
 tempfile = "3"
+clap = { version = "4", features = ["derive"] }
+anyhow = "1"
 
 # Internal crate dependencies
 ql-core = { path = "crates/ql-core" }
@@ -48,3 +52,4 @@ ql-models = { path = "crates/ql-models" }
 ql-pricingengines = { path = "crates/ql-pricingengines" }
 ql-methods = { path = "crates/ql-methods" }
 ql-persistence = { path = "crates/ql-persistence" }
+ql-rust = { path = "crates/ql-rust" }

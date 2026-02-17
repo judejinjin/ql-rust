@@ -1,0 +1,22 @@
+[package]
+name = "ql-cli"
+version = "0.1.0"
+edition = "2021"
+description = "QuantLib-Rust command-line interface"
+
+[[bin]]
+name = "ql-cli"
+path = "src/main.rs"
+
+[dependencies]
+ql-rust = { path = "../ql-rust" }
+ql-core = { workspace = true }
+ql-time = { workspace = true }
+ql-instruments = { workspace = true }
+ql-termstructures = { workspace = true }
+ql-pricingengines = { workspace = true }
+ql-persistence = { workspace = true }
+clap = { version = "4", features = ["derive"] }
+anyhow = "1"
+serde = { workspace = true }
+serde_json = { workspace = true }

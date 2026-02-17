@@ -1,0 +1,21 @@
+[package]
+name = "ql-rust"
+version = "0.1.0"
+edition = "2021"
+description = "QuantLib for Rust – convenience facade crate"
+
+[dependencies]
+ql-core = { workspace = true }
+ql-time = { workspace = true }
+ql-math = { workspace = true }
+ql-currencies = { workspace = true }
+ql-indexes = { workspace = true }
+ql-termstructures = { workspace = true }
+ql-cashflows = { workspace = true }
+ql-instruments = { workspace = true }
+ql-processes = { workspace = true }
+ql-models = { workspace = true }
+ql-pricingengines = { workspace = true }
+ql-methods = { workspace = true }
+ql-persistence = { workspace = true }
+serde_json = { workspace = true }
