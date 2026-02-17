@@ -337,6 +337,8 @@ version = "0.1.0"
 dependencies = [
  "approx",
  "ql-core",
+ "ql-indexes",
+ "ql-termstructures",
  "ql-time",
  "serde",
 ]
