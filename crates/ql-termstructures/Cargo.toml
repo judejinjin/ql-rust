@@ -9,6 +9,7 @@ license = "MIT OR Apache-2.0"
 ql-core = { workspace = true }
 ql-time = { workspace = true }
 ql-math = { workspace = true }
+ql-indexes = { path = "../ql-indexes" }
 serde = { workspace = true }
 
 [dev-dependencies]

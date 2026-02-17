@@ -366,6 +366,7 @@ version = "0.1.0"
 dependencies = [
  "approx",
  "ql-core",
+ "ql-currencies",
  "ql-time",
  "serde",
 ]
@@ -456,6 +457,7 @@ version = "0.1.0"
 dependencies = [
  "approx",
  "ql-core",
+ "ql-indexes",
  "ql-math",
  "ql-time",
  "serde",

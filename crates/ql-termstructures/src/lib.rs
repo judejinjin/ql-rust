@@ -2,3 +2,16 @@
 //!
 //! Term structure traits and implementations: yield curves, volatility surfaces,
 //! default probability curves, inflation curves, and bootstrapping framework.
+
+pub mod term_structure;
+pub mod yield_term_structure;
+pub mod yield_curves;
+pub mod bootstrap;
+
+// Re-exports
+pub use term_structure::TermStructure;
+pub use yield_term_structure::YieldTermStructure;
+pub use yield_curves::{FlatForward, DiscountCurve, ZeroCurve};
+pub use bootstrap::{
+    RateHelper, DepositRateHelper, SwapRateHelper, PiecewiseYieldCurve,
+};
