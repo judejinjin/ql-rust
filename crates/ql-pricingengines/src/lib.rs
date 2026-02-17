@@ -5,8 +5,12 @@
 pub mod analytic_european;
 pub mod analytic_heston;
 pub mod discounting;
+pub mod swaption_engines;
+pub mod cap_floor_engines;
 
 // Re-exports
 pub use analytic_european::{price_european, implied_volatility, AnalyticEuropeanResults};
 pub use analytic_heston::{heston_price, HestonResult};
 pub use discounting::{price_swap, price_bond, SwapResults, BondResults};
+pub use swaption_engines::{black_swaption, bachelier_swaption, SwaptionResult};
+pub use cap_floor_engines::{black_cap_floor, bachelier_cap_floor, CapFloorResult};
