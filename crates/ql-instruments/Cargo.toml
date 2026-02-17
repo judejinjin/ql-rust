@@ -8,6 +8,10 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 ql-core = { workspace = true }
 ql-time = { workspace = true }
+ql-math = { path = "../ql-math" }
+ql-indexes = { path = "../ql-indexes" }
+ql-termstructures = { path = "../ql-termstructures" }
+ql-cashflows = { path = "../ql-cashflows" }
 serde = { workspace = true }
 
 [dev-dependencies]
