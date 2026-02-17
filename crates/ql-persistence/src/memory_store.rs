@@ -20,9 +20,9 @@ use crate::store::ObjectStore;
 /// Thread-safe via `RwLock`. Supports bitemporal versioning, event sourcing,
 /// trade queries, and market snapshots — all in RAM.
 pub struct InMemoryStore {
-    /// trade_id → Vec<Trade> (one entry per version, newest last)
+    /// trade_id → `Vec<Trade>` (one entry per version, newest last)
     trades: RwLock<HashMap<String, Vec<Trade>>>,
-    /// trade_id → Vec<LifecycleEvent> (append-only, chronological)
+    /// trade_id → `Vec<LifecycleEvent>` (append-only, chronological)
     events: RwLock<HashMap<String, Vec<LifecycleEvent>>>,
     /// (date, snapshot_type_key) → MarketSnapshot
     snapshots: RwLock<HashMap<String, MarketSnapshot>>,

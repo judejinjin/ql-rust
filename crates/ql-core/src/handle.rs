@@ -17,7 +17,7 @@ struct Link<T: ?Sized> {
 
 /// A shared, read-only reference to a (possibly absent) object.
 ///
-/// All clones of a `Handle` point to the same underlying [`Link`] and see the
+/// All clones of a `Handle` point to the same underlying link and see the
 /// same object. The object can only be changed via the corresponding
 /// [`RelinkableHandle`].
 pub struct Handle<T: ?Sized> {
