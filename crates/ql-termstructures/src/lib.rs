@@ -9,6 +9,8 @@ pub mod yield_curves;
 pub mod bootstrap;
 pub mod vol_term_structure;
 pub mod sabr;
+pub mod default_term_structure;
+pub mod inflation_term_structure;
 
 // Re-exports
 pub use term_structure::TermStructure;
@@ -22,3 +24,10 @@ pub use vol_term_structure::{
     BlackConstantVol, BlackVarianceSurface, LocalVolSurface,
 };
 pub use sabr::{sabr_volatility, SabrSmileSection};
+pub use default_term_structure::{
+    DefaultProbabilityTermStructure, FlatHazardRate, PiecewiseDefaultCurve,
+};
+pub use inflation_term_structure::{
+    ZeroInflationTermStructure, FlatZeroInflationCurve,
+    PiecewiseZeroInflationCurve, ZeroCouponInflationSwap,
+};

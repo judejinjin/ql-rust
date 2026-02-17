@@ -10,6 +10,7 @@ pub mod barrier_option;
 pub mod asian_option;
 pub mod swaption;
 pub mod cap_floor;
+pub mod credit_default_swap;
 
 // Re-exports
 pub use payoff::{OptionType, Payoff, Exercise};
@@ -20,3 +21,4 @@ pub use barrier_option::{BarrierOption, BarrierType};
 pub use asian_option::{AsianOption, AveragingType};
 pub use swaption::{Swaption, SwaptionType, SettlementType};
 pub use cap_floor::{CapFloor, CapFloorType, Caplet};
+pub use credit_default_swap::{CreditDefaultSwap, CdsProtectionSide, CdsPremiumPeriod};
