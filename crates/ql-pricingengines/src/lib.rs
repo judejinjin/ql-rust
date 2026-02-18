@@ -45,3 +45,9 @@ pub use multi_asset::{
 pub use hw_analytic::{
     hw_bond_option, hw_caplet, hw_floorlet, hw_jamshidian_swaption, HWAnalyticResult,
 };
+pub mod tree_swaption;
+pub use tree_swaption::{
+    tree_bond_price, tree_swaption, tree_bermudan_swaption, tree_cap_floor,
+    fd_hw_swaption, mc_hw_cap_floor,
+    TreeResult, FdResult, McHwResult,
+};
