@@ -11,6 +11,7 @@ pub mod vasicek;
 pub mod cir;
 pub mod black_karasinski;
 pub mod g2_model;
+pub mod lmm;
 
 // Re-exports
 pub use parameter::{Parameter, Constraint, NoConstraint, PositiveConstraint, BoundaryConstraint, CompositeConstraint};
@@ -22,3 +23,4 @@ pub use vasicek::VasicekModel;
 pub use cir::CIRModel;
 pub use black_karasinski::BlackKarasinskiModel;
 pub use g2_model::G2Model;
+pub use lmm::{LmmConfig, LmmCurveState, LmmResult, lmm_cap_price, lmm_swaption_price};

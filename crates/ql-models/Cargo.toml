@@ -12,6 +12,8 @@ ql-math = { path = "../ql-math" }
 ql-processes = { path = "../ql-processes" }
 ql-termstructures = { path = "../ql-termstructures" }
 nalgebra = { workspace = true }
+rand = { workspace = true }
+rand_distr = { workspace = true }
 serde = { workspace = true }
 
 [dev-dependencies]

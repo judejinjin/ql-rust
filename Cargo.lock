@@ -869,6 +869,8 @@ dependencies = [
  "ql-processes",
  "ql-termstructures",
  "ql-time",
+ "rand 0.9.2",
+ "rand_distr 0.5.1",
  "serde",
 ]
 
