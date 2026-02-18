@@ -18,6 +18,7 @@ pub mod compound_engine;
 pub mod variance_swap_engine;
 pub mod merton_jump_diffusion;
 pub mod multi_asset;
+pub mod hw_analytic;
 
 // Re-exports
 pub use american_engines::{
@@ -40,4 +41,7 @@ pub use merton_jump_diffusion::{merton_jump_diffusion, MertonJDResult};
 pub use multi_asset::{
     mc_basket, stulz_max_call, stulz_min_call, kirk_spread_call, kirk_spread_put,
     margrabe_exchange, BasketType, BasketResult,
+};
+pub use hw_analytic::{
+    hw_bond_option, hw_caplet, hw_floorlet, hw_jamshidian_swaption, HWAnalyticResult,
 };
