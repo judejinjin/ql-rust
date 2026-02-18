@@ -6,7 +6,10 @@
 pub mod term_structure;
 pub mod yield_term_structure;
 pub mod yield_curves;
+pub mod yield_curves_extended;
 pub mod bootstrap;
+pub mod bootstrap_extended;
+pub mod nelson_siegel;
 pub mod vol_term_structure;
 pub mod sabr;
 pub mod svi;
@@ -20,8 +23,18 @@ pub mod inflation_term_structure;
 pub use term_structure::TermStructure;
 pub use yield_term_structure::YieldTermStructure;
 pub use yield_curves::{FlatForward, DiscountCurve, ZeroCurve};
+pub use yield_curves_extended::{
+    CompositeZeroYieldStructure, ImpliedTermStructure, ForwardCurve,
+    UltimateForwardTermStructure, SpreadedTermStructure,
+};
 pub use bootstrap::{
     RateHelper, DepositRateHelper, SwapRateHelper, PiecewiseYieldCurve,
+};
+pub use bootstrap_extended::{
+    OISRateHelper, BondHelper, FuturesRateHelper, FRAHelper,
+};
+pub use nelson_siegel::{
+    NelsonSiegelFitting, SvenssonFitting, FittedBondDiscountCurve, FittingMethod,
 };
 pub use vol_term_structure::{
     BlackVolTermStructure, LocalVolTermStructure,
