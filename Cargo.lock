@@ -761,6 +761,7 @@ dependencies = [
  "approx",
  "ql-core",
  "ql-indexes",
+ "ql-math",
  "ql-termstructures",
  "ql-time",
  "serde",
