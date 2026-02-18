@@ -6,9 +6,11 @@ pub mod parameter;
 pub mod calibrated_model;
 pub mod heston_model;
 pub mod hull_white_model;
+pub mod bates_model;
 
 // Re-exports
 pub use parameter::{Parameter, Constraint, NoConstraint, PositiveConstraint, BoundaryConstraint, CompositeConstraint};
 pub use calibrated_model::{CalibratedModel, CalibrationHelper, ShortRateModel, calibrate};
 pub use heston_model::HestonModel;
 pub use hull_white_model::HullWhiteModel;
+pub use bates_model::BatesModel;

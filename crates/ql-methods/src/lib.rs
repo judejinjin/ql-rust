@@ -10,6 +10,6 @@ pub mod lattice;
 
 // Re-exports
 pub use monte_carlo::{Path, PathGenerator, MultiPath, MultiPathGenerator};
-pub use mc_engines::{MCResult, mc_european, mc_barrier, mc_asian, mc_heston};
+pub use mc_engines::{MCResult, mc_european, mc_barrier, mc_asian, mc_heston, mc_bates};
 pub use finite_differences::{FDResult, fd_black_scholes};
 pub use lattice::{LatticeResult, binomial_crr};
