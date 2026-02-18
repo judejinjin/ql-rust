@@ -15,7 +15,11 @@ ql-cashflows = { path = "../ql-cashflows" }
 ql-instruments = { path = "../ql-instruments" }
 ql-processes = { path = "../ql-processes" }
 ql-models = { path = "../ql-models" }
+ql-methods = { path = "../ql-methods" }
 nalgebra = { workspace = true }
+rand = { workspace = true }
+rand_distr = { workspace = true }
+rayon = { workspace = true }
 serde = { workspace = true }
 
 [dev-dependencies]

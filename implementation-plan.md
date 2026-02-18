@@ -20,13 +20,25 @@
 12. [Phase 10: Experimental & Exotics](#12-phase-10-experimental--exotics)
 13. [Phase 11: Persistence Layer](#13-phase-11-persistence-layer)
 14. [Phase 12: Integration, CLI & API Shell](#14-phase-12-integration-cli--api-shell)
-15. [Cross-Cutting Concerns](#15-cross-cutting-concerns)
-16. [Dependency Graph Between Phases](#16-dependency-graph-between-phases)
-17. [Testing & Validation Strategy](#17-testing--validation-strategy)
-18. [Performance Benchmarking Plan](#18-performance-benchmarking-plan)
-19. [Risk Register & Mitigations](#19-risk-register--mitigations)
-20. [Estimated Timeline](#20-estimated-timeline)
-21. [Definition of Done — Per-Phase Checklist](#21-definition-of-done--per-phase-checklist)
+15. [Phase 13: Advanced American Option Engines](#15-phase-13-advanced-american-option-engines)
+16. [Phase 14: Bates Model & Jump-Diffusion](#16-phase-14-bates-model--jump-diffusion)
+17. [Phase 15: Multi-Asset & Basket Options](#17-phase-15-multi-asset--basket-options)
+18. [Phase 16: Short-Rate Models — Full Coverage](#18-phase-16-short-rate-models--full-coverage)
+19. [Phase 17: Advanced Swaption & Cap/Floor Engines](#19-phase-17-advanced-swaption--capfloor-engines)
+20. [Phase 18: Advanced Volatility Surfaces & Smile Models](#20-phase-18-advanced-volatility-surfaces--smile-models)
+21. [Phase 19: Advanced Finite Difference Framework](#21-phase-19-advanced-finite-difference-framework)
+22. [Phase 20: LIBOR Market Model Framework](#22-phase-20-libor-market-model-framework)
+23. [Phase 21: Advanced Credit Models](#23-phase-21-advanced-credit-models)
+24. [Phase 22: Math Library Extensions](#24-phase-22-math-library-extensions)
+25. [Phase 23: Advanced Cash Flows & Coupons](#25-phase-23-advanced-cash-flows--coupons)
+26. [Phase 24: Advanced Yield Curve & Fitting](#26-phase-24-advanced-yield-curve--fitting)
+27. [Cross-Cutting Concerns](#27-cross-cutting-concerns)
+28. [Dependency Graph Between Phases](#28-dependency-graph-between-phases)
+29. [Testing & Validation Strategy](#29-testing--validation-strategy)
+30. [Performance Benchmarking Plan](#30-performance-benchmarking-plan)
+31. [Risk Register & Mitigations](#31-risk-register--mitigations)
+32. [Estimated Timeline](#32-estimated-timeline)
+33. [Definition of Done — Per-Phase Checklist](#33-definition-of-done--per-phase-checklist)
 
 ---
 
@@ -945,19 +957,129 @@ As in project.md §17.6 — use `into_par_iter()` for embarrassingly parallel pa
 
 ## 12. Phase 10: Experimental & Exotics
 
-**Duration estimate:** 4+ weeks (ongoing)
+**Duration estimate:** 4–6 weeks
 **Depends on:** Phases 6–9
-**Milestone:** *Feature parity with QuantLib's most-used experimental modules.*
+**Milestone:** *Can price callable bonds, barrier options (analytic/MC/FD), Asian options, lookback options, cliquet options, variance swaps, and exotic chooser/compound options.*
 
-| Feature | Priority |
-|---|---|
-| Callable bonds (Hull-White tree) | High |
-| Barrier options (analytic + MC + FD) | High |
-| Asian options (MC) | Medium |
-| Variance swaps | Medium |
-| Stochastic local volatility (SLV) | Low |
-| Hybrid Heston-Hull-White | Low |
-| Commodity models | Low |
+### 12.1 Callable Bonds
+
+- `CallableBond` instrument with `CallabilitySchedule` (call/put dates + prices).
+- `TreeCallableBondEngine` — Hull-White trinomial tree pricing.
+- `BlackCallableBondEngine` — Black's model for European callable.
+- `CallableBondConstantVol`, `CallableBondVolStructure`.
+- `DiscretizedCallableFixedRateBond` — lattice discretization.
+
+### 12.2 Advanced Barrier Options
+
+- `DoubleBarrierOption` (knock-in/knock-out with two barriers) + `AnalyticDoubleBarrierEngine`.
+- `PartialTimeBarrierOption` (barrier active for part of option life) + `AnalyticPartialTimeBarrierEngine`.
+- `SoftBarrierOption` (softened payoff) + `AnalyticSoftBarrierEngine`.
+- `TwoAssetBarrierOption` + `AnalyticTwoAssetBarrierEngine`.
+- `QuantoBarrierOption` — quanto-adjusted barrier.
+- `FdHestonBarrierEngine` — 2D FD barrier pricing under Heston.
+- `FdHestonDoubleBarrierEngine`, `FdHestonRebateEngine`.
+- `BinomialBarrierEngine` — lattice barrier pricing.
+
+### 12.3 Advanced Asian Options
+
+- `AnalyticContinuousGeometricAveragePriceAsianEngine` — closed-form geometric average.
+- `AnalyticDiscreteGeometricAveragePriceAsianEngine`, `AnalyticDiscreteGeometricAverageStrikeAsianEngine`.
+- `TurnbullWakemanAsianEngine` — analytic approximation for arithmetic average.
+- `ContinuousArithmeticAsianLevyEngine` — Levy approximation.
+- `ChoiAsianEngine` — Choi et al. expansion.
+- `MCDiscreteArithmeticAveragePriceHestonEngine` — MC Asian under Heston.
+- `FdBlackScholesAsianEngine` — FD Asian pricing.
+
+### 12.4 Lookback Options
+
+- `LookbackOption` instrument (fixed/floating strike, continuous/discrete).
+- `AnalyticContinuousFixedLookbackEngine`.
+- `AnalyticContinuousFloatingLookbackEngine`.
+- `AnalyticContinuousPartialFixedLookbackEngine`.
+- `AnalyticContinuousPartialFloatingLookbackEngine`.
+- `MCLookbackEngine` — MC for path-dependent lookbacks.
+
+### 12.5 Cliquet & Forward-Start Options
+
+- `CliquetOption` instrument + `AnalyticCliquetEngine`.
+- `AnalyticPerformanceEngine` — performance option pricing.
+- `MCPerformanceEngine` — MC performance option.
+- `ForwardVanillaOption` + `ForwardEngine`, `ForwardPerformanceEngine`.
+- `MCForwardEuropeanBSEngine`, `MCForwardEuropeanHestonEngine`.
+
+### 12.6 Exotic & Chooser Options
+
+- `SimpleChooserOption` + `AnalyticSimpleChooserEngine`.
+- `ComplexChooserOption` + `AnalyticComplexChooserEngine`.
+- `CompoundOption` + `AnalyticCompoundOptionEngine`.
+- `HolderExtensibleOption` + `AnalyticHolderExtensibleOptionEngine`.
+- `WriterExtensibleOption` + `AnalyticWriterExtensibleOptionEngine`.
+- `MargrabeOption` + `AnalyticEuropeanMargrabeEngine`, `AnalyticAmericanMargrabeEngine`.
+- `TwoAssetCorrelationOption` + `AnalyticTwoAssetCorrelationEngine`.
+- `EverestOption` + `MCEverestEngine` — rainbow option on worst performer.
+- `HimalayaOption` + `MCHimalayaEngine` — mountain-range option.
+- `PagodaOption` + `MCPagodaEngine`.
+
+### 12.7 Variance & Volatility Instruments
+
+- `VarianceSwap` instrument + `ReplicatingVarianceSwapEngine` + `MCVarianceSwapEngine`.
+- `VanillaStorageOption`, `VanillaSwingOption` — energy/commodity storage.
+
+### 12.8 Convertible Bonds
+
+- `ConvertibleBond` (zero-coupon, fixed-rate, floating-rate variants).
+- `BinomialConvertibleEngine` — tree-based pricing.
+- `RiskyBondEngine` — credit-adjusted bond pricing.
+
+### 12.9 Other Instruments
+
+- `BondForward`, `FixedRateBondForward`.
+- `CompositeInstrument` — portfolio of instruments.
+- `Stock` — simple equity instrument.
+- `AssetSwap` — bond + swap combination.
+- `OvernightIndexedSwap` (OIS), `BMASwap`.
+- `FloatFloatSwap`, `FloatFloatSwaption`, `NonstandardSwap`, `NonstandardSwaption`.
+- `ZeroCouponSwap`, `ZeroCouponBond` instrument.
+- `EquityTotalReturnSwap`.
+- `PerpetualFutures` + `DiscountingPerpetualFuturesEngine`.
+- `OvernightIndexFuture`.
+
+### 12.10 Advanced Bond Types
+
+- `AmortizingFixedRateBond`, `AmortizingFloatingRateBond`.
+- `AmortizingCmsRateBond`, `CmsRateBond`.
+- `CPIBond` — CPI-linked bond.
+- `BTP` — Italian government bonds.
+
+### 12.11 Inflation Instruments (Extended)
+
+- `CPICapFloor` + `InflationCapFloorEngine`.
+- `CPISwap`.
+- `InflationCapFloor` + `YoYInflationCapFloorEngine`.
+- `YearOnYearInflationSwap`, `ZeroCouponInflationSwap` (extended).
+
+### 12.12 Quanto Options
+
+- `QuantoVanillaOption`, `QuantoForwardVanillaOption`.
+- `QuantoEngine` — generic quanto wrapper for any vanilla engine.
+- `QuantoTermStructure` — quanto-adjusted yield curve.
+
+### 12.13 Cat Bonds
+
+- `CatBond` instrument + `MonteCarloCatBondEngine`.
+- `CatRisk` — catastrophe risk models (BetaRisk, EventSetRisk).
+- `RiskyNotional` — notional at risk.
+
+### 12.14 Phase 10 Deliverables
+
+- [ ] Callable bond price matches QuantLib's `TreeCallableBondEngine` to 1e-4.
+- [ ] Double barrier option matches analytic formula to 1e-8.
+- [ ] Lookback option matches analytic to 1e-8.
+- [ ] Asian option (geometric) matches closed-form to 1e-10.
+- [ ] Variance swap replication matches QuantLib.
+- [ ] Cliquet, chooser, compound options match analytic formulas.
+- [ ] Convertible bond prices within 1% of QuantLib tree engine.
+- [ ] At least 5 golden cross-validation tests against QuantLib C++.
 
 ---
 
@@ -1104,17 +1226,1040 @@ store.put(&ObjectId("OPT-001".into()), &option_trade, "jude").await?;
 
 ---
 
-## 15. Cross-Cutting Concerns
+## 15. Phase 13: Advanced American Option Engines
+
+**Duration estimate:** 3–4 weeks
+**Depends on:** Phase 5 (vanilla options), Phase 7 (MC/FD/lattice)
+**Milestone:** *Can price American options with analytic approximations (BAW, Bjerksund-Stensland) and Longstaff-Schwartz Monte Carlo.*
+
+### 15.1 Analytic Approximation Engines
+
+| Engine | Method | QuantLib Source |
+|---|---|---|
+| `BaroneAdesiWhaleyEngine` | BAW quadratic approximation for American options | `baroneadesiwhaleyengine.hpp` |
+| `BjerksundStenslandEngine` | Bjerksund-Stensland 1993/2002 approximation | `bjerksundstenslandengine.hpp` |
+| `JuQuadraticEngine` | Ju quadratic approximation | `juquadraticengine.hpp` |
+| `QdPlusAmericanEngine` | QD+ method (high accuracy) | `qdplusamericanengine.hpp` |
+| `QdFpAmericanEngine` | QD fixed-point iteration | `qdfpamericanengine.hpp` |
+
+### 15.2 Longstaff-Schwartz MC Engine
+
+- `MCAmericanEngine` — Longstaff-Schwartz regression-based early exercise.
+- `LongstaffSchwartzPathPricer` — regression on basis functions.
+- `LSMBasisSystem` — polynomial basis (monomial, Laguerre, Hermite, hyperbolic, Chebyshev).
+- `GenericLSRegression` — generic least-squares regression.
+- `EarlyExercisePathPricer` trait — interface for early exercise decisions.
+- `BrownianBridge` — bridge construction for path generation.
+
+### 15.3 Dividend Handling
+
+- `AnalyticDividendEuropeanEngine` — European with discrete dividends (escrowed model).
+- `CashDividendEuropeanEngine` — cash dividend model.
+- `FdBlackScholesShoutEngine` — FD shout option.
+- `DividendSchedule` — schedule of dividend payments.
+
+### 15.4 Digital American Options
+
+- `AnalyticDigitalAmericanEngine` — American digital (cash-or-nothing, asset-or-nothing).
+- `MCDigitalEngine` — MC digital option pricing.
+
+### 15.5 Phase 13 Deliverables
+
+- [ ] BAW price within 0.5% of FD benchmark for ATM American put.
+- [ ] Bjerksund-Stensland price within 0.3% of FD benchmark.
+- [ ] QD+ price within 0.01% of FD benchmark (high accuracy).
+- [ ] Longstaff-Schwartz converges to FD price ± 3 standard errors at 100k paths.
+- [ ] Early exercise boundary is monotonic and converges with time steps.
+- [ ] Benchmark: BAW < 1 μs, LS-MC (10k paths) < 100 ms.
+
+---
+
+## 16. Phase 14: Bates Model & Jump-Diffusion
+
+**Duration estimate:** 2–3 weeks
+**Depends on:** Phase 6 (Heston model), Phase 7 (MC/FD)
+**Milestone:** *Can calibrate a Bates model (Heston + jumps) and price options with jump-diffusion dynamics.*
+
+### 16.1 Bates Model & Process
+
+- `BatesModel` — extends `HestonModel` with jump parameters (λ, ν, δ).
+  - Parameters: v0, κ, θ, σ, ρ (Heston) + λ (jump intensity), ν (jump mean), δ (jump vol).
+- `BatesProcess` — extends `HestonProcess` with Merton-style jumps.
+  - Compound Poisson process with log-normal jump sizes.
+- `BatesDetJumpModel`, `BatesDoubleExpModel`, `BatesDoubleExpDetJumpModel` — variants.
+
+### 16.2 Bates Engines
+
+| Engine | Method | Notes |
+|---|---|---|
+| `BatesEngine` | Semi-analytic (characteristic function) | Extends `AnalyticHestonEngine` |
+| `FdBatesVanillaEngine` | 2D FD + jump integral | `fdbatesvanillaengine.hpp` |
+| `MCEuropeanHestonEngine` | MC with Heston dynamics | Path-based |
+| `MCHestonHullWhiteEngine` | MC hybrid Heston-HW | Correlated rate + equity |
+
+### 16.3 Merton Jump-Diffusion
+
+- `Merton76Process` — GBM + compound Poisson jumps.
+- `JumpDiffusionEngine` — analytic Merton jump-diffusion pricing.
+
+### 16.4 GJR-GARCH Model
+
+- `GjrGarchModel` — asymmetric GARCH volatility model.
+- `GjrGarchProcess` — GJR-GARCH stochastic process.
+- `AnalyticGjrGarchEngine` — analytic engine.
+- `MCEuropeanGjrGarchEngine` — MC engine.
+
+### 16.5 Phase 14 Deliverables
+
+- [ ] Bates characteristic function matches Heston when jump parameters are zero.
+- [ ] Bates calibration recovers known parameters from synthetic surface.
+- [ ] Bates engine price matches QuantLib to 1e-6.
+- [ ] FD Bates matches semi-analytic to 1e-4.
+- [ ] Merton jump-diffusion matches analytic formula to 1e-10.
+- [ ] GJR-GARCH calibration to historical returns converges.
+- [ ] Benchmark: Bates analytic < 500 μs, FD Bates < 5 s.
+
+---
+
+## 17. Phase 15: Multi-Asset & Basket Options
+
+**Duration estimate:** 3–4 weeks
+**Depends on:** Phase 6 (processes), Phase 7 (MC)
+**Milestone:** *Can price basket options, spread options, and multi-asset correlation products.*
+
+### 17.1 Multi-Asset Infrastructure
+
+- `MultiAssetOption` — base for multi-asset payoffs.
+- `BasketOption` — option on a basket of underlyings.
+- `StochasticProcessArray` — correlated multi-dimensional process array.
+- `MultiPathGenerator` — correlated path generation via Cholesky.
+- `BasketPayoff` — MinBasket, MaxBasket, AverageBasket payoff types.
+
+### 17.2 Basket Engines
+
+| Engine | Method | Notes |
+|---|---|---|
+| `MCEuropeanBasketEngine` | MC simulation | General multi-asset |
+| `MCAmericanBasketEngine` | MC + Longstaff-Schwartz | American basket |
+| `StulzEngine` | Analytic 2-asset max/min | Stulz formula |
+| `SingleFactorBSMBasketEngine` | Moment-matching approximation | Fast approximate |
+| `DengLiZhouBasketEngine` | Deng-Li-Zhou expansion | Higher-order approximation |
+| `ChoiBasketEngine` | Choi et al. expansion | Accurate for many assets |
+| `Fd2dBlackScholesVanillaEngine` | 2D FD grid | Two correlated underlyings |
+| `FdNDimBlackScholesVanillaEngine` | N-dimensional FD | General N-asset |
+
+### 17.3 Spread Options
+
+| Engine | Spread Type | Notes |
+|---|---|---|
+| `KirkEngine` | Kirk approximation | 2-asset spread |
+| `BjerksundStenslandSpreadEngine` | Bjerksund-Stensland spread | Improved approximation |
+| `OperatorSplittingSpreadEngine` | Operator splitting | FD-based |
+| `SpreadBlackScholesVanillaEngine` | BS spread | Closed-form for special cases |
+
+### 17.4 Exchange Options
+
+- `MargrabeOption` — exchange one asset for another.
+- `AnalyticEuropeanMargrabeEngine` — Margrabe formula (closed-form).
+- `AnalyticAmericanMargrabeEngine` — American exercise approximation.
+
+### 17.5 Phase 15 Deliverables
+
+- [ ] 2-asset basket MC price converges to Stulz formula for max-option.
+- [ ] Spread option Kirk price matches QuantLib to 1e-6.
+- [ ] Margrabe formula matches Black-Scholes at special parameters.
+- [ ] 5-asset basket MC with antithetic variates: std error < 0.1% at 100k paths.
+- [ ] 2D FD spread matches MC to 1e-3.
+- [ ] Benchmark: 5-asset MC basket (100k paths) < 2 s.
+
+---
+
+## 18. Phase 16: Short-Rate Models — Full Coverage
+
+**Duration estimate:** 4–5 weeks
+**Depends on:** Phase 6 (HullWhite base), Phase 7 (lattice/FD)
+**Milestone:** *Complete short-rate model suite: CIR, Vasicek, Black-Karasinski, GSR, G2, Markov Functional.*
+
+### 18.1 One-Factor Affine Models
+
+| Model | Parameters | Notes |
+|---|---|---|
+| `Vasicek` | a (mean reversion), b (long-run), σ | Classic Vasicek |
+| `CoxIngersollRoss` | θ (speed), μ (level), σ | CIR square-root |
+| `ExtendedCoxIngersollRoss` | Time-dependent CIR | Calibrated to curve |
+| `BlackKarasinski` | a(t), σ(t) | Log-normal short rate |
+
+### 18.2 Gaussian 1D Framework
+
+- `Gaussian1DModel` trait — base for one-factor Gaussian models.
+- `GSR` — Gaussian Short Rate model with piecewise constant volatilities.
+- `GSRProcess`, `GSRProcessCore` — associated stochastic processes.
+- `MarkovFunctional` — Markov functional model (calibrated to swaptions/caplets).
+- `MfStateProcess` — state process for Markov functional.
+
+### 18.3 Two-Factor Models
+
+- `G2Model` — two-factor additive Gaussian model.
+  - Parameters: a, σ, b, η, ρ (5 parameters).
+- `G2Process` — correlated two-factor Gaussian process.
+- `TwoFactorModel` trait — base trait for two-factor short-rate models.
+
+### 18.4 CIR Process
+
+- `CoxIngersollRossProcess` — square-root diffusion process.
+- `SquareRootProcess` — general square-root process.
+
+### 18.5 Volatility Estimation
+
+- `ConstantEstimator` — constant vol from historical data.
+- `GarchEstimator` — GARCH(1,1) vol estimation.
+- `GarmanKlass` — Garman-Klass range-based estimator.
+- `SimpleLocalEstimator` — simple local vol estimator.
+
+### 18.6 Calibration Helpers (Extended)
+
+- `SwaptionHelper` — calibrate short-rate models to swaption market.
+- `CapHelper` — calibrate to cap/floor market.
+
+### 18.7 Phase 16 Deliverables
+
+- [ ] Vasicek bond price matches analytic formula to 1e-10.
+- [ ] CIR bond price matches analytic to 1e-8.
+- [ ] Black-Karasinski calibrated to swaption grid, reprices within 1 bp.
+- [ ] GSR calibrated model reprices caplets within 0.5 bp.
+- [ ] G2 model calibrated to swaption matrix, reprices within 2 bp.
+- [ ] Markov functional calibrated to coterminal swaptions.
+- [ ] Short-rate tree discount factors match curve-implied to 1e-6.
+- [ ] Benchmark: Vasicek bond price < 100 ns, G2 swaption < 10 ms.
+
+---
+
+## 19. Phase 17: Advanced Swaption & Cap/Floor Engines
+
+**Duration estimate:** 3–4 weeks
+**Depends on:** Phase 16 (short-rate models), Phase 8 (vol surfaces)
+**Milestone:** *Full swaption/cap-floor engine suite: Gaussian 1D, Jamshidian, FD Hull-White/G2, tree-based.*
+
+### 19.1 Gaussian 1D Engines
+
+| Engine | Instrument | Notes |
+|---|---|---|
+| `Gaussian1DSwaptionEngine` | Swaption | Numerical integration |
+| `Gaussian1DJamshidianSwaptionEngine` | Swaption | Jamshidian decomposition |
+| `Gaussian1DNonstandardSwaptionEngine` | Nonstandard swaption | Bermudan + amortizing |
+| `Gaussian1DFloatFloatSwaptionEngine` | Float-float swaption | CMS spread |
+| `Gaussian1DCapFloorEngine` | Cap/Floor | Numerical integration |
+
+### 19.2 Analytic & Semi-Analytic Engines
+
+- `JamshidianSwaptionEngine` — Jamshidian trick for coupon-bond options.
+- `G2SwaptionEngine` — analytic G2 swaption pricing.
+- `AnalyticCapFloorEngine` — Hull-White analytic cap/floor.
+- `BachelierSwaptionEngine` — normal (Bachelier) model swaption pricing.
+- `BachelierCapFloorEngine` — normal model cap/floor pricing.
+- `BasketGeneratingEngine` — generates calibration baskets for Bermudan swaptions.
+
+### 19.3 FD Swaption Engines
+
+- `FdHullWhiteSwaptionEngine` — 1D FD under Hull-White.
+- `FdG2SwaptionEngine` — 2D FD under G2 two-factor model.
+
+### 19.4 Tree Engines (Extended)
+
+- `TreeSwaptionEngine` — generic short-rate tree swaption.
+- `TreeCapFloorEngine` — tree-based cap/floor pricing.
+- `TreeSwapEngine` — tree-based swap pricing.
+- `MCHullWhiteEngine` — MC simulation under Hull-White for cap/floor.
+- `LatticeShortRateModelEngine` — generic lattice engine for short-rate models.
+
+### 19.5 Nonstandard & Irregular Instruments
+
+- `NonstandardSwap`, `NonstandardSwaption` — amortizing/step-up notional.
+- `IrregularSwap`, `IrregularSwaption` — irregular schedules.
+- `HaganIrregularSwaptionEngine` — Hagan's method for irregular swaptions.
+
+### 19.6 Phase 17 Deliverables
+
+- [ ] Gaussian1D swaption matches Black swaption at flat vol to 1e-6.
+- [ ] Jamshidian decomposition matches tree engine to 1e-4.
+- [ ] FD Hull-White Bermudan swaption matches tree to 1e-3.
+- [ ] G2 swaption analytic matches FD to 1e-4.
+- [ ] Bachelier cap/floor matches Black at zero-rate limit.
+- [ ] MC Hull-White cap converges to analytic ± 3 std errors.
+- [ ] Nonstandard swaption with amortizing notional prices correctly.
+- [ ] Benchmark: Jamshidian swaption < 1 ms, FD HW Bermudan < 500 ms.
+
+---
+
+## 20. Phase 18: Advanced Volatility Surfaces & Smile Models
+
+**Duration estimate:** 4–5 weeks
+**Depends on:** Phase 8 (SABR base), Phase 6 (Heston)
+**Milestone:** *Complete vol surface infrastructure: SVI, ZABR, NoArb-SABR, Andreasen-Huge, Dupire local vol, full swaption vol cube.*
+
+### 20.1 Equity/FX Volatility Surfaces
+
+| Type | Description | QuantLib Source |
+|---|---|---|
+| `BlackVarianceSurface` | Interpolated strike × expiry grid | `blackvariancesurface.hpp` |
+| `BlackVarianceCurve` | ATM vol term structure | `blackvariancecurve.hpp` |
+| `ImpliedVolTermStructure` | Implied from another surface | `impliedvoltermstructure.hpp` |
+| `HestonBlackVolSurface` | Black vol derived from Heston params | `hestonblackvolsurface.hpp` |
+| `LocalVolSurface` | Dupire local vol from Black vol | `localvolsurface.hpp` |
+| `LocalVolCurve` | 1D local vol | `localvolcurve.hpp` |
+| `LocalConstantVol` | Constant local vol | `localconstantvol.hpp` |
+| `FixedLocalVolSurface` | Parameterized local vol | `fixedlocalvolsurface.hpp` |
+| `GridModelLocalVolSurface` | Grid-based local vol | `gridmodellocalvolsurface.hpp` |
+| `NoExceptLocalVolSurface` | Exception-safe local vol wrapper | `noexceptlocalvolsurface.hpp` |
+
+### 20.2 Advanced Smile Models
+
+| Model | Description | QuantLib Source |
+|---|---|---|
+| SVI | Stochastic Volatility Inspired parameterization | `sviinterpolation.hpp` |
+| `SviSmileSection`, `SviInterpolatedSmileSection` | SVI per-expiry smile | `svismilesection.hpp` |
+| ZABR | Generalized SABR with CEV backbone | `zabr.hpp`, `zabrinterpolation.hpp` |
+| `ZabrSmileSection`, `ZabrInterpolatedSmileSection` | ZABR smile sections | `zabrsmilesection.hpp` |
+| NoArb-SABR | Arbitrage-free SABR (Hagan et al.) | `noarbsabr.hpp` |
+| `NoArbSabrSmileSection`, `NoArbSabrInterpolatedSmileSection` | NoArb-SABR smile | `noarbsabrsmilesection.hpp` |
+| `KahaleSmileSection` | Kahale monotonic convex interpolation | `kahalesmilesection.hpp` |
+| `InterpolatedSmileSection` | Generic interpolated smile | `interpolatedsmilesection.hpp` |
+| `SpreadedSmileSection` | Smile with additive spread | `spreadedsmilesection.hpp` |
+| `AtmAdjustedSmileSection`, `AtmSmileSection` | ATM-normalized smile | `atmadjustedsmilesection.hpp` |
+| `FlatSmileSection` | Constant vol smile section | `flatsmilesection.hpp` |
+
+### 20.3 Andreasen-Huge Volatility Interpolation
+
+- `AndersenHugeVolatilityInterpl` — Andreasen-Huge piecewise-linear local vol.
+- `AndersenHugeVolatilityAdapter` — wraps interpolation as Black vol surface.
+- `AndersenHugeLocalVolAdapter` — wraps as local vol surface.
+- Produces arbitrage-free interpolation from discrete option prices.
+
+### 20.4 Swaption Volatility Cube
+
+| Type | Description |
+|---|---|
+| `SwaptionVolMatrix` | ATM swaption vol (option tenor × swap tenor) |
+| `SwaptionVolCube` | Full cube: ATM matrix + smile per point |
+| `InterpolatedSwaptionVolatilityCube` | Smile via SABR interpolation |
+| `SabrSwaptionVolatilityCube` | SABR-calibrated per-expiry smile |
+| `NoArbSabrSwaptionVolatilityCube` | Arbitrage-free SABR cube |
+| `SwaptionConstantVol` | Constant swaption vol |
+| `SpreadedSwaptionVol` | Spreaded swaption vol |
+| `Gaussian1DSwaptionVolatility` | Swaption vol from Gaussian 1D model |
+| `SwaptionVolDiscrete` | Discrete swaption vol data |
+
+### 20.5 Cap/Floor Volatility Structures
+
+- `CapFloorTermVolatilityStructure` — base trait.
+- `CapFloorTermVolCurve` — flat vol per tenor.
+- `CapFloorTermVolSurface` — strike × tenor surface.
+- `ConstantCapFloorTermVol` — constant cap/floor vol.
+- `OptionletVolatilityStructure` — base for optionlet vols.
+- `ConstantOptionletVol`, `SpreadedOptionletVol`.
+- `OptionletStripper1`, `OptionletStripper2` — strip caps into optionlets.
+- `StrippedOptionlet`, `StrippedOptionletAdapter`, `StrippedOptionletBase`.
+- `CapletVarianceCurve` — caplet variance term structure.
+
+### 20.6 Inflation Volatility
+
+- `CPIVolatilityStructure`, `ConstantCPIVolatility`.
+- `YoYInflationOptionletVolatilityStructure`.
+
+### 20.7 ABCD Volatility
+
+- `AbcdFunction` — ABCD parametric vol function a(t) = (a + b·t)·exp(-c·t) + d.
+- `AbcdCalibration` — calibration to market data.
+- `AbcdInterpolation` — ABCD-based interpolation.
+
+### 20.8 CMS Market & Calibration
+
+- `CmsMarket` — CMS swap market quotes.
+- `CmsMarketCalibration` — calibrate CMS model to market.
+
+### 20.9 Stochastic Local Volatility (SLV)
+
+- `HestonSLVFDMModel` — Heston stochastic local vol via FD.
+- `HestonSLVMCModel` — Heston SLV via Monte Carlo.
+- `HestonSLVProcess` — process with leverage function.
+- `PiecewiseTimeDependentHestonModel` — time-dependent Heston params.
+
+### 20.10 Phase 18 Deliverables
+
+- [ ] SVI smile matches QuantLib's calibration to 1e-8.
+- [ ] ZABR smile matches QuantLib to 1e-6.
+- [ ] NoArb-SABR produces arbitrage-free density.
+- [ ] Andreasen-Huge interpolation exact at input points.
+- [ ] Swaption vol cube queried at arbitrary strike/expiry/tenor.
+- [ ] Optionlet stripping from cap vols matches QuantLib.
+- [ ] SLV leverage function calibrated from local/stochastic vol.
+- [ ] Benchmark: SABR calibration < 1 ms, SVI fit < 500 μs.
+
+---
+
+## 21. Phase 19: Advanced Finite Difference Framework
+
+**Duration estimate:** 5–6 weeks
+**Depends on:** Phase 7 (basic FD), Phase 6 (Heston), Phase 16 (short-rate models)
+**Milestone:** *Production-grade multi-dimensional FD framework with all QuantLib meshers, operators, schemes, solvers, and step conditions.*
+
+### 21.1 FDM Meshers
+
+| Mesher | Description |
+|---|---|
+| `Fdm1DMesher` trait | Base 1D mesher interface |
+| `Uniform1DMesher` | Uniform grid |
+| `Concentrating1DMesher` | Grid with concentration around a point (strikes) |
+| `FdmBlackScholesMesher` | Log-spot mesher for BS |
+| `FdmBlackScholesMultiStrikeMesher` | Multi-strike concentrating mesher |
+| `FdmHestonVarianceMesher` | Variance mesher for Heston |
+| `FdmSimpleProcess1DMesher` | Generic 1D process mesher |
+| `Predefined1DMesher` | User-supplied grid points |
+| `ExponentialJump1DMesher` | Mesher for jump-diffusion |
+| `FdmCEV1DMesher` | CEV model mesher |
+| `FdmMesher` trait | Multi-dimensional mesher |
+| `FdmMesherComposite` | Composite N-dimensional mesher |
+| `UniformGridMesher` | N-dimensional uniform grid |
+
+### 21.2 FDM Operators
+
+| Operator | Description |
+|---|---|
+| `FdmLinearOp` trait | Base linear operator |
+| `TripleBandLinearOp` | Tridiagonal operator |
+| `NinePointLinearOp` | 9-point 2D stencil |
+| `FirstDerivativeOp` | First derivative operator |
+| `SecondDerivativeOp` | Second derivative operator |
+| `SecondOrderMixedDerivativeOp` | Cross-derivative for 2D |
+| `NthOrderDerivativeOp` | Arbitrary-order derivative |
+| `ModTripleBandLinearOp` | Modified tridiagonal |
+| `FdmLinearOpComposite` trait | Composite operator (ADI splitting) |
+| `FdmBlackScholesOp` | 1D BS operator |
+| `Fdm2dBlackScholesOp` | 2D correlated BS operator |
+| `FdmHestonOp` | 2D Heston (spot × variance) |
+| `FdmHestonFwdOp` | Forward Heston PDE operator |
+| `FdmHestonHullWhiteOp` | 3D Heston-HW hybrid operator |
+| `FdmBatesOp` | Heston + jump integral |
+| `FdmHullWhiteOp` | Hull-White short-rate operator |
+| `FdmG2Op` | G2 two-factor rate operator |
+| `FdmCIROp` | CIR process operator |
+| `FdmCEVOp` | CEV model operator |
+| `FdmSABROp` | SABR model operator |
+| `FdmOrnsteinUhlenbeckOp` | OU process operator |
+| `FdmBlackScholesFwdOp` | Forward BS PDE |
+| `FdmLocalVolFwdOp` | Forward local vol PDE |
+| `FdmSquareRootFwdOp` | Forward square-root (CIR) PDE |
+| `FdmWienerOp` | Wiener process operator |
+| `FdmLinearOpLayout` | Grid layout for N-dimensional problems |
+| `FdmLinearOpIterator` | Iterator over grid points |
+
+### 21.3 FDM Schemes (Time-Stepping)
+
+| Scheme | Description |
+|---|---|
+| `CrankNicolsonScheme` | θ = 0.5 implicit-explicit |
+| `DouglasScheme` | Douglas ADI splitting |
+| `HundsdorferScheme` | Hundsdorfer ADI |
+| `CraigSneydScheme` | Craig-Sneyd ADI |
+| `ModifiedCraigSneydScheme` | Modified Craig-Sneyd |
+| `ExplicitEulerScheme` | Forward Euler |
+| `ImplicitEulerScheme` | Backward Euler |
+| `MethodOfLinesScheme` | Method of lines |
+| `TRBDF2Scheme` | TR-BDF2 (high-order) |
+| `MixedScheme` | Weighted combination |
+| `BoundaryConditionSchemeHelper` | BC handling for all schemes |
+
+### 21.4 FDM Solvers
+
+| Solver | Description |
+|---|---|
+| `Fdm1DimSolver` | 1D PDE solver |
+| `Fdm2DimSolver` | 2D PDE solver |
+| `Fdm3DimSolver` | 3D PDE solver |
+| `FdmNDimSolver` | General N-dimensional solver |
+| `FdmBackwardSolver` | Backward-in-time solver |
+| `FdmBlackScholesSolver` | Specialized BS solver |
+| `FdmHestonSolver` | Specialized Heston solver |
+| `FdmHestonHullWhiteSolver` | 3D hybrid solver |
+| `FdmBatesSolver` | Bates model solver |
+| `FdmHullWhiteSolver` | HW rate solver |
+| `FdmG2Solver` | G2 two-factor solver |
+| `FdmCIRSolver` | CIR model solver |
+| `Fdm2dBlackScholesSolver` | 2D correlated BS |
+| `FdmSimple2DBSSolver` | Simplified 2D BS solver |
+| `FdmSolverDesc` | Solver configuration descriptor |
+
+### 21.5 Step Conditions
+
+| Condition | Description |
+|---|---|
+| `FdmAmericanStepCondition` | American exercise boundary |
+| `FdmBermudanStepCondition` | Bermudan exercise dates |
+| `FdmArithmeticAverageCondition` | Asian averaging |
+| `FdmSimpleStorageCondition` | Storage/swing option |
+| `FdmSimpleSwingCondition` | Swing option exercise |
+| `FdmSnapshotCondition` | Snapshot for Greeks |
+| `FdmStepConditionComposite` | Composite conditions |
+
+### 21.6 FDM Utilities
+
+- `FdmBoundaryConditionSet` — Dirichlet, discount, time-dependent boundaries.
+- `FdmDirichletBoundary`, `FdmDiscountDirichletBoundary`, `FdmTimeDependentDirichletBoundary`.
+- `FdmDividendHandler` — discrete dividend handling in FD.
+- `FdmInnerValueCalculator` trait + implementations.
+- `FdmQuantoHelper` — quanto adjustment in FD.
+- `FdmAffineModelTermStructure`, `FdmAffineModelSwapInnerValue`.
+- Risk-neutral density calculators: `BSMRndCalculator`, `HestonRndCalculator`, `LocalVolRndCalculator`, `CEVRndCalculator`, `GBSMRndCalculator`, `SquareRootProcessRndCalculator`.
+- `FdmMesherIntegral` — numerical integration over mesher.
+- `FdmIndicesOnBoundary` — boundary index management.
+- `FdmHestonGreensFct` — Green's function for Heston.
+
+### 21.7 Additional FD Engines
+
+| Engine | Model | Notes |
+|---|---|---|
+| `FdHestonVanillaEngine` | Heston | 2D PDE American/European |
+| `FdHestonHullWhiteVanillaEngine` | Heston-HW hybrid | 3D PDE |
+| `FdCEVVanillaEngine` | CEV | 1D PDE |
+| `FdCIRVanillaEngine` | CIR | 1D PDE |
+| `FdSABRVanillaEngine` | SABR | 2D PDE |
+| `FdSimpleBSSwingEngine` | BS | Swing option |
+| `FdMultiPeriodEngine` | Generic | Multi-exercise periods |
+
+### 21.8 Phase 19 Deliverables
+
+- [ ] Concentrating mesher produces denser grid around strike.
+- [ ] Heston 2D FD matches analytic Heston to 1e-4 on 100×100 grid.
+- [ ] Douglas ADI matches Crank-Nicolson to 1e-3 for 2D problems.
+- [ ] 3D Heston-HW FD runs successfully on 50×50×50 grid.
+- [ ] American exercise boundary is correct (early exercise premium > 0).
+- [ ] Bermudan swaption FD matches tree to 1e-3.
+- [ ] All schemes converge at expected order (CN: 2nd order, explicit: 1st order).
+- [ ] Benchmark: 1D FD (200 grid) < 10 ms, 2D FD (100×100) < 1 s.
+
+---
+
+## 22. Phase 20: LIBOR Market Model Framework
+
+**Duration estimate:** 6–8 weeks
+**Depends on:** Phase 7 (MC), Phase 8 (vol surfaces), Phase 16 (short-rate models)
+**Milestone:** *Complete LIBOR Market Model (BGM) framework: curve states, evolvers, multi-step products, calibration, pathwise Greeks.*
+
+### 22.1 Market Model Infrastructure
+
+- `MarketModel` trait — base trait for market models.
+- `EvolutionDescription` — time grid, rate tenors, alive rates.
+- `CurveState` trait — state of the yield curve at each time step.
+  - `LMMCurveState` — forward LIBOR measure.
+  - `CoterminalSwapCurveState` — coterminal swap measure.
+  - `CMSwapCurveState` — constant maturity swap measure.
+- `Discounter` — path-based discounting.
+
+### 22.2 Brownian Generators
+
+- `BrownianGenerator` trait — interface for Brownian increments.
+- `MTBrownianGenerator` — Mersenne Twister based.
+- `SobolBrownianGenerator` — Sobol quasi-random.
+- Bridge construction variants for variance reduction.
+
+### 22.3 Drift Computation
+
+- `LMMDriftCalculator` — log-normal LMM drift.
+- `LMMNormalDriftCalculator` — normal LMM drift.
+- `SMMDriftCalculator` — swap market model drift.
+- `CmSMMDriftCalculator` — CMS market model drift.
+
+### 22.4 Evolvers
+
+| Evolver | Measure | Scheme |
+|---|---|---|
+| `LogNormalFwdRatePC` | Forward | Predictor-corrector |
+| `LogNormalFwdRateEuler` | Forward | Euler |
+| `LogNormalFwdRateBalland` | Forward | Balland-Tran |
+| `LogNormalFwdRateEulerConstrained` | Forward | Constrained Euler |
+| `LogNormalFwdRateIPC` | Forward | Iterative PC |
+| `LogNormalFwdRateIBalland` | Forward | Iterative Balland |
+| `LogNormalCotSwapRatePC` | Coterminal swap | Predictor-corrector |
+| `LogNormalCMSwapRatePC` | CMS | Predictor-corrector |
+| `NormalFwdRatePC` | Forward (normal) | Predictor-corrector |
+| `SvdDFwdRatePC` | Forward (SVD) | SVD-based |
+
+### 22.5 Market Model Volatility
+
+- `AbcdVol` — ABCD parameterization for forward rate vols.
+- `FlatVol` — constant vol for all rates.
+- `PiecewiseConstantVariance` — piecewise constant per rate.
+- `PiecewiseConstantAbcdVariance` — ABCD with piecewise parameters.
+- `VolatilityInterpolationSpecifier`, `VolatilityInterpolationSpecifierAbcd`.
+- `MarketModelVolProcess` — stochastic vol on rates (Andersen's QE).
+- `SquareRootAndersen` — square-root vol-of-vol process.
+
+### 22.6 Correlations
+
+- `PiecewiseConstantCorrelation` — base correlation structure.
+- `TimeHomogeneousForwardCorrelation` — time-homogeneous forward rate correlation.
+- `ExponentialCorrelations` — exponentially decaying correlation.
+- `CotSwapFromFwdCorrelation` — derive coterminal from forward.
+
+### 22.7 Multi-Step Products
+
+| Product | Description |
+|---|---|
+| `MultiStepSwap` | Generic multi-step swap |
+| `MultiStepSwaption` | Multi-step Bermudan swaption |
+| `MultiStepOptionlets` | Sequence of caplets |
+| `MultiStepForwards` | Forward rate agreements |
+| `MultiStepCoterminalSwaps` | Coterminal swap portfolio |
+| `MultiStepCoterminalSwaptions` | Coterminal swaption |
+| `MultiStepCoinitialSwaps` | Coinitial swaps |
+| `MultiStepInverseFloater` | Inverse floater |
+| `MultiStepRatchet` | Ratchet product |
+| `MultiStepTarn` | Target redemption note |
+| `MultiStepNothing` | Null product (benchmarking) |
+| `MultiStepPeriodCapletSwaptions` | Period caplet/swaption |
+| `CallSpecifiedMultiProduct` | Callable multi-step |
+| `ExerciseAdapter` | Early exercise adapter |
+| `CashRebate` | Cash rebate on exercise |
+
+### 22.8 One-Step Products
+
+- `OneStepForwards`, `OneStepOptionlets`.
+- `OneStepCoterminalSwaps`, `OneStepCoinitialSwaps`.
+
+### 22.9 Accounting & Greeks
+
+- `AccountingEngine` — pathwise P&L accumulation.
+- `PathwiseAccountingEngine` — pathwise with AAD.
+- `PathwiseDiscounter` — pathwise discount factors.
+- `ProxyGreekEngine` — proxy Greeks via bump-and-revalue.
+- Pathwise Greeks: `BumpInstrumentJacobian`, `RatePseudoRootJacobian`, `SwaptionPseudoJacobian`, `VegaBumpCluster`.
+
+### 22.10 Calibration
+
+- `CapletCoterminalAlphaCalibration` — alpha calibration.
+- `CapletCoterminalMaxHomogeneity` — max homogeneity calibration.
+- `CapletCoterminalPeriodic` — periodic calibration.
+- `CapletCoterminalSwaptionCalibration` — joint caplet/swaption calibration.
+- `CTSMMCapletCalibration` — CTSMM caplet calibration.
+- `CotSwapToFwdAdapter`, `FwdToCotSwapAdapter`, `FwdPeriodAdapter` — model adapters.
+- `PseudoRootFacade` — pseudo-root access.
+- `AlphaFinder`, `AlphaForm`, `AlphaFormConcrete` — alpha shape functions.
+- `ForwardForwardMappings`, `SwapForwardMappings` — mapping utilities.
+- `HistoricalForwardRatesAnalysis`, `HistoricalRatesAnalysis` — historical analysis.
+
+### 22.11 Callability (Bermudan)
+
+- `ExerciseValue` trait, `BermudanSwaptionExerciseValue`.
+- `LSStrategy` — Longstaff-Schwartz strategy.
+- `UpperBoundEngine` — Andersen upper bound.
+- `MarketModelBasisSystem`, `MarketModelParametricExercise`.
+- `SwapBasisSystem`, `SwapForwardBasisSystem`.
+- `SwapRateTrigger`, `TriggeredSwapExercise`.
+- `CollectNodeData`, `NodeDataProvider`.
+- `ParametricExerciseAdapter`, `NothingExerciseValue`.
+
+### 22.12 Phase 20 Deliverables
+
+- [ ] LMM forward rate evolution preserves drift condition.
+- [ ] Coterminal swaption prices match Black swaption prices at flat vol.
+- [ ] Predictor-corrector evolver converges to exact at fine time steps.
+- [ ] Caplet calibration reproduces market caplet vols to 0.5 bp.
+- [ ] Bermudan swaption with LS regression produces sensible exercise boundary.
+- [ ] Pathwise vega matches bump-and-revalue to 5%.
+- [ ] Multi-step swap NPV matches discounting engine to 1e-4.
+- [ ] Example: `calibrate_lmm.rs` — full LMM calibration + Bermudan swaption.
+- [ ] Benchmark: LMM 10k paths, 40 rates, 10 steps < 5 s.
+
+---
+
+## 23. Phase 21: Advanced Credit Models
+
+**Duration estimate:** 4–5 weeks
+**Depends on:** Phase 9 (basic credit), Phase 7 (MC), Phase 22 (math: copulas)
+**Milestone:** *CDO tranches, nth-to-default baskets, CDS options, portfolio credit models with copulas.*
+
+### 23.1 Portfolio Credit Instruments
+
+| Instrument | Description |
+|---|---|
+| `SyntheticCDO` | Synthetic CDO tranche |
+| `NthToDefault` | n-th to default basket |
+| `CDSOption` | Option on a CDS |
+| `Basket` | Credit basket (pool of names) |
+
+### 23.2 Credit Engines
+
+| Engine | Description |
+|---|---|
+| `IntegralCDOEngine` | Numerical integration CDO pricing |
+| `MidpointCDOEngine` | Midpoint integration CDO |
+| `IntegralNtdEngine` | Nth-to-default engine |
+| `IsdaCdsEngine` | ISDA standard CDS pricing |
+| `IntegralCdsEngine` | Numerical integration CDS |
+| `BlackCdsOptionEngine` | Black model CDS option |
+
+### 23.3 Default Loss Models
+
+| Model | Description |
+|---|---|
+| `DefaultLossModel` trait | Base trait for portfolio loss |
+| `GaussianLHPLossModel` | Large homogeneous portfolio (Vasicek) |
+| `BinomialLossModel` | Binomial loss distribution |
+| `RecursiveLossModel` | Recursive (Andersen-Sidenius) |
+| `SaddlepointLossModel` | Saddlepoint approximation |
+| `RandomDefaultLossModel` | MC default simulation |
+
+### 23.4 Copula Models
+
+| Model | Description |
+|---|---|
+| `OneFactorGaussianCopula` | Standard Gaussian copula |
+| `OneFactorStudentCopula` | Student-t copula |
+| `OneFactorAffineSurvival` | Affine survival |
+| `DefaultProbabilityLatentModel` | Latent factor model |
+| `ConstantLossLatentModel` | Constant LGD latent model |
+| `SpotLossLatentModel` | Spot loss latent model |
+| `RandomLossLatentModel` | Random loss latent model |
+| `RandomDefaultLatentModel` | Random default latent model |
+
+### 23.5 Base Correlation
+
+- `BaseCorrelationStructure` — base correlation term structure.
+- `BaseCorrelationLossModel` — tranche pricing via base correlation.
+- `CorrelationStructure` — general correlation interface.
+
+### 23.6 Credit Utilities
+
+- `Pool` — pool of issuers.
+- `Issuer` — individual issuer with default curves.
+- `DefaultEvent`, `DefaultType`, `DefaultProbabilityKey`.
+- `RecoveryRateModel`, `RecoveryRateQuote`.
+- `Loss`, `LossDistribution`.
+- `HomogeneousPoolDef`, `InhomogeneousPoolDef` — pool definitions.
+- `Claim` — recovery claim type.
+- `FactorSpreadedhazardRateCurve`, `SpreadedhazardRateCurve`.
+- `InterpolatedAffineHazardRateCurve`.
+- `RiskyAssetSwap`, `RiskyAssetSwapOption` — credit-risky instruments.
+
+### 23.7 Phase 21 Deliverables
+
+- [ ] Gaussian copula CDO tranche matches QuantLib to 1e-4.
+- [ ] Nth-to-default basket matches MC to 1e-3.
+- [ ] ISDA CDS engine matches standard ISDA calculator.
+- [ ] CDS option Black model matches QuantLib to 1e-6.
+- [ ] Base correlation term structure interpolates correctly.
+- [ ] MC default simulation converges to semi-analytic at 100k paths.
+- [ ] Benchmark: Gaussian copula CDO (125 names, 7 tranches) < 2 s.
+
+---
+
+## 24. Phase 22: Math Library Extensions
+
+**Duration estimate:** 4–5 weeks
+**Depends on:** Phase 2 (math base)
+**Milestone:** *Complete math library parity: all interpolations, distributions, copulas, optimizers, statistics, RNG, and matrix utilities.*
+
+### 24.1 Additional Interpolations
+
+| Interpolation | Description |
+|---|---|
+| `BackwardFlatInterpolation` | Backward-flat step function |
+| `ForwardFlatInterpolation` | Forward-flat step function |
+| `SABRInterpolation` | SABR-based smile interpolation |
+| `XABRInterpolation` | Generalized XABR framework |
+| `ABCDInterpolation` | ABCD parametric vol interpolation |
+| `LagrangeInterpolation` | Lagrange polynomial |
+| `ChebyshevInterpolation` | Chebyshev polynomial |
+| `ConvexMonotoneInterpolation` | Monotone-convex preserving |
+| `MixedInterpolation` | Hybrid interpolation |
+| `KernelInterpolation` | Kernel (RBF) interpolation |
+| `BSpline` | B-spline basis functions |
+| `BilinearInterpolation` | 2D bilinear |
+| `BicubicSplineInterpolation` | 2D bicubic spline |
+| `KernelInterpolation2D` | 2D kernel interpolation |
+| `BackwardFlatLinearInterpolation` | 2D backward-flat + linear |
+| `FlatExtrapolation2D` | 2D flat extrapolation |
+| `MultiCubicSpline` | N-dimensional cubic spline |
+| `Interpolation2D` trait | Base 2D interpolation |
+
+### 24.2 Additional Distributions
+
+| Distribution | Description |
+|---|---|
+| `BinomialDistribution` | Binomial CDF/PDF |
+| `PoissonDistribution` | Poisson CDF/PDF |
+| `GammaDistribution` | Gamma CDF/PDF |
+| `ChiSquareDistribution` | Chi-square CDF/PDF |
+| `StudentTDistribution` | Student-t CDF/PDF |
+| `BivariateNormalDistribution` | 2D cumulative normal |
+| `BivariateStudentTDistribution` | 2D cumulative Student-t |
+
+### 24.3 Copulas
+
+| Copula | Description |
+|---|---|
+| `GaussianCopula` | Standard Gaussian |
+| `ClaytonCopula` | Clayton (lower tail dependence) |
+| `FrankCopula` | Frank (symmetric) |
+| `GumbelCopula` | Gumbel (upper tail dependence) |
+| `PlackettCopula` | Plackett |
+| `AliMikhailHaqCopula` | Ali-Mikhail-Haq |
+| `FarlieGumbelMorgensternCopula` | FGM |
+| `GalambosCopula` | Galambos |
+| `HuslerReissCopula` | Husler-Reiss |
+| `MarshallOlkinCopula` | Marshall-Olkin |
+| `IndependentCopula` | Product copula |
+| `MaxCopula`, `MinCopula` | Fréchet bounds |
+
+### 24.4 Additional Optimizers
+
+| Optimizer | Description |
+|---|---|
+| `BFGS` | Broyden-Fletcher-Goldfarb-Shanno |
+| `ConjugateGradient` | Nonlinear conjugate gradient |
+| `SteepestDescent` | Gradient descent |
+| `DifferentialEvolution` | Evolutionary global optimizer |
+| `SimulatedAnnealing` | Stochastic global optimizer |
+| `ArmijoLineSearch` | Armijo step-size rule |
+| `GoldsteinLineSearch` | Goldstein conditions |
+| `SphereCylinder` | Constrained optimization on sphere/cylinder |
+| `ProjectedCostFunction` | Projected optimization (subset of parameters) |
+| `ProjectedConstraint` | Projected constraints |
+
+### 24.5 Additional Solvers
+
+| Solver | Description |
+|---|---|
+| `Secant` | Secant method |
+| `Ridder` | Ridder's method |
+| `FalsePosition` | False position (regula falsi) |
+| `Halley` | Halley's method (cubic convergence) |
+| `NewtonSafe` | Newton with bisection safeguard |
+| `FiniteDifferenceNewtonSafe` | Newton-safe with FD Jacobian |
+
+### 24.6 Statistics
+
+| Type | Description |
+|---|---|
+| `GeneralStatistics` | Mean, variance, skewness, kurtosis, percentiles |
+| `IncrementalStatistics` | Online (streaming) statistics |
+| `GaussianStatistics` | Extended with Gaussian-based metrics |
+| `RiskStatistics` | VaR, CVaR, shortfall, average shortfall |
+| `SequenceStatistics` | Multi-variate statistics (correlation matrix) |
+| `ConvergenceStatistics` | Track convergence (for MC) |
+| `DiscrepancyStatistics` | Low-discrepancy sequence quality |
+| `Histogram` | Histogram accumulator |
+
+### 24.7 Additional Random Number Generators
+
+| Generator | Description |
+|---|---|
+| `Xoshiro256StarStarUniformRng` | Xoshiro256** (fast, modern) |
+| `KnuthUniformRng` | Knuth's subtractive RNG |
+| `LecuyerUniformRng` | L'Ecuyer combined RNG |
+| `RanluxUniformRng` | RANLUX luxury random |
+| `HaltonRsg` | Halton quasi-random sequence |
+| `FaureRsg` | Faure quasi-random sequence |
+| `LatticeRsg` | Lattice rules |
+| `RandomizedLDS` | Randomized low-discrepancy |
+| `SobolBrownianBridgeRsg` | Sobol + Brownian bridge |
+| `Burley2020SobolRsg` | Burley (2020) scrambled Sobol |
+| `BoxMullerGaussianRng` | Box-Muller normal transform |
+| `ZigguratGaussianRng` | Ziggurat normal (very fast) |
+| `CentralLimitGaussianRng` | CLT-based normal |
+| `StochasticCollocationInvCDF` | Stochastic collocation CDF |
+
+### 24.8 Matrix Utilities
+
+| Utility | Description |
+|---|---|
+| `CholeskyDecomposition` | Lower-triangular Cholesky |
+| `SVD` | Singular value decomposition |
+| `QRDecomposition` | QR decomposition |
+| `SymmetricSchurDecomposition` | Symmetric eigendecomposition |
+| `TQREigenDecomposition` | Tridiagonal QR eigen |
+| `PseudoSqrt` | Pseudo-square root (Spectral, Salvaging, Hypersphere) |
+| `MatrixExponential` (expm) | Matrix exponential |
+| `Householder` | Householder transformation |
+| `GetCovariance` | Covariance from vol + correlation |
+| `BasisIncompleteOrdered` | Incomplete basis |
+| `FactorReduction` | Factor reduction |
+| `BiCGstab` | Bi-conjugate gradient stabilized |
+| `GMRES` | Generalized minimal residual |
+| `SparseMatrix` | Sparse matrix type |
+| `SparseILUPreconditioner` | ILU(0) preconditioner |
+| `TAPCorrelations` | TAP correlation structure |
+
+### 24.9 Additional Math Functions
+
+- `FastFourierTransform` — FFT for option pricing (Carr-Madan).
+- `RichardsonExtrapolation` — convergence acceleration.
+- `GeneralLinearLeastSquares`, `LinearLeastSquaresRegression` — regression.
+- `BernsteinPolynomial` — Bernstein basis polynomials.
+- `ModifiedBessel` — modified Bessel functions (I, K).
+- `Beta` function, `IncompletGamma` function.
+- `Factorial`, `PascalTriangle`, `PrimeNumbers`.
+- `Rounding` — decimal rounding modes.
+- `Autocovariance` — autocovariance function.
+- `KernelFunctions` — Gaussian, Epanechnikov kernels.
+- `AdaptiveRungeKutta` — ODE solver.
+- `Quadratic` — quadratic equation solver.
+- `TransformedGrid` — coordinate transforms.
+
+### 24.10 Additional Integrals
+
+| Integral | Description |
+|---|---|
+| `SimpsonIntegral` | Simpson's rule |
+| `TrapezoidIntegral` | Trapezoidal rule |
+| `SegmentIntegral` | Segment-based |
+| `KronrodIntegral` | Gauss-Kronrod adaptive |
+| `GaussianQuadratures` | Gauss-Legendre, Laguerre, Hermite, Jacobi, etc. |
+| `GaussianOrthogonalPolynomial` | Orthogonal polynomial basis |
+| `TwoDimensionalIntegral` | 2D integration |
+| `DiscreteIntegrals` | Discrete (trapezoid, Simpson) |
+| `FilonIntegral` | Highly oscillatory integrals |
+| `TanhSinhIntegral` | Double-exponential (tanh-sinh) |
+| `ExpSinhIntegral` | Exp-sinh integration |
+| `ExponentialIntegrals` | Ei(x) exponential integral |
+| `GaussLaguerreCosinePolynomial` | Laguerre-cosine for Heston |
+| `MomentBasedGaussianPolynomial` | Moment-based quadrature |
+
+### 24.11 Phase 22 Deliverables
+
+- [ ] All 14 copulas match QuantLib CDF/PDF values to 1e-10.
+- [ ] Bivariate normal CDF matches QuantLib to 1e-12.
+- [ ] SABR interpolation matches QuantLib SABR to 1e-10.
+- [ ] 2D bicubic spline smooth and matches QuantLib.
+- [ ] BFGS optimizer converges on Rosenbrock function.
+- [ ] Differential evolution finds global minimum of Rastrigin function.
+- [ ] Cholesky decomposition matches `nalgebra` to 1e-14.
+- [ ] FFT matches direct DFT to 1e-10.
+- [ ] All statistics accumulators match QuantLib reference values.
+- [ ] Halton, Faure, lattice sequences pass discrepancy tests.
+- [ ] Benchmark: FFT (8192 points) < 1 ms, Cholesky (100×100) < 1 ms.
+
+---
+
+## 25. Phase 23: Advanced Cash Flows & Coupons
+
+**Duration estimate:** 3–4 weeks
+**Depends on:** Phase 4 (basic cash flows), Phase 3 (indexes)
+**Milestone:** *Complete coupon/cash flow coverage: CMS coupons, digital coupons, range accruals, sub-period coupons, inflation coupons.*
+
+### 25.1 CMS Coupons
+
+- `CmsCoupon` — Constant Maturity Swap coupon.
+- `CmsCouponPricer` — CMS convexity adjustment.
+- `ConundrumPricer` — Hagan, Andersen & Piterbarg replication-based pricing.
+- `LinearTSRPricer` — linear terminal swap rate model pricer.
+- `DigitalCmsCoupon` — digital CMS coupon.
+
+### 25.2 Digital Coupons
+
+- `DigitalCoupon` — generic digital coupon (call/put, cash/asset).
+- `DigitalIborCoupon` — digital IBOR coupon.
+- `CapFlooredCoupon` — capped/floored coupon.
+- `CapFlooredInflationCoupon` — capped/floored inflation coupon.
+
+### 25.3 Inflation Coupons
+
+- `CPICoupon` + `CPICouponPricer` — CPI-linked coupon.
+- `YoYInflationCoupon` — year-on-year inflation coupon.
+- `InflationCoupon` (base), `InflationCouponPricer`.
+- `ZeroInflationCashflow` — zero-coupon inflation cash flow.
+- `IndexedCashflow` — generic index-linked cash flow.
+
+### 25.4 Other Coupon Types
+
+- `AverageBMACoupon` — BMA (Bond Market Association) averaged coupon.
+- `SubPeriodCoupon` — sub-period compounding/averaging coupon.
+- `MultipleResetsCoupon` — coupon with multiple resets per period.
+- `RangeAccrualCoupon` — range accrual (corridor) coupon.
+- `OvernightIndexedCouponPricer` — extended pricer with lookback/lockout.
+- `EquityCashflow` — equity dividend/total return cash flow.
+- `Dividend` — discrete dividend payment.
+
+### 25.5 Cash Flow Utilities
+
+- `CashFlows` analytics: `npv`, `bps`, `atmRate`, `duration`, `convexity`, `basisPointValue`, `zSpread`.
+- `TimeBasket` — time-bucketed cash flow aggregation.
+- `CashFlowVectors` — utility for building coupon vectors.
+- `RateAveraging` — compounding vs. averaging methods (ISDA 2021).
+- `Replication` — replication model for CMS convexity.
+- `Duration` enum — `Simple`, `Macaulay`, `Modified`.
+
+### 25.6 Phase 23 Deliverables
+
+- [ ] CMS coupon rate matches QuantLib's Hagan replication to 0.5 bp.
+- [ ] Digital coupon cash flow matches QuantLib to 1e-8.
+- [ ] Range accrual matches QuantLib under flat vol to 1e-6.
+- [ ] CPI coupon indexation matches QuantLib.
+- [ ] Sub-period compounding matches manual calculation to 1e-12.
+- [ ] Cash flow `zSpread` matches QuantLib to 1e-8.
+
+---
+
+## 26. Phase 24: Advanced Yield Curve & Fitting
+
+**Duration estimate:** 2–3 weeks
+**Depends on:** Phase 3 (basic term structures)
+**Milestone:** *Fitted bond discount curves (Nelson-Siegel, Svensson), OIS helpers, multi-curve framework.*
+
+### 26.1 Fitted Bond Discount Curve
+
+- `FittedBondDiscountCurve` — fit discount function to bond prices.
+- `NonlinearFittingMethods`:
+  - `NelsonSiegelFitting` — 4-parameter Nelson-Siegel.
+  - `SvenssonFitting` — 6-parameter Svensson.
+  - `ExponentialSplinesFitting` — exponential spline fitting.
+  - `CubicBSplinesFitting` — cubic B-spline fitting.
+  - `SimplePolynomialFitting` — polynomial fitting.
+  - `SpreadFittingMethod` — spread over reference curve.
+- `BondHelper` — rate helper for bond-based bootstrapping.
+
+### 26.2 Advanced Yield Curves
+
+- `CompositeZeroYieldStructure` — sum/product of two zero-rate curves.
+- `ImpliedTermStructure` — derived from a base curve.
+- `InterpolatedSimpleZeroCurve` — zero curve with simple compounding.
+- `ForwardCurve` — interpolated instantaneous forward curve.
+- `PiecewiseSpreadYieldCurve` — bootstrap spread over reference.
+- `PiecewiseForwardSpreadedTermStructure` — piecewise forward spread.
+- `PiecewiseZeroSpreadedTermStructure` — piecewise zero spread.
+- `SpreadDiscountCurve` — discount curve with additive spread.
+- `UltimateForwardTermStructure` — Smith-Wilson extrapolation.
+- `QuantoTermStructure` — quanto-adjusted yield curve.
+
+### 26.3 Additional Rate Helpers
+
+- `OISRateHelper` (extended) — overnight index swap helper.
+- `OvernightIndexFutureRateHelper` — SOFR futures helper.
+- `BondHelper` — bootstrap from bond prices.
+- `FuturesRateHelper` — Eurodollar/SOFR futures.
+
+### 26.4 Phase 24 Deliverables
+
+- [ ] Nelson-Siegel fit matches QuantLib to 1e-6 on 10 bonds.
+- [ ] Svensson fit produces smooth forward curve.
+- [ ] OIS curve bootstrap matches QuantLib to 1e-8.
+- [ ] Smith-Wilson extrapolation converges to UFR.
+- [ ] Composite curve C1 + C2 matches manual computation.
+- [ ] Benchmark: Nelson-Siegel fit (20 bonds) < 100 ms.
+
+---
+
+## 27. Cross-Cutting Concerns
 
 These apply across ALL phases and should be set up during workspace bootstrap:
 
-### 15.1 Error Handling
+### 27.1 Error Handling
 
 - All public APIs return `QLResult<T>`.
 - No `unwrap()` in library code (only in examples/tests).
 - Use `thiserror` for library errors, `anyhow` only in binaries.
 
-### 15.2 Logging & Tracing
+### 27.2 Logging & Tracing
 
 - Use `tracing` crate with structured spans.
 - Key instrumentation points:
@@ -1122,18 +2267,18 @@ These apply across ALL phases and should be set up during workspace bootstrap:
   - Bootstrap steps: `tracing::debug!(pillar_date, quote, implied)`.
   - MC simulation: `tracing::info!(paths, mean, std_error, elapsed)`.
 
-### 15.3 Serialization
+### 27.3 Serialization
 
 - All domain types derive `Serialize` + `Deserialize`.
 - Enables: JSON config files, persistence (Phase 11), REST API (future).
 
-### 15.4 Documentation
+### 27.4 Documentation
 
 - Every public type/function has `///` doc comments with examples.
 - Each crate has a `//! # ql-time` module-level doc.
 - `cargo doc --workspace --no-deps` generates a browsable documentation site.
 
-### 15.5 Feature Flags
+### 27.5 Feature Flags
 
 | Flag | Crate | Effect |
 |---|---|---|
@@ -1145,54 +2290,73 @@ These apply across ALL phases and should be set up during workspace bootstrap:
 
 ---
 
-## 16. Dependency Graph Between Phases
+## 28. Dependency Graph Between Phases
 
 ```
 Phase 0: Workspace Bootstrap
     │
     ▼
-Phase 1: ql-core + ql-time ◄──────────────────────┐
-    │                                               │
-    ├──► Phase 2: ql-math                           │
-    │       │                                       │
-    │       ▼                                       │
-    ├──► Phase 3: ql-currencies + ql-indexes        │
-    │       + ql-termstructures                     │
-    │       │                                       │
-    │       ▼                                       │
-    ├──► Phase 4: ql-cashflows                      │
-    │       │                                       │
-    │       ▼                                       │
-    ├──► Phase 5: ql-instruments + ql-pricingengines│
-    │       │                                       │
-    │       ├──► Phase 6: ql-processes + ql-models  │
-    │       │       │                               │
-    │       │       ▼                               │
-    │       ├──► Phase 7: ql-methods (MC, FD, lattice)
-    │       │       │                               │
-    │       │       ├──► Phase 8: Vol surfaces      │
-    │       │       ├──► Phase 9: Credit & inflation│
-    │       │       └──► Phase 10: Exotics          │
-    │       │                                       │
-    │       └──► Phase 12: Integration / CLI        │
-    │                                               │
-    └──► Phase 11: ql-persistence ──────────────────┘
+Phase 1: ql-core + ql-time ◄──────────────────────────────┐
+    │                                                      │
+    ├──► Phase 2: ql-math ──────────────────────┐          │
+    │       │                                   │          │
+    │       │                          Phase 22: Math Ext  │
+    │       ▼                                              │
+    ├──► Phase 3: ql-currencies + ql-indexes               │
+    │       + ql-termstructures ────► Phase 24: Adv Curves  │
+    │       │                                              │
+    │       ▼                                              │
+    ├──► Phase 4: ql-cashflows ────► Phase 23: Adv Coupons │
+    │       │                                              │
+    │       ▼                                              │
+    ├──► Phase 5: ql-instruments + ql-pricingengines       │
+    │       │                                              │
+    │       ├──► Phase 6: ql-processes + ql-models         │
+    │       │       │                                      │
+    │       │       ├──► Phase 14: Bates & Jump-Diffusion  │
+    │       │       │                                      │
+    │       │       ▼                                      │
+    │       ├──► Phase 7: ql-methods (MC, FD, lattice)     │
+    │       │       │                                      │
+    │       │       ├──► Phase 8: Vol surfaces              │
+    │       │       │       └──► Phase 18: Adv Vol Surfaces │
+    │       │       │                                      │
+    │       │       ├──► Phase 9: Credit & inflation        │
+    │       │       │       └──► Phase 21: Advanced Credit  │
+    │       │       │                                      │
+    │       │       ├──► Phase 10: Exotics (expanded)       │
+    │       │       │                                      │
+    │       │       ├──► Phase 13: Advanced American        │
+    │       │       │                                      │
+    │       │       ├──► Phase 15: Multi-Asset & Basket     │
+    │       │       │                                      │
+    │       │       ├──► Phase 19: Advanced FD Framework    │
+    │       │       │                                      │
+    │       │       ├──► Phase 16: Short-Rate Models (full) │
+    │       │       │       │                              │
+    │       │       │       └──► Phase 17: Adv Swaption    │
+    │       │       │                                      │
+    │       │       └──► Phase 20: LMM Framework            │
+    │       │                                              │
+    │       └──► Phase 12: Integration / CLI                │
+    │                                                      │
+    └──► Phase 11: ql-persistence ─────────────────────────┘
          (can start in parallel after Phase 1)
 ```
 
-**Key insight:** Phase 11 (persistence) depends only on `ql-core` types. It can be developed **in parallel** with Phases 3–10.
+**Key insight:** Phase 11 (persistence) depends only on `ql-core` types. It can be developed **in parallel** with Phases 3–24. Phases 13–24 can largely proceed in parallel once their dependencies are met.
 
 ---
 
-## 17. Testing & Validation Strategy
+## 29. Testing & Validation Strategy
 
-### 17.1 Unit Tests (Every Phase)
+### 29.1 Unit Tests (Every Phase)
 
 - Every module has inline `#[cfg(test)] mod tests`.
 - Use `approx::assert_relative_eq!` for all floating-point comparisons.
 - Target: > 90% line coverage on core computation code.
 
-### 17.2 Cross-Validation Against QuantLib C++
+### 29.2 Cross-Validation Against QuantLib C++
 
 For each phase, write "golden file" tests that compare results against QuantLib C++ output:
 
@@ -1211,8 +2375,21 @@ For each phase, write "golden file" tests that compare results against QuantLib 
 | 7 | MC/FD/binomial prices |
 | 8 | SABR vols, swaption prices, cap/floor prices |
 | 9 | CDS NPV, default curve survival probabilities |
+| 10 | Callable bond, barrier option, Asian option, lookback, cliquet |
+| 13 | BAW, Bjerksund-Stensland, QD+, Longstaff-Schwartz prices |
+| 14 | Bates prices, Merton jump-diffusion, GJR-GARCH |
+| 15 | Basket option MC, spread option Kirk, Margrabe formula |
+| 16 | Vasicek/CIR bond prices, BK/GSR/G2 swaption prices |
+| 17 | Gaussian 1D swaption, Jamshidian, FD HW swaption |
+| 18 | SVI/ZABR/NoArb-SABR vols, Andreasen-Huge, vol cube |
+| 19 | 2D FD Heston, 3D Heston-HW, FD barrier, FD Bates |
+| 20 | LMM caplet prices, Bermudan swaption, pathwise Greeks |
+| 21 | CDO tranche, nth-to-default, ISDA CDS, CDS option |
+| 22 | Copula values, bivariate normal, FFT, statistics |
+| 23 | CMS coupon, digital coupon, range accrual, CPI coupon |
+| 24 | Nelson-Siegel fit, Svensson, OIS bootstrap, Smith-Wilson |
 
-### 17.3 Integration Tests
+### 29.3 Integration Tests
 
 Located in `tests/` directory:
 
@@ -1221,7 +2398,7 @@ Located in `tests/` directory:
 - `test_option_pricing_pipeline.rs` — vol surface → process → engine → Greeks.
 - `test_persistence_round_trip.rs` — create trade → persist → load → verify.
 
-### 17.4 Property-Based Testing
+### 29.4 Property-Based Testing
 
 Use `proptest` or `quickcheck` for invariants:
 
@@ -1230,15 +2407,15 @@ Use `proptest` or `quickcheck` for invariants:
 - Monotonicity: `discount(t1) >= discount(t2)` for `t1 < t2`.
 - American option price ≥ European option price.
 
-### 17.5 Fuzzing (Optional, Phase 10+)
+### 29.5 Fuzzing (Optional, Phase 10+)
 
 Use `cargo-fuzz` on date parsing, schedule generation, and deserialization to find panics.
 
 ---
 
-## 18. Performance Benchmarking Plan
+## 30. Performance Benchmarking Plan
 
-### 18.1 Criterion Benchmarks
+### 30.1 Criterion Benchmarks
 
 Located in `benches/`:
 
@@ -1255,14 +2432,33 @@ Located in `benches/`:
 | `bench_fd_american` | 200×200 grid: < 50 ms |
 | `bench_heston_analytic` | Heston price: < 100 μs |
 | `bench_heston_calibration` | 20-point calibration: < 2 s |
+| `bench_baw_american` | BAW approximation: < 1 μs |
+| `bench_bjerksund_stensland` | BJS approximation: < 1 μs |
+| `bench_ls_mc_10k` | Longstaff-Schwartz 10k paths: < 100 ms |
+| `bench_bates_analytic` | Bates characteristic fn price: < 500 μs |
+| `bench_fd_bates_2d` | 2D FD Bates (100×100): < 5 s |
+| `bench_basket_mc_5asset` | 5-asset basket MC (100k): < 2 s |
+| `bench_kirk_spread` | Kirk spread approximation: < 1 μs |
+| `bench_vasicek_bond` | Vasicek bond price: < 100 ns |
+| `bench_g2_swaption` | G2 analytic swaption: < 10 ms |
+| `bench_sabr_calibration` | SABR calibration per-expiry: < 1 ms |
+| `bench_svi_fit` | SVI smile fit: < 500 μs |
+| `bench_fd_heston_2d` | 2D FD Heston (100×100): < 1 s |
+| `bench_fd_heston_hw_3d` | 3D FD Heston-HW (50³): < 30 s |
+| `bench_lmm_10k_paths` | LMM 10k paths, 40 rates: < 5 s |
+| `bench_gaussian_copula_cdo` | CDO (125 names, 7 tranches): < 2 s |
+| `bench_fft_8192` | FFT 8192 points: < 1 ms |
+| `bench_cholesky_100` | Cholesky 100×100: < 1 ms |
+| `bench_nelson_siegel_fit` | Nelson-Siegel (20 bonds): < 100 ms |
+| `bench_cms_coupon_pricing` | CMS coupon replication: < 10 ms |
 
-### 18.2 Comparison Framework
+### 30.2 Comparison Framework
 
 Write a benchmark harness that runs the same computation in QuantLib C++ (via `cc` crate or subprocess) and reports the Rust / C++ speed ratio.
 
 ---
 
-## 19. Risk Register & Mitigations
+## 31. Risk Register & Mitigations
 
 | Risk | Impact | Likelihood | Mitigation |
 |---|---|---|---|
@@ -1270,15 +2466,22 @@ Write a benchmark harness that runs the same computation in QuantLib C++ (via `c
 | Observer pattern + interior mutability → complex borrow-checker fights | Development slowdown | Medium | Start with single-threaded `Rc<RefCell>`, upgrade to `Arc<RwLock>` only where needed |
 | `argmin` crate doesn't cover all QuantLib optimizers (e.g., LM constraints) | Can't calibrate some models | Medium | Implement custom optimizer wrapper; contribute to `argmin` upstream |
 | Calendar/holiday data maintenance burden | Stale calendars | Medium | Auto-generate from QuantLib's calendar source; keep a `calendars/` data directory |
-| Scope creep (QuantLib has 500+ source files) | Never-ending project | High | Strict phase gates; "done" = milestone test passes, not feature parity |
+| Scope creep (QuantLib has 2,300+ source files) | Never-ending project | High | Strict phase gates; "done" = milestone test passes, not feature parity |
 | Persistence layer adds coupling to domain crates | Architecture rot | Medium | `ObjectStore` trait in `ql-core`; all implementations in `ql-persistence` |
 | `nalgebra` API churn or breaking changes | Build breakage | Low | Pin versions in workspace dependencies |
+| LMM framework is enormous (~100 QuantLib files) | Phase 20 takes too long | High | Start with forward measure only; add coterminal/CMS measures later |
+| Multi-dimensional FD (3D+) memory and runtime | Impractical on commodity hardware | Medium | Use ADI splitting; limit 3D grids to ~50³; provide rayon parallelism |
+| Copula/credit models require extensive test data | Can't validate without market data | Medium | Use synthetic portfolios; cross-validate against QuantLib test suite |
+| Advanced vol models (SLV, ZABR) have numerical edge cases | Divergence or NaN | Medium | Extensive property-based testing; fallback to simpler models |
+| Extended phases may break existing API contracts | Regression | Medium | Golden tests freeze existing behavior; CI runs full test suite |
 
 ---
 
-## 20. Estimated Timeline
+## 32. Estimated Timeline
 
 Assuming one full-time developer:
+
+### 32.1 Core Phases (Phases 0–12)
 
 | Phase | Duration | Cumulative | Key Milestone |
 |---|---|---|---|
@@ -1292,17 +2495,45 @@ Assuming one full-time developer:
 | 7: Advanced Methods | 4–5 weeks | Week 25–26 | MC + FD + lattice ✓ |
 | 8: Vol Surfaces | 3 weeks | Week 28–29 | SABR + swaptions ✓ |
 | 9: Credit & Inflation | 3 weeks | Week 31–32 | CDS + inflation ✓ |
-| 10: Exotics | 4+ weeks | Week 35–36 | Barriers + Asians ✓ |
+| 10: Exotics | 4–6 weeks | Week 37–38 | Full exotics suite ✓ |
 | 11: Persistence | 3–4 weeks | (parallel) | redb + Postgres ✓ |
-| 12: Integration | 2–3 weeks | Week 38 | End-to-end ✓ |
+| 12: Integration | 2–3 weeks | Week 40 | End-to-end ✓ |
 
-**Total: ~9 months** for a single developer to reach comprehensive coverage. Phases 11 runs in parallel with 3–10.
+**Core Total: ~10 months** for a single developer.
 
-With a team of 2–3 developers, the critical path (Phases 0→1→2→3→4→5) is ~16–17 weeks, and parallel work on persistence, math, and advanced methods can bring total time to ~5–6 months.
+### 32.2 Extended Phases (Phases 13–24)
+
+| Phase | Duration | Depends On | Key Milestone |
+|---|---|---|---|
+| 13: Advanced American | 3–4 weeks | 5, 7 | BAW + LS-MC ✓ |
+| 14: Bates & Jump-Diffusion | 2–3 weeks | 6, 7 | Bates calibration ✓ |
+| 15: Multi-Asset & Basket | 3–4 weeks | 6, 7 | Basket MC + spread options ✓ |
+| 16: Short-Rate Models (full) | 4–5 weeks | 6, 7 | CIR + Vasicek + BK + GSR + G2 ✓ |
+| 17: Adv Swaption & Cap/Floor | 3–4 weeks | 16, 8 | Gaussian 1D + FD HW swaption ✓ |
+| 18: Adv Vol Surfaces | 4–5 weeks | 8, 6 | SVI + ZABR + NoArb-SABR + SLV ✓ |
+| 19: Advanced FD Framework | 5–6 weeks | 7, 6, 16 | Full FDM: meshers + operators + schemes ✓ |
+| 20: LMM Framework | 6–8 weeks | 7, 8, 16 | Full LMM with Bermudan swaptions ✓ |
+| 21: Advanced Credit | 4–5 weeks | 9, 7, 22 | CDO + copula models ✓ |
+| 22: Math Extensions | 4–5 weeks | 2 | All interpolations + copulas + stats ✓ |
+| 23: Adv Cash Flows | 3–4 weeks | 4, 3 | CMS + digital + range accrual ✓ |
+| 24: Adv Yield Curve | 2–3 weeks | 3 | Nelson-Siegel + OIS + multi-curve ✓ |
+
+**Extended Total: ~44–56 additional weeks** (sequentially).
+
+### 32.3 Parallelization Opportunities
+
+Many extended phases can run in parallel:
+
+- **Track A (Equity/Vol):** Phases 13, 14, 15, 18 (in sequence after Phase 7)
+- **Track B (Rates):** Phases 16, 17, 23, 24 (in sequence after Phase 7)
+- **Track C (Numerics):** Phases 19, 20 (after Phase 7)
+- **Track D (Credit/Math):** Phases 22, 21 (Phase 22 first, then 21)
+
+With 3–4 parallel tracks, extended phases reduce to ~6–8 months. **Grand total with parallelism: ~16–18 months** for full QuantLib parity.
 
 ---
 
-## 21. Definition of Done — Per-Phase Checklist
+## 33. Definition of Done — Per-Phase Checklist
 
 For each phase, **all** of the following must be satisfied:
 

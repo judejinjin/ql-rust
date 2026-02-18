@@ -899,10 +899,14 @@ dependencies = [
  "ql-indexes",
  "ql-instruments",
  "ql-math",
+ "ql-methods",
  "ql-models",
  "ql-processes",
  "ql-termstructures",
  "ql-time",
+ "rand 0.9.2",
+ "rand_distr 0.5.1",
+ "rayon",
  "serde",
 ]
 
