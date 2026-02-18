@@ -11,10 +11,13 @@ use ql_math::interpolation::{CubicSplineInterpolation, Interpolation, LinearInte
 use ql_math::optimization::EndCriteria;
 use ql_methods::{binomial_crr, fd_black_scholes, mc_european};
 use ql_models::{CalibrationHelper, HestonModel, calibrate};
-use ql_pricingengines::{heston_price, implied_volatility, price_bond, price_european, price_swap};
+use ql_pricingengines::{
+    heston_price, implied_volatility, price_bond, price_european, price_swap,
+    barone_adesi_whaley, bjerksund_stensland, qd_plus_american,
+};
 use ql_termstructures::{
-    DepositRateHelper, FlatForward, PiecewiseYieldCurve, RateHelper, SwapRateHelper,
-    YieldTermStructure,
+    DepositRateHelper, FlatForward, NelsonSiegelFitting, PiecewiseYieldCurve,
+    RateHelper, SwapRateHelper, YieldTermStructure,
 };
 use ql_time::{
     BusinessDayConvention, Calendar, Date, DayCounter, Month, Period, Schedule,
@@ -365,6 +368,61 @@ fn bench_interpolation(c: &mut Criterion) {
     });
 }
 
+// ── American approximation methods ───────────────────────────────────────────
+
+fn bench_american_approx(c: &mut Criterion) {
+    c.bench_function("american_baw_put", |b| {
+        b.iter(|| {
+            barone_adesi_whaley(
+                black_box(100.0), black_box(110.0),
+                black_box(0.05), black_box(0.02),
+                black_box(0.30), black_box(1.0),
+                black_box(OptionType::Put),
+            )
+        })
+    });
+
+    c.bench_function("american_bjerksund_stensland_put", |b| {
+        b.iter(|| {
+            bjerksund_stensland(
+                black_box(100.0), black_box(110.0),
+                black_box(0.05), black_box(0.02),
+                black_box(0.30), black_box(1.0),
+                black_box(OptionType::Put),
+            )
+        })
+    });
+
+    c.bench_function("american_qd_plus_put", |b| {
+        b.iter(|| {
+            qd_plus_american(
+                black_box(100.0), black_box(110.0),
+                black_box(0.05), black_box(0.02),
+                black_box(0.30), black_box(1.0),
+                black_box(OptionType::Put),
+            )
+        })
+    });
+}
+
+// ── Nelson-Siegel curve fitting ──────────────────────────────────────────────
+
+fn bench_nelson_siegel_fit(c: &mut Criterion) {
+    let maturities = vec![0.25, 0.5, 1.0, 2.0, 3.0, 5.0, 7.0, 10.0, 15.0, 20.0, 30.0];
+    let yields = vec![
+        0.030, 0.032, 0.035, 0.040, 0.043, 0.048, 0.050, 0.052, 0.053, 0.054, 0.055,
+    ];
+
+    c.bench_function("nelson_siegel_fit_11_points", |b| {
+        b.iter(|| {
+            NelsonSiegelFitting::fit(
+                black_box(&maturities),
+                black_box(&yields),
+            )
+        })
+    });
+}
+
 criterion_group!(
     benches,
     bench_bs_pricing,
@@ -381,5 +439,7 @@ criterion_group!(
     bench_heston_calibration,
     bench_calendar_advance,
     bench_interpolation,
+    bench_american_approx,
+    bench_nelson_siegel_fit,
 );
 criterion_main!(benches);

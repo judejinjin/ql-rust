@@ -2,6 +2,103 @@
 
 All notable changes to the ql-rust project are documented in this file.
 
+## [0.2.0] — 2026-02-18
+
+### Phase 13: Advanced American Option Engines
+- Barone-Adesi-Whaley (BAW) analytic approximation
+- Bjerksund-Stensland 2002 two-point boundary
+- QD+ high-precision American pricing (iteration until convergence)
+- `AmericanApproxResult` with NPV, early-exercise premium, critical price
+
+### Phase 14: Bates Model & Jump-Diffusion
+- `BatesModel` (Heston + Merton jumps: λ, μ_J, σ_J)
+- `BatesProcess` stochastic process
+- `bates_price` / `bates_price_flat` Fourier integration
+- `merton_jump_diffusion` closed-form pricing
+- `mc_bates` Monte Carlo for Bates SDE
+
+### Phase 15: Multi-Asset & Basket Options
+- Stulz max/min-on-two-assets closed-form
+- Kirk's spread option approximation
+- Margrabe exchange option formula
+- `mc_basket` Monte Carlo for N-asset baskets (max, min, spread)
+- Cholesky-correlated multi-asset path generation
+
+### Phase 16: Short-Rate Models — Full Coverage
+- `VasicekModel`, `CIRModel` with analytic bond pricing
+- `HullWhiteModel` with calibration, mean-reversion, term structure fitting
+- `BlackKarasinskiModel` with lognormal short rate
+- `G2Model` (two-factor Gaussian) with analytic swaption pricing
+- `OrnsteinUhlenbeckProcess`, `HullWhiteProcess`, `CoxIngersollRossProcess`
+
+### Phase 17: Advanced Swaption & Cap/Floor Engines
+- Hull-White analytic bond options, caplets, floorlets
+- Jamshidian swaption decomposition
+- Trinomial tree pricing (bonds, swaptions, Bermudans, caps/floors)
+- Finite-difference Hull-White swaption solver
+- Monte Carlo Hull-White cap/floor pricing
+
+### Phase 18: Advanced Volatility Surfaces & Smile Models
+- SVI (Stochastic Volatility Inspired) smile parameterisation with 5-param calibration
+- ZABR extension of SABR (variable γ backbone)
+- Optionlet stripping from cap volatilities
+- `BlackVarianceCurve` and `SmileSectionSurface` interpolation
+
+### Phase 19: Advanced Finite Difference Framework
+- `Mesher1d`, `FdmMesherComposite` mesh generation
+- Concentrating and log-spot meshers for non-uniform grids
+- `TripleBandOp`, `Heston2dOps` operator discretisation
+- Crank-Nicolson, implicit, and Douglas ADI time stepping
+- 1D BS FD solver and 2D Heston FD solver with American exercise
+
+### Phase 20: LIBOR Market Model Framework
+- `LmmConfig` with forward rate and volatility structure
+- `LmmCurveState` for forward rate evolution
+- `lmm_cap_price` — caplet pricing via log-normal displaced diffusion
+- `lmm_swaption_price` — Bermudan/European swaption via MC
+
+### Phase 21: Advanced Credit Models
+- `GaussianCopulaLHP` — large homogeneous portfolio CDO tranche pricing
+- `nth_to_default_mc` — Monte Carlo N-th to default basket
+- `cds_option_black` — CDS option pricing via Black's formula
+- ISDA standard CDS model coupon dates
+
+### Phase 22: Math Library Extensions
+- **Copulas:** Gaussian, Clayton, Frank, Gumbel with Kendall's τ conversion
+- **Statistics:** General, Incremental (Welford), Risk (VaR/CVaR), Convergence
+- **Distributions:** Student's t, Gamma, Binomial, bivariate normal CDF
+- **Interpolation:** backward/forward flat, bilinear 2D, bicubic Catmull-Rom 2D
+- **Quasi-random:** Halton (40-dim), Sobol (21-dim), Brownian bridge
+- **FFT:** Radix-2 Cooley-Tukey, Carr-Madan option pricing
+- **Solvers:** Secant, Ridder, false-position (Illinois)
+
+### Phase 23: Advanced Cash Flows & Coupons
+- `CmsCoupon` with linear TSR convexity adjustment and Black caplet pricing
+- `DigitalCoupon` (binary payoff), `CapFlooredCoupon` (cap/floor/collar)
+- `RangeAccrualCoupon` (fraction of days in range)
+- `SubPeriodCoupon` (compounding and averaging sub-periods)
+- Extended analytics: convexity, modified duration, DV01, Z-spread, ATM rate
+- Time-bucketed cash flow analysis
+
+### Phase 24: Advanced Yield Curve & Fitting
+- `NelsonSiegelFitting` (4-parameter) with Nelder-Mead optimisation
+- `SvenssonFitting` (6-parameter) extension
+- `FittedBondDiscountCurve` as `YieldTermStructure`
+- `CompositeZeroYieldStructure` (additive combination of two curves)
+- `ImpliedTermStructure` (forward-starting derived curve)
+- `ForwardCurve` (interpolated instantaneous forward rates)
+- `UltimateForwardTermStructure` (Smith-Wilson / Solvency II UFR extrapolation)
+- `SpreadedTermStructure` (base + constant zero-rate spread)
+- `OISRateHelper`, `BondHelper`, `FuturesRateHelper`, `FRAHelper`
+
+### Quality & Cross-Cutting
+- Updated facade crate (ql-rust) with all Phase 13-24 re-exports
+- New integration tests: American pricing pipeline, multi-asset pipeline,
+  short-rate model pipeline, yield curve fitting pipeline, advanced cashflows pipeline
+- New benchmarks: American approximation, Nelson-Siegel fit, FD Heston 2D, MC basket
+- Golden cross-validation tests for American, spread, and Nelson-Siegel results
+- 910+ tests total, zero clippy warnings
+
 ## [0.1.1] — 2026-02-17
 
 ### Quality — Definition of Done Completion

@@ -3,7 +3,7 @@
 A modern Rust reimplementation of the [QuantLib](https://www.quantlib.org/) quantitative finance library.
 
 [![Build](https://img.shields.io/badge/build-passing-brightgreen)]()
-[![Tests](https://img.shields.io/badge/tests-542_passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-910_passing-brightgreen)]()
 [![Rust](https://img.shields.io/badge/rust-2021_edition-orange)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
 
@@ -123,28 +123,32 @@ println!("CRR European call: {:.4}", crr.npv);
 ├──────────────────┼───────────────────────────────────────────┤
 │  ql-persistence  │  Trade store, lifecycle events, redb      │
 ├──────────────────┼───────────────────────────────────────────┤
-│  ql-methods      │  Monte Carlo, finite differences, lattice │
+│  ql-methods      │  Monte Carlo, FD (1D + 2D Heston),       │
+│                  │  lattice, FDM meshers & operators         │
 ├──────────────────┼───────────────────────────────────────────┤
 │  ql-pricingengines│ Analytic BS, swap/bond/swaption pricing  │
 ├──────────────────┼───────────────────────────────────────────┤
-│  ql-models       │  Heston stochastic volatility model       │
+│  ql-models       │  Heston, Hull-White, Vasicek, CIR, G2,   │
+│                  │  Bates, Black-Karasinski, LMM             │
 ├──────────────────┼───────────────────────────────────────────┤
-│  ql-processes    │  GBM, Heston process                      │
+│  ql-processes    │  GBM, Heston, Hull-White, Bates, CIR      │
 ├──────────────────┼───────────────────────────────────────────┤
 │  ql-instruments  │  Options, swaps, bonds, swaptions,        │
 │                  │  caps/floors, CDS, exotics                │
 ├──────────────────┼───────────────────────────────────────────┤
-│  ql-cashflows    │  Fixed/floating coupons, NPV, accrued     │
+│  ql-cashflows    │  Fixed/floating coupons, CMS, digital,    │
+│                  │  range-accrual, sub-period, analytics     │
 ├──────────────────┼───────────────────────────────────────────┤
 │  ql-termstructures│ Yield curves, vol surfaces, inflation,   │
-│                  │  credit, local vol, SABR                  │
+│                  │  credit, local vol, SABR, SVI, ZABR,     │
+│                  │  Nelson-Siegel, Smith-Wilson              │
 ├──────────────────┼───────────────────────────────────────────┤
 │  ql-indexes      │  IBOR indices, interest rate compounding  │
 ├──────────────────┼───────────────────────────────────────────┤
 │  ql-currencies   │  30+ ISO 4217 currencies                  │
 ├──────────────────┼───────────────────────────────────────────┤
 │  ql-math         │  Interpolation, root-finding, integration,│
-│                  │  optimization, linear algebra             │
+│                  │  optimization, copulas, FFT, quasi-random │
 ├──────────────────┼───────────────────────────────────────────┤
 │  ql-time         │  Dates, day counters, calendars,          │
 │                  │  schedules, business day conventions       │
@@ -162,13 +166,13 @@ println!("CRR European call: {:.4}", crr.npv);
 | **ql-math** | Numerical methods | `LinearInterpolation`, `CubicSpline`, `Brent` |
 | **ql-currencies** | ISO 4217 currency definitions | `Currency`, `USD`, `EUR`, `GBP` |
 | **ql-indexes** | Interest rate indices | `IborIndex`, `InterestRate`, `Compounding` |
-| **ql-termstructures** | Term structure models | `FlatForward`, `PiecewiseYieldCurve`, `BlackConstantVol` |
-| **ql-cashflows** | Cash flow generation & analytics | `CashFlow`, `Leg`, `fixed_leg`, `ibor_leg`, `npv` |
+| **ql-termstructures** | Term structure models | `FlatForward`, `PiecewiseYieldCurve`, `NelsonSiegelFitting`, `SviSmileSection` |
+| **ql-cashflows** | Cash flow generation & analytics | `CashFlow`, `Leg`, `CmsCoupon`, `DigitalCoupon`, `convexity`, `dv01` |
 | **ql-instruments** | Financial instrument types | `VanillaOption`, `VanillaSwap`, `FixedRateBond` |
-| **ql-processes** | Stochastic processes | `GeneralizedBlackScholesProcess`, `HestonProcess` |
-| **ql-models** | Calibrated models | `HestonModel` |
-| **ql-pricingengines** | Analytic pricing engines | `price_european`, `price_swap`, `price_bond` |
-| **ql-methods** | Numerical pricing methods | `mc_european`, `fd_black_scholes`, `binomial_crr` |
+| **ql-processes** | Stochastic processes | `GeneralizedBlackScholesProcess`, `HestonProcess`, `HullWhiteProcess` |
+| **ql-models** | Calibrated models | `HestonModel`, `HullWhiteModel`, `VasicekModel`, `CIRModel`, `G2Model` |
+| **ql-pricingengines** | Analytic pricing engines | `price_european`, `price_swap`, `barone_adesi_whaley`, `mc_basket` |
+| **ql-methods** | Numerical pricing methods | `mc_european`, `fd_black_scholes`, `fd_heston_solve` |
 | **ql-persistence** | Trade storage & lifecycle | `Trade`, `EmbeddedStore`, `ObjectStore` |
 | **ql-cli** | Command-line interface | Binary: `ql-cli` |
 | **ql-rust** | Façade re-exporting all crates | — |
@@ -177,22 +181,31 @@ println!("CRR European call: {:.4}", crr.npv);
 
 | Category | Instruments |
 |----------|-------------|
-| **Equity** | European/American options, barrier options, lookback options, Asian options, compound options, variance swaps |
-| **Rates** | Vanilla swaps, swaptions, caps/floors, fixed-rate bonds, callable bonds |
-| **Credit** | Credit default swaps |
+| **Equity** | European/American options, barrier options, lookback options, Asian options, compound options, variance swaps, basket options, spread options, exchange options |
+| **Rates** | Vanilla swaps, swaptions (European & Bermudan), caps/floors, fixed-rate bonds, callable bonds |
+| **Credit** | Credit default swaps, CDS options, CDO tranches (LHP), N-th to default baskets |
 | **Hybrid** | Convertible bonds |
+| **Multi-Asset** | Stulz max/min, Kirk spread, Margrabe exchange, MC basket (N-asset) |
 
 ## Pricing Engines
 
 | Engine | Method | Instruments |
 |--------|--------|-------------|
 | Analytic Black-Scholes | Closed-form | European options |
+| BAW / BJS / QD+ | Analytic approximation | American options |
+| Longstaff-Schwartz | Least-squares MC | American options |
 | Heston semi-analytic | Fourier integration | European options (stochastic vol) |
-| Monte Carlo | Simulation (parallel) | European, barrier, Asian, Heston |
-| Finite Differences | PDE (Crank-Nicolson) | European & American options |
+| Bates / Merton JD | Jump-diffusion | European options |
+| Monte Carlo | Simulation (parallel) | European, barrier, Asian, Heston, Bates, basket |
+| Finite Differences 1D | Crank-Nicolson | European & American options |
+| Finite Differences 2D | Douglas ADI | Heston PDE |
 | Binomial CRR | Lattice | European & American options |
+| Trinomial tree | Short-rate tree | Bonds, swaptions, caps/floors |
+| Hull-White analytic | Closed-form | Bond options, caplets, swaptions |
 | Analytic swap/bond | Discounted cash flows | Swaps, bonds |
 | Black / Bachelier | Closed-form | Swaptions, caps/floors |
+| Gaussian copula LHP | Semi-analytic | CDO tranche pricing |
+| Black CDS option | Closed-form | CDS options |
 
 ## CLI Usage
 
@@ -218,7 +231,7 @@ ql-cli list --book equity
 ## Testing
 
 ```bash
-# Run all 542 tests
+# Run all 910 tests
 cargo test --workspace
 
 # Run integration tests only
@@ -235,10 +248,10 @@ cargo bench -p ql-rust
 
 | Category | Count | Description |
 |----------|-------|-------------|
-| Unit tests | 502 | Per-crate functionality |
-| Integration tests | 16 | Cross-crate pipelines (yield curve, swap, option, persistence) |
+| Unit tests | 827 | Per-crate functionality |
+| Integration tests | 47 | Cross-crate pipelines (options, swaps, yield curve, American, multi-asset, short-rate, cashflows) |
 | Property-based tests | 11 | Mathematical invariants via proptest (put-call parity, bounds, monotonicity) |
-| Golden cross-validation | 13 | Calendar, yield curve, and Black-Scholes vs analytical reference values |
+| Golden cross-validation | 21 | Calendar, yield curve, BS, American, spread, Nelson-Siegel vs reference values |
 
 ### Benchmarks
 
@@ -260,6 +273,10 @@ cargo bench -p ql-rust
 | `interpolation_cubic_spline_lookup` | Cubic spline interpolation point lookup |
 | `date_add_days` | Date + integer days arithmetic |
 | `day_counter_year_fraction` | Year fraction calculation |
+| `american_baw_put` | Barone-Adesi-Whaley American put |
+| `american_bjerksund_stensland_put` | Bjerksund-Stensland American put |
+| `american_qd_plus_put` | QD+ high-precision American put |
+| `nelson_siegel_fit_11_points` | Nelson-Siegel 4-param curve fitting |
 
 ## Building
 
