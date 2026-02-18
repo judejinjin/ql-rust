@@ -264,6 +264,236 @@ impl Solver1D for Bisection {
 }
 
 // ===========================================================================
+// Secant Method
+// ===========================================================================
+
+/// Secant method — derivative-free, superlinear convergence.
+///
+/// Uses two initial evaluations and does not require a bracket.
+#[derive(Clone, Debug, Default)]
+pub struct Secant;
+
+impl Solver1D for Secant {
+    fn solve<F: Fn(f64) -> f64>(
+        &self,
+        f: F,
+        target: f64,
+        guess: f64,
+        x_min: f64,
+        x_max: f64,
+        accuracy: f64,
+        max_evaluations: usize,
+    ) -> QLResult<f64> {
+        let g = |x: f64| f(x) - target;
+
+        let dx = guess.abs().max(1.0) * 1e-4;
+        let mut x0 = guess;
+        let mut x1 = guess + dx;
+        x1 = x1.clamp(x_min, x_max);
+        if (x1 - x0).abs() < 1e-30 {
+            x0 = guess - dx;
+        }
+
+        let mut f0 = g(x0);
+        let mut f1 = g(x1);
+        let mut evals = 2;
+
+        for _ in 0..max_evaluations {
+            if f1.abs() < accuracy {
+                return Ok(x1);
+            }
+            if evals >= max_evaluations {
+                return Err(QLError::RootNotFound(evals));
+            }
+
+            let denom = f1 - f0;
+            if denom.abs() < 1e-30 {
+                return Err(QLError::RootNotFound(evals));
+            }
+
+            let x2 = x1 - f1 * (x1 - x0) / denom;
+            let x2 = x2.clamp(x_min, x_max);
+
+            x0 = x1;
+            f0 = f1;
+            x1 = x2;
+            f1 = g(x1);
+            evals += 1;
+        }
+
+        Err(QLError::RootNotFound(max_evaluations))
+    }
+}
+
+// ===========================================================================
+// Ridder's Method
+// ===========================================================================
+
+/// Ridder's method — bracketing method with quadratic convergence.
+#[derive(Clone, Debug, Default)]
+pub struct Ridder;
+
+impl Solver1D for Ridder {
+    fn solve<F: Fn(f64) -> f64>(
+        &self,
+        f: F,
+        target: f64,
+        _guess: f64,
+        x_min: f64,
+        x_max: f64,
+        accuracy: f64,
+        max_evaluations: usize,
+    ) -> QLResult<f64> {
+        let g = |x: f64| f(x) - target;
+
+        let mut a = x_min;
+        let mut b = x_max;
+        let mut fa = g(a);
+        let mut fb = g(b);
+        let mut evals = 2;
+
+        if fa * fb > 0.0 {
+            return Err(QLError::RootNotFound(evals));
+        }
+        if fa.abs() < accuracy {
+            return Ok(a);
+        }
+        if fb.abs() < accuracy {
+            return Ok(b);
+        }
+
+        for _ in 0..max_evaluations / 2 {
+            let mid = 0.5 * (a + b);
+            let fm = g(mid);
+            evals += 1;
+
+            if fm.abs() < accuracy {
+                return Ok(mid);
+            }
+
+            let s = (fm * fm - fa * fb).sqrt();
+            if s < 1e-30 {
+                return Ok(mid);
+            }
+
+            let sign = if (fa - fb) > 0.0 { 1.0 } else { -1.0 };
+            let x_new = mid + (mid - a) * sign * fm / s;
+            let fx = g(x_new);
+            evals += 1;
+
+            if fx.abs() < accuracy {
+                return Ok(x_new);
+            }
+
+            // Update bracket
+            if fm * fx < 0.0 {
+                if mid < x_new {
+                    a = mid;
+                    fa = fm;
+                    b = x_new;
+                    fb = fx;
+                } else {
+                    a = x_new;
+                    fa = fx;
+                    b = mid;
+                    fb = fm;
+                }
+            } else if fa * fx < 0.0 {
+                b = x_new;
+                fb = fx;
+            } else {
+                a = x_new;
+                fa = fx;
+            }
+
+            if (b - a).abs() < accuracy {
+                return Ok(0.5 * (a + b));
+            }
+
+            if evals >= max_evaluations {
+                return Err(QLError::RootNotFound(evals));
+            }
+        }
+
+        Ok(0.5 * (a + b))
+    }
+}
+
+// ===========================================================================
+// False Position (Regula Falsi)
+// ===========================================================================
+
+/// False position (regula falsi) method — bracketing with linear interpolation.
+///
+/// Illinois variant for improved convergence.
+#[derive(Clone, Debug, Default)]
+pub struct FalsePosition;
+
+impl Solver1D for FalsePosition {
+    fn solve<F: Fn(f64) -> f64>(
+        &self,
+        f: F,
+        target: f64,
+        _guess: f64,
+        x_min: f64,
+        x_max: f64,
+        accuracy: f64,
+        max_evaluations: usize,
+    ) -> QLResult<f64> {
+        let g = |x: f64| f(x) - target;
+
+        let mut a = x_min;
+        let mut b = x_max;
+        let mut fa = g(a);
+        let mut fb = g(b);
+        let mut evals = 2;
+
+        if fa * fb > 0.0 {
+            return Err(QLError::RootNotFound(evals));
+        }
+
+        let mut side = 0i32; // 0=none, 1=left retained, 2=right retained
+
+        for _ in 0..max_evaluations {
+            let denom = fb - fa;
+            if denom.abs() < 1e-30 {
+                return Ok(0.5 * (a + b));
+            }
+
+            let c = (a * fb - b * fa) / denom;
+            let fc = g(c);
+            evals += 1;
+
+            if fc.abs() < accuracy || (b - a).abs() < accuracy {
+                return Ok(c);
+            }
+
+            if fa * fc < 0.0 {
+                b = c;
+                fb = fc;
+                if side == 1 {
+                    fa *= 0.5; // Illinois modification
+                }
+                side = 1;
+            } else {
+                a = c;
+                fa = fc;
+                if side == 2 {
+                    fb *= 0.5; // Illinois modification
+                }
+                side = 2;
+            }
+
+            if evals >= max_evaluations {
+                return Err(QLError::RootNotFound(evals));
+            }
+        }
+
+        Ok(0.5 * (a + b))
+    }
+}
+
+// ===========================================================================
 // Tests
 // ===========================================================================
 
@@ -375,5 +605,57 @@ mod tests {
             .solve(f64::exp, 2.0, 0.5, -10.0, 10.0, ACC, MAX_EVAL)
             .unwrap();
         assert_abs_diff_eq!(root, 2.0_f64.ln(), epsilon = 1e-10);
+    }
+
+    #[test]
+    fn secant_sqrt2() {
+        let solver = Secant;
+        let root = solver
+            .solve(f_quadratic, 2.0, 1.5, 0.0, 3.0, ACC, MAX_EVAL)
+            .unwrap();
+        assert_abs_diff_eq!(root, SQRT2, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn ridder_sqrt2() {
+        let solver = Ridder;
+        let root = solver
+            .solve(f_quadratic, 2.0, 1.5, 0.0, 3.0, ACC, MAX_EVAL)
+            .unwrap();
+        assert_abs_diff_eq!(root, SQRT2, epsilon = ACC);
+    }
+
+    #[test]
+    fn false_position_sqrt2() {
+        let solver = FalsePosition;
+        let root = solver
+            .solve(f_quadratic, 2.0, 1.5, 0.0, 3.0, ACC, MAX_EVAL)
+            .unwrap();
+        assert_abs_diff_eq!(root, SQRT2, epsilon = ACC);
+    }
+
+    #[test]
+    fn secant_cosine() {
+        let root = Secant
+            .solve(f64::cos, 0.0, 1.0, 0.0, 2.0, ACC, MAX_EVAL)
+            .unwrap();
+        assert_abs_diff_eq!(root, std::f64::consts::FRAC_PI_2, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn ridder_cubic() {
+        let f = |x: f64| x * x * x - 6.0 * x * x + 11.0 * x - 6.0;
+        let root = Ridder
+            .solve(f, 0.0, 2.5, 1.5, 2.5, ACC, MAX_EVAL)
+            .unwrap();
+        assert_abs_diff_eq!(root, 2.0, epsilon = ACC);
+    }
+
+    #[test]
+    fn false_position_exp() {
+        let root = FalsePosition
+            .solve(f64::exp, 2.0, 0.5, -10.0, 10.0, ACC, MAX_EVAL)
+            .unwrap();
+        assert_abs_diff_eq!(root, 2.0_f64.ln(), epsilon = ACC);
     }
 }

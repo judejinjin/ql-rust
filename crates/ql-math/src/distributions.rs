@@ -144,6 +144,166 @@ impl ChiSquaredDistribution {
 }
 
 // ===========================================================================
+// Student-t Distribution
+// ===========================================================================
+
+/// Student's t-distribution.
+#[derive(Clone, Debug)]
+pub struct StudentTDistribution {
+    inner: statrs::distribution::StudentsT,
+}
+
+impl StudentTDistribution {
+    /// Create a Student-t distribution with `dof` degrees of freedom.
+    pub fn new(dof: f64) -> QLResult<Self> {
+        statrs::distribution::StudentsT::new(0.0, 1.0, dof)
+            .map(|inner| Self { inner })
+            .map_err(|e| QLError::InvalidArgument(format!("invalid Student-t dof: {e}")))
+    }
+
+    /// General Student-t with location and scale.
+    pub fn with_params(location: f64, scale: f64, dof: f64) -> QLResult<Self> {
+        statrs::distribution::StudentsT::new(location, scale, dof)
+            .map(|inner| Self { inner })
+            .map_err(|e| QLError::InvalidArgument(format!("invalid Student-t params: {e}")))
+    }
+
+    pub fn cdf(&self, x: f64) -> f64 {
+        ContinuousCDF::cdf(&self.inner, x)
+    }
+
+    pub fn pdf(&self, x: f64) -> f64 {
+        self.inner.pdf(x)
+    }
+
+    pub fn inverse_cdf(&self, p: f64) -> QLResult<f64> {
+        if !(0.0..=1.0).contains(&p) {
+            return Err(QLError::InvalidArgument(format!(
+                "probability must be in [0,1], got {p}"
+            )));
+        }
+        Ok(ContinuousCDF::inverse_cdf(&self.inner, p))
+    }
+}
+
+// ===========================================================================
+// Gamma Distribution
+// ===========================================================================
+
+/// Gamma distribution with shape (α) and rate (β) parameterization.
+#[derive(Clone, Debug)]
+pub struct GammaDistribution {
+    inner: statrs::distribution::Gamma,
+}
+
+impl GammaDistribution {
+    /// Create with shape α and rate β. Mean = α/β, Var = α/β².
+    pub fn new(shape: f64, rate: f64) -> QLResult<Self> {
+        statrs::distribution::Gamma::new(shape, rate)
+            .map(|inner| Self { inner })
+            .map_err(|e| QLError::InvalidArgument(format!("invalid Gamma params: {e}")))
+    }
+
+    pub fn cdf(&self, x: f64) -> f64 {
+        ContinuousCDF::cdf(&self.inner, x)
+    }
+
+    pub fn pdf(&self, x: f64) -> f64 {
+        self.inner.pdf(x)
+    }
+
+    pub fn inverse_cdf(&self, p: f64) -> QLResult<f64> {
+        if !(0.0..=1.0).contains(&p) {
+            return Err(QLError::InvalidArgument(format!(
+                "probability must be in [0,1], got {p}"
+            )));
+        }
+        Ok(ContinuousCDF::inverse_cdf(&self.inner, p))
+    }
+}
+
+// ===========================================================================
+// Binomial Distribution
+// ===========================================================================
+
+/// Binomial distribution B(n, p).
+#[derive(Clone, Debug)]
+pub struct BinomialDistribution {
+    inner: statrs::distribution::Binomial,
+}
+
+impl BinomialDistribution {
+    pub fn new(n: u64, p: f64) -> QLResult<Self> {
+        statrs::distribution::Binomial::new(p, n)
+            .map(|inner| Self { inner })
+            .map_err(|e| QLError::InvalidArgument(format!("invalid Binomial params: {e}")))
+    }
+
+    /// P(X = k).
+    pub fn pmf(&self, k: u64) -> f64 {
+        self.inner.pmf(k)
+    }
+
+    /// P(X ≤ k).
+    pub fn cdf(&self, k: u64) -> f64 {
+        DiscreteCDF::cdf(&self.inner, k)
+    }
+}
+
+// ===========================================================================
+// Bivariate Normal Distribution
+// ===========================================================================
+
+/// Bivariate standard normal CDF: Φ₂(x, y; ρ).
+///
+/// Uses Drezner-Wesolowsky approximation (1990) for fast computation.
+pub fn bivariate_normal_cdf(x: f64, y: f64, rho: f64) -> f64 {
+    let n = NormalDistribution::standard();
+
+    if rho.abs() < 1e-12 {
+        return n.cdf(x) * n.cdf(y);
+    }
+    if (rho - 1.0).abs() < 1e-12 {
+        return n.cdf(x.min(y));
+    }
+    if (rho + 1.0).abs() < 1e-12 {
+        return (n.cdf(x) + n.cdf(-y) - 1.0).max(0.0);
+    }
+
+    // Gauss-Legendre quadrature on the arcsin(ρ) integral form
+    let theta0 = rho.asin();
+    let half_nodes = [
+        (0.095_012_509_837_637_4, 0.189_450_610_455_068),
+        (0.281_603_550_779_258_9, 0.182_603_415_044_924),
+        (0.458_016_777_657_227_4, 0.169_156_519_395_003),
+        (0.617_876_244_402_643_7, 0.149_595_988_816_577),
+        (0.755_404_408_355_003, 0.124_628_971_255_534),
+        (0.865_631_202_387_831_7, 0.095_158_511_682_493),
+        (0.944_575_023_073_232_6, 0.062_253_523_938_648),
+        (0.989_400_934_991_649_9, 0.027_152_459_411_754),
+    ];
+
+    let mut sum = 0.0;
+    let half_range = theta0 / 2.0;
+    let mid = theta0 / 2.0;
+
+    for &(xi, wi) in &half_nodes {
+        for &sign in &[-1.0, 1.0] {
+            let theta = mid + sign * half_range * xi;
+            let sin_t = theta.sin();
+            let cos_t = theta.cos();
+            let integrand =
+                (-(x * x + y * y - 2.0 * x * y * sin_t) / (2.0 * cos_t * cos_t)).exp();
+            sum += wi * integrand;
+        }
+    }
+
+    sum *= half_range / (2.0 * std::f64::consts::PI);
+    sum += n.cdf(x) * n.cdf(y);
+    sum.clamp(0.0, 1.0)
+}
+
+// ===========================================================================
 // Tests
 // ===========================================================================
 
@@ -232,5 +392,60 @@ mod tests {
         let x = 4.0;
         let expected = 1.0 - (-x / 2.0_f64).exp();
         assert_abs_diff_eq!(chi2.cdf(x), expected, epsilon = 1e-14);
+    }
+
+    #[test]
+    fn student_t_symmetry() {
+        let t = StudentTDistribution::new(5.0).unwrap();
+        assert_abs_diff_eq!(t.cdf(0.0), 0.5, epsilon = 1e-12);
+        assert_abs_diff_eq!(t.cdf(-2.0) + t.cdf(2.0), 1.0, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn student_t_converges_to_normal() {
+        // For large dof, Student-t → normal
+        let t = StudentTDistribution::new(1000.0).unwrap();
+        let n = NormalDistribution::standard();
+        assert_abs_diff_eq!(t.cdf(1.96), n.cdf(1.96), epsilon = 0.005);
+    }
+
+    #[test]
+    fn gamma_exponential_special_case() {
+        // Gamma(1, λ) = Exponential(λ)
+        let g = GammaDistribution::new(1.0, 2.0).unwrap();
+        let x: f64 = 1.5;
+        let expected = 1.0 - (-2.0 * x).exp();
+        assert_abs_diff_eq!(g.cdf(x), expected, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn binomial_coin_flip() {
+        let b = BinomialDistribution::new(10, 0.5).unwrap();
+        // P(X = 5) = C(10,5) * 0.5^10 = 252/1024
+        assert_abs_diff_eq!(b.pmf(5), 252.0 / 1024.0, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn bivariate_normal_independence() {
+        let n = NormalDistribution::standard();
+        // ρ=0 → Φ₂(x,y) = Φ(x)·Φ(y)
+        let result = bivariate_normal_cdf(1.0, 1.0, 0.0);
+        let expected = n.cdf(1.0) * n.cdf(1.0);
+        assert_abs_diff_eq!(result, expected, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn bivariate_normal_comonotone() {
+        let n = NormalDistribution::standard();
+        // ρ=1 → Φ₂(x,y) = Φ(min(x,y))
+        let result = bivariate_normal_cdf(0.5, 1.0, 1.0);
+        assert_abs_diff_eq!(result, n.cdf(0.5), epsilon = 1e-10);
+    }
+
+    #[test]
+    fn bivariate_normal_known_value() {
+        // Φ₂(0, 0; 0.5) ≈ 0.333
+        let result = bivariate_normal_cdf(0.0, 0.0, 0.5);
+        assert_abs_diff_eq!(result, 0.333, epsilon = 0.01);
     }
 }
