@@ -17,6 +17,7 @@ pub mod lookback_engine;
 pub mod compound_engine;
 pub mod variance_swap_engine;
 pub mod merton_jump_diffusion;
+pub mod multi_asset;
 
 // Re-exports
 pub use american_engines::{
@@ -36,3 +37,7 @@ pub use lookback_engine::{analytic_lookback, LookbackResult};
 pub use compound_engine::{analytic_compound_option, CompoundOptionResult};
 pub use variance_swap_engine::{price_variance_swap, VarianceSwapResult};
 pub use merton_jump_diffusion::{merton_jump_diffusion, MertonJDResult};
+pub use multi_asset::{
+    mc_basket, stulz_max_call, stulz_min_call, kirk_spread_call, kirk_spread_put,
+    margrabe_exchange, BasketType, BasketResult,
+};
