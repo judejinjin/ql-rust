@@ -51,3 +51,7 @@ pub use tree_swaption::{
     fd_hw_swaption, mc_hw_cap_floor,
     TreeResult, FdResult, McHwResult,
 };
+pub mod credit_models;
+pub use credit_models::{
+    GaussianCopulaLHP, NtdResult, nth_to_default_mc, cds_option_black,
+};
