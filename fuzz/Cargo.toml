@@ -1,0 +1,46 @@
+[package]
+name = "ql-rust-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+arbitrary = { version = "1", features = ["derive"] }
+ql-time = { path = "../crates/ql-time" }
+ql-math = { path = "../crates/ql-math" }
+ql-instruments = { path = "../crates/ql-instruments" }
+ql-pricingengines = { path = "../crates/ql-pricingengines" }
+ql-termstructures = { path = "../crates/ql-termstructures" }
+ql-methods = { path = "../crates/ql-methods" }
+
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "fuzz_date"
+path = "fuzz_targets/fuzz_date.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_schedule"
+path = "fuzz_targets/fuzz_schedule.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_interpolation"
+path = "fuzz_targets/fuzz_interpolation.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_bs_pricing"
+path = "fuzz_targets/fuzz_bs_pricing.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_sabr"
+path = "fuzz_targets/fuzz_sabr.rs"
+doc = false
