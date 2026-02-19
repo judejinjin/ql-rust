@@ -132,12 +132,20 @@ pub fn atm_rate(leg: &Leg, curve: &dyn YieldTermStructure, settle: Date) -> f64 
 /// and returns the PV contribution of each bucket.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TimeBucket {
+    /// Bucket start time (years from reference date).
     pub start: f64,
+    /// Bucket end time (years from reference date).
     pub end: f64,
+    /// Aggregate present value of cash flows in this bucket.
     pub pv: f64,
+    /// Number of cash flows falling into this bucket.
     pub cash_flow_count: usize,
 }
 
+/// Aggregate cash flows into time buckets and compute the PV contribution of each.
+///
+/// `bucket_boundaries` defines the bucket edges (e.g. `[0, 1, 2, 5, 10, 30]`).
+/// Returns one `TimeBucket` per adjacent pair of boundaries.
 pub fn time_bucketed_cashflows(
     leg: &Leg,
     curve: &dyn YieldTermStructure,

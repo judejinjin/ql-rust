@@ -1,6 +1,28 @@
 //! # ql-models
 //!
-//! Calibrated model trait and implementations: Heston, Hull-White, Vasicek, etc.
+//! Calibrated model framework and implementations for derivative pricing.
+//!
+//! ## Overview
+//!
+//! ### Framework
+//! - [`CalibratedModel`] — trait for models with calibratable parameters
+//! - [`CalibrationHelper`] — market instrument used as calibration target
+//! - [`Parameter`] / [`Constraint`] — parameter with bounds and transforms
+//! - [`calibrate`] — generic Levenberg-Marquardt calibration driver
+//!
+//! ### Stochastic Volatility
+//! - [`HestonModel`] — Heston (1993) stochastic variance model
+//! - [`BatesModel`] — Bates = Heston + Merton jumps
+//!
+//! ### Short-Rate Models
+//! - [`HullWhiteModel`] — Hull-White (extended Vasicek)
+//! - [`VasicekModel`] — Vasicek mean-reverting model
+//! - [`CIRModel`] — Cox-Ingersoll-Ross model
+//! - [`BlackKarasinskiModel`] — log-normal short rate
+//! - [`G2Model`] — two-factor Gaussian short-rate model
+//!
+//! ### LIBOR Market Model
+//! - [`lmm`] — LMM framework for forward rates (caps, swaptions)
 
 pub mod parameter;
 pub mod calibrated_model;

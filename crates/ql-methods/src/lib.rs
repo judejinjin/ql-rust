@@ -1,7 +1,32 @@
 //! # ql-methods
 //!
-//! Numerical pricing methods: Monte Carlo path generation, finite difference solvers,
+//! Numerical pricing methods: Monte Carlo simulation, finite difference solvers,
 //! and lattice (binomial/trinomial tree) frameworks.
+//!
+//! ## Overview
+//!
+//! | Module | Purpose |
+//! |---|---|
+//! | [`monte_carlo`] | Path generation ([`Path`], [`MultiPath`]) with pseudo/quasi-random |
+//! | [`mc_engines`] | MC pricing: European, barrier, Asian, Heston, Bates |
+//! | [`finite_differences`] | Classical 1D finite difference solver |
+//! | [`fdm_meshers`] | Mesh generation for FD grids (uniform, concentrating, log-spot) |
+//! | [`fdm_operators`] | FD operators, ADI schemes, Crank-Nicolson, 2D Heston solver |
+//! | [`lattice`] | Binomial CRR tree for option pricing |
+//!
+//! ## Quick Start
+//!
+//! ```rust
+//! use ql_methods::{mc_european, MCResult};
+//! use ql_instruments::OptionType;
+//!
+//! // Monte Carlo European call
+//! let result: MCResult = mc_european(
+//!     100.0, 100.0, 0.05, 0.0, 0.20, 1.0,
+//!     OptionType::Call, 50_000, true, 42,
+//! );
+//! assert!((result.npv - 10.45).abs() < 1.0); // approximate
+//! ```
 
 pub mod monte_carlo;
 pub mod mc_engines;

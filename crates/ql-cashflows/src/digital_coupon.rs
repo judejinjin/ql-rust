@@ -128,15 +128,25 @@ impl Coupon for DigitalCoupon {
 /// Effective rate = max(floor, min(cap, gearing * reference_rate + spread)).
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CapFlooredCoupon {
+    /// Payment date.
     pub payment_date: Date,
+    /// Notional amount.
     pub nominal: f64,
+    /// Start of accrual period.
     pub accrual_start: Date,
+    /// End of accrual period.
     pub accrual_end: Date,
+    /// Day counter for year-fraction computation.
     pub day_counter: DayCounter,
+    /// Underlying floating reference rate.
     pub reference_rate: f64,
+    /// Additive spread over the reference rate.
     pub spread: f64,
+    /// Multiplicative gearing factor.
     pub gearing: f64,
+    /// Optional cap rate (upper bound on the effective rate).
     pub cap: Option<f64>,
+    /// Optional floor rate (lower bound on the effective rate).
     pub floor: Option<f64>,
 }
 
@@ -231,13 +241,21 @@ impl Coupon for CapFlooredCoupon {
 /// Amount = nominal * rate * accrual_period * (days_in_range / total_days).
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct RangeAccrualCoupon {
+    /// Payment date.
     pub payment_date: Date,
+    /// Notional amount.
     pub nominal: f64,
+    /// Start of accrual period.
     pub accrual_start: Date,
+    /// End of accrual period.
     pub accrual_end: Date,
+    /// Day counter for year-fraction computation.
     pub day_counter: DayCounter,
+    /// Fixed coupon rate (before range-accrual scaling).
     pub fixed_rate: f64,
+    /// Lower barrier of the accrual range.
     pub lower_barrier: f64,
+    /// Upper barrier of the accrual range.
     pub upper_barrier: f64,
     /// Observed rates for each observation day.
     pub observed_rates: Vec<f64>,
@@ -341,15 +359,23 @@ pub enum SubPeriodType {
 /// A coupon composed of multiple sub-period fixings.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SubPeriodCoupon {
+    /// Payment date.
     pub payment_date: Date,
+    /// Notional amount.
     pub nominal: f64,
+    /// Start of accrual period.
     pub accrual_start: Date,
+    /// End of accrual period.
     pub accrual_end: Date,
+    /// Day counter for year-fraction computation.
     pub day_counter: DayCounter,
+    /// Additive spread over the compounded/averaged rate.
     pub spread: f64,
-    /// Sub-period rates and year fractions.
+    /// Sub-period fixing rates.
     pub sub_rates: Vec<f64>,
+    /// Year fractions for each sub-period.
     pub sub_year_fractions: Vec<f64>,
+    /// Compounding or averaging rule for combining sub-periods.
     pub sub_period_type: SubPeriodType,
 }
 

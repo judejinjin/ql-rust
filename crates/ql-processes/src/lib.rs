@@ -1,6 +1,21 @@
 //! # ql-processes
 //!
-//! Stochastic process traits and implementations: Black-Scholes, Heston, Hull-White, etc.
+//! Stochastic process traits and implementations for derivative pricing.
+//!
+//! ## Overview
+//!
+//! | Process | SDE | Use Case |
+//! |---|---|---|
+//! | [`GeneralizedBlackScholesProcess`] | dS = (r−q)S dt + σS dW | Equity options |
+//! | [`HestonProcess`] | dS/S = (r−q) dt + √v dW₁, dv = κ(θ−v) dt + σ√v dW₂ | Stochastic vol |
+//! | [`BatesProcess`] | Heston + Merton jumps | Vol smiles + jumps |
+//! | [`HullWhiteProcess`] | dr = (θ(t)−a·r) dt + σ dW | Interest rates |
+//! | [`CoxIngersollRossProcess`] | dr = κ(θ−r) dt + σ√r dW | Non-negative rates |
+//!
+//! ## Traits
+//!
+//! - [`StochasticProcess`] — multi-dimensional process interface
+//! - [`StochasticProcess1D`] — single-factor convenience trait
 
 pub mod process;
 pub mod black_scholes_process;

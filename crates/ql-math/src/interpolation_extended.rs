@@ -234,7 +234,7 @@ fn catmull_rom(t: f64, p0: f64, p1: f64, p2: f64, p3: f64) -> f64 {
         + (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t3)
 }
 
-/// Find the interval index i such that xs[i] <= x < xs[i+1].
+/// Find the interval index i such that `xs[i] <= x < xs[i+1]`.
 fn find_interval(xs: &[f64], x: f64) -> usize {
     let n = xs.len();
     if n <= 1 {

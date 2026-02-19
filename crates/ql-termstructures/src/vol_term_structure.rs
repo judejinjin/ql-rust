@@ -97,7 +97,7 @@ pub struct BlackVarianceSurface {
     day_counter: DayCounter,
     strikes: Vec<f64>,
     expiries: Vec<f64>, // in year fractions
-    /// Variance grid: variances[i][j] = vol[i][j]² × expiries[i]
+    /// Variance grid: `variances[i][j] = vol[i][j]² × expiries[i]`
     variances: Vec<Vec<f64>>,
 }
 

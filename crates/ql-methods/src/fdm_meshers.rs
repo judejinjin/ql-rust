@@ -13,9 +13,9 @@
 pub struct Mesher1d {
     /// Grid locations (sorted).
     pub locations: Vec<f64>,
-    /// Grid spacings: dplus[i] = locations[i+1] − locations[i].
+    /// Grid spacings: `dplus[i] = locations[i+1] − locations[i]`.
     pub dplus: Vec<f64>,
-    /// Grid spacings: dminus[i] = locations[i] − locations[i−1].
+    /// Grid spacings: `dminus[i] = locations[i] − locations[i−1]`.
     pub dminus: Vec<f64>,
 }
 

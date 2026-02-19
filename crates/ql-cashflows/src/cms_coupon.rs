@@ -14,14 +14,23 @@ use crate::coupon::Coupon;
 /// The swap rate is the par swap rate for a given tenor at the fixing date.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CmsCoupon {
+    /// Payment date.
     pub payment_date: Date,
+    /// Notional amount.
     pub nominal: f64,
+    /// Date on which the swap rate is observed.
     pub fixing_date: Date,
+    /// Start of accrual period.
     pub accrual_start: Date,
+    /// End of accrual period.
     pub accrual_end: Date,
+    /// Day counter for year-fraction computation.
     pub day_counter: DayCounter,
+    /// Tenor (in years) of the reference swap rate.
     pub swap_tenor_years: f64,
+    /// Additive spread over the swap rate.
     pub spread: f64,
+    /// Multiplicative gearing factor applied to the swap rate.
     pub gearing: f64,
     /// The projected or fixed swap rate (set by pricer).
     pub rate_estimate: f64,

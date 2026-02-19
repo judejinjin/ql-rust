@@ -1,11 +1,41 @@
 //! # ql-rust
 //!
-//! Convenience facade crate that re-exports the most commonly used types
-//! from the QuantLib-Rust library. Import this single crate to get started:
+//! **QuantLib-Rust** — a comprehensive quantitative finance library for Rust,
+//! faithfully reimplementing QuantLib's instrument/engine/term-structure model
+//! with idiomatic Rust patterns.
 //!
-//! ```rust
+//! This facade crate re-exports the most commonly used types from the 14
+//! underlying `ql-*` crates. Import this single crate to get started:
+//!
+//! ```rust,no_run
 //! use ql_rust::*;
 //! ```
+//!
+//! ## Feature Flags
+//!
+//! | Flag | Default | Effect |
+//! |---|---|---|
+//! | `parallel` | off | Enable `rayon` parallelism in Monte Carlo / FD methods |
+//! | `redb` | off | Enable embedded `redb` persistence backend |
+//!
+//! ## Crate Map
+//!
+//! | Crate | Purpose |
+//! |---|---|
+//! | `ql-core` | Error types, type aliases, observer pattern, handles |
+//! | `ql-time` | Dates, calendars, day counters, schedules |
+//! | `ql-math` | Interpolation, root-finding, optimization, distributions |
+//! | `ql-currencies` | ISO 4217 currencies, money, exchange rates |
+//! | `ql-indexes` | IBOR/overnight indexes, interest rate conventions |
+//! | `ql-termstructures` | Yield curves, vol surfaces, credit/inflation curves |
+//! | `ql-cashflows` | Coupons, legs, cash-flow analytics |
+//! | `ql-instruments` | Options, swaps, bonds, exotic derivatives |
+//! | `ql-processes` | Stochastic processes (GBM, Heston, Hull-White, …) |
+//! | `ql-models` | Calibrated models (Heston, HW, Bates, LMM, …) |
+//! | `ql-methods` | MC simulation, FD solvers, lattice methods |
+//! | `ql-pricingengines` | Analytic, MC, FD, and tree pricing engines |
+//! | `ql-persistence` | Trade storage, lifecycle events, market snapshots |
+//! | `ql-cli` | Command-line interface for pricing and curve ops |
 
 // Core types and errors
 pub use ql_core::{QLError, QLResult};

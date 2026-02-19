@@ -2,6 +2,34 @@
 //!
 //! Term structure traits and implementations: yield curves, volatility surfaces,
 //! default probability curves, inflation curves, and bootstrapping framework.
+//!
+//! ## Overview
+//!
+//! ### Yield Curves
+//! - [`FlatForward`] — constant forward rate
+//! - [`DiscountCurve`], [`ZeroCurve`] — interpolated from market data
+//! - [`PiecewiseYieldCurve`] — bootstrapped from rate helpers
+//! - [`NelsonSiegelFitting`], [`SvenssonFitting`] — parametric curve fitting
+//!
+//! ### Volatility Surfaces
+//! - [`BlackConstantVol`], [`BlackVarianceSurface`] — Black vol term structures
+//! - [`SabrSmileSection`], [`SviSmileSection`], [`ZabrSmileSection`] — smile models
+//!
+//! ### Credit & Inflation
+//! - [`FlatHazardRate`], [`PiecewiseDefaultCurve`] — default probability curves
+//! - [`FlatZeroInflationCurve`], [`PiecewiseZeroInflationCurve`] — inflation curves
+//!
+//! ## Quick Start
+//!
+//! ```rust
+//! use ql_termstructures::{FlatForward, YieldTermStructure};
+//! use ql_time::{Date, Month, DayCounter};
+//!
+//! let today = Date::from_ymd(2025, Month::January, 15);
+//! let curve = FlatForward::new(today, 0.05, DayCounter::Actual365Fixed);
+//! let df = curve.discount(today + 365);
+//! assert!((df - (-0.05_f64).exp()).abs() < 0.01);
+//! ```
 
 pub mod term_structure;
 pub mod yield_term_structure;

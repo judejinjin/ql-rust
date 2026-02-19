@@ -7,7 +7,7 @@
 //!   dW₁ dW₂ = ρ dt
 //!
 //! where N is a Poisson process with intensity λ, and log(1+J) ~ N(ν, δ²).
-//! The drift compensator k̄ = E[J] = exp(ν + δ²/2) − 1 ensures the
+//! The drift compensator k̄ = `E[J]` = exp(ν + δ²/2) − 1 ensures the
 //! risk-neutral drift is (r − q).
 
 use nalgebra::{DMatrix, DVector};

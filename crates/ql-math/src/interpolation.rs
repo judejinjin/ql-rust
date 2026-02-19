@@ -94,7 +94,7 @@ fn validate_data(xs: &[f64], ys: &[f64]) -> QLResult<()> {
 pub struct LinearInterpolation {
     xs: Vec<f64>,
     ys: Vec<f64>,
-    /// Precomputed slopes: s[i] = (y[i+1]-y[i]) / (x[i+1]-x[i])
+    /// Precomputed slopes: `s[i] = (y[i+1]-y[i]) / (x[i+1]-x[i])`
     slopes: Vec<f64>,
 }
 
@@ -243,7 +243,7 @@ impl Interpolation for LogLinearInterpolation {
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct CubicSplineInterpolation {
     xs: Vec<f64>,
-    /// Spline coefficients: y(x) = a[i] + b[i]*(x-x[i]) + c[i]*(x-x[i])^2 + d[i]*(x-x[i])^3
+    /// Spline coefficients: `y(x) = a[i] + b[i]*(x-x[i]) + c[i]*(x-x[i])^2 + d[i]*(x-x[i])^3`
     a: Vec<f64>,
     b: Vec<f64>,
     c: Vec<f64>,

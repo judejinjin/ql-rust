@@ -256,7 +256,7 @@ impl BrownianBridge {
         }
     }
 
-    /// Transform uniform [0,1] quasi-random input into a Brownian path.
+    /// Transform uniform \[0,1\] quasi-random input into a Brownian path.
     ///
     /// `uniforms` should have length `n_steps`. Returns Brownian increments.
     pub fn transform(&self, uniforms: &[f64]) -> Vec<f64> {

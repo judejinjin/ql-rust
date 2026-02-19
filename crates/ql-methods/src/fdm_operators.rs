@@ -12,7 +12,7 @@
 /// Tridiagonal linear operator for 1D PDEs.
 ///
 /// Represents L·u where L is a tridiagonal matrix with
-/// bands lower[i], diag[i], upper[i].
+/// bands `lower[i]`, `diag[i]`, `upper[i]`.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TripleBandOp {
     pub n: usize,
@@ -263,7 +263,7 @@ pub fn build_heston_ops(
 /// Splitting: V^(n+1) = V^n + dt [L_x V^n + L_v V^n + L_cross V^n]
 /// with implicit x-sweep then implicit v-sweep.
 ///
-/// `values` is stored in row-major order: values[i * nv + j] for x[i], v[j].
+/// `values` is stored in row-major order: `values[i * nv + j]` for `x[i]`, `v[j]`.
 pub fn douglas_adi_step(
     ops: &Heston2dOps,
     values: &mut [f64],

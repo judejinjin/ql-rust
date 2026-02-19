@@ -1,6 +1,34 @@
 //! # ql-pricingengines
 //!
-//! Pricing engine trait and implementations: analytic, Monte Carlo, finite difference, lattice.
+//! Pricing engine implementations: analytic, Monte Carlo, finite difference,
+//! and lattice engines for the full range of financial instruments.
+//!
+//! ## Overview
+//!
+//! ### Equity / FX Options
+//! - [`analytic_european`] — Black-Scholes closed-form with full Greeks
+//! - [`american_engines`] — Barone-Adesi-Whaley, Bjerksund-Stensland, QD+
+//! - [`analytic_heston`] — Heston (1993) semi-analytic pricing
+//! - [`analytic_bates`] — Bates model (Heston + jumps)
+//! - [`merton_jump_diffusion()`] — Merton (1976) jump-diffusion
+//! - [`longstaff_schwartz`] — LSM Monte Carlo for American options
+//! - [`multi_asset`] — basket options, spread options, exchange options
+//! - [`lookback_engine`] — analytic lookback options
+//! - [`compound_engine`] — analytic compound options
+//! - [`variance_swap_engine`] — variance/volatility swap pricing
+//!
+//! ### Interest Rate Derivatives
+//! - [`discounting`] — swap and bond discounting engines
+//! - [`swaption_engines`] — Black and Bachelier swaption engines
+//! - [`cap_floor_engines`] — cap/floor pricing (Black, Bachelier)
+//! - [`hw_analytic`] — Hull-White analytic bond options, caplets, swaptions
+//! - [`tree_swaption()`] — tree/FD/MC engines for HW swaptions
+//!
+//! ### Credit
+//! - [`cds_engine`] — midpoint CDS engine
+//! - [`callable_bond_engine`] — callable bond pricing
+//! - [`convertible_bond_engine`] — convertible bond pricing
+//! - [`credit_models`] — Gaussian copula, nth-to-default, CDS options
 
 pub mod american_engines;
 pub mod analytic_european;
