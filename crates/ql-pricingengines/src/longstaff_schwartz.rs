@@ -27,7 +27,7 @@ use ql_instruments::OptionType;
 use ql_methods::MCResult;
 
 /// Basis function system for Longstaff-Schwartz regression.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub enum LSMBasis {
     /// Simple monomials: 1, x, x², ..., x^degree.
     Monomial,

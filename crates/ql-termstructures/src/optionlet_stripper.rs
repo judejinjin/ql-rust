@@ -11,7 +11,7 @@
 //! Reference: Brigo & Mercurio, "Interest Rate Models — Theory and Practice," Ch. 6.
 
 /// Result of optionlet stripping.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct StrippedOptionletVolatilities {
     /// Caplet maturities (in years from today).
     pub maturities: Vec<f64>,

@@ -16,7 +16,7 @@ use crate::heston_process::HestonProcess;
 use crate::process::StochasticProcess;
 
 /// Bates process parameters (Heston + jumps).
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct BatesProcess {
     /// The underlying Heston process.
     pub heston: HestonProcess,

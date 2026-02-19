@@ -24,7 +24,7 @@
 use ql_math::distributions::NormalDistribution;
 
 /// Results from the Merton jump-diffusion engine.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct MertonJDResult {
     /// Net present value.
     pub npv: f64,

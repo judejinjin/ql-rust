@@ -59,7 +59,7 @@ pub fn svi_volatility(
 ///
 /// Stores the SVI raw parameters and provides volatility/variance
 /// queries at arbitrary strikes.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SviSmileSection {
     pub forward: f64,
     pub expiry: f64,

@@ -8,7 +8,7 @@ use crate::money::Money;
 /// An exchange rate between two currencies.
 ///
 /// Represents `1 source = rate × target`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct ExchangeRate {
     /// The source (base) currency.
     pub source: Currency,

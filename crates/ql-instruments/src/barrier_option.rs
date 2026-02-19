@@ -35,7 +35,7 @@ impl BarrierType {
 }
 
 /// A barrier option.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BarrierOption {
     /// The barrier type.
     pub barrier_type: BarrierType,

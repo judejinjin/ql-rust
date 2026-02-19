@@ -11,7 +11,7 @@
 #![allow(clippy::too_many_arguments)]
 
 /// Result from a tree-based pricing engine.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TreeResult {
     pub npv: f64,
 }
@@ -380,7 +380,7 @@ pub fn tree_cap_floor(
 // =========================================================================
 
 /// Result from an FD-based pricing engine.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct FdResult {
     pub npv: f64,
 }
@@ -536,7 +536,7 @@ pub fn fd_hw_swaption(
 // =========================================================================
 
 /// Result from MC Hull-White cap/floor pricing.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct McHwResult {
     pub npv: f64,
     pub std_error: f64,

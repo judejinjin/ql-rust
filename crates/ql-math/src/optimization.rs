@@ -11,7 +11,7 @@ use ql_core::errors::{QLError, QLResult};
 // ---------------------------------------------------------------------------
 
 /// Convergence criteria for optimizers.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct EndCriteria {
     pub max_iterations: usize,
     pub max_stationary_iterations: usize,
@@ -33,7 +33,7 @@ impl Default for EndCriteria {
 }
 
 /// Result of an optimization.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct OptimizationResult {
     /// The optimal parameter vector.
     pub parameters: Vec<f64>,
@@ -67,7 +67,7 @@ pub trait LeastSquaresCostFunction: CostFunction {
 // ===========================================================================
 
 /// Nelder-Mead simplex optimizer (derivative-free).
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Simplex {
     /// Initial simplex size.
     pub lambda: f64,
@@ -240,7 +240,7 @@ impl Simplex {
 // ===========================================================================
 
 /// Levenberg-Marquardt optimizer for least-squares problems.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct LevenbergMarquardt {
     /// Initial damping parameter.
     pub initial_lambda: f64,

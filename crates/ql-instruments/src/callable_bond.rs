@@ -4,11 +4,13 @@
 //! at specified call dates and prices. A puttable bond gives the holder
 //! the right to sell back at specified put dates.
 
+use serde::{Deserialize, Serialize};
+
 use ql_cashflows::{fixed_leg, add_notional_exchange, Leg};
 use ql_time::{Date, DayCounter, Schedule};
 
 /// Whether the embedded option is a call (issuer's right) or put (holder's right).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CallabilityType {
     /// Issuer can redeem early (lowers bond value vs. non-callable).
     Call,
@@ -18,7 +20,7 @@ pub enum CallabilityType {
 
 /// A single call/put schedule entry: the date on which the option can be
 /// exercised and the price at which the bond is redeemed.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CallabilityScheduleEntry {
     /// Date on which the option is exercisable.
     pub date: Date,

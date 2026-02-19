@@ -5,6 +5,7 @@ use std::sync::{OnceLock, RwLock};
 
 use ql_core::errors::QLResult;
 use ql_time::Date;
+use serde::{Deserialize, Serialize};
 
 // ---------------------------------------------------------------------------
 // Index Trait
@@ -109,7 +110,7 @@ impl IndexManager {
 // ---------------------------------------------------------------------------
 
 /// A time series of (Date, f64) values. Used for storing fixings.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TimeSeries {
     data: Vec<(Date, f64)>,
 }

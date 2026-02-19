@@ -1,7 +1,7 @@
 //! Statistics accumulators: general, incremental (online), risk metrics.
 
 /// General statistics accumulator — collects all samples then computes.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct GeneralStatistics {
     samples: Vec<f64>,
     sorted: bool,
@@ -141,7 +141,7 @@ impl Default for GeneralStatistics {
 /// Incremental (online/streaming) statistics — Welford's algorithm.
 ///
 /// Computes mean, variance, skewness, kurtosis in a single pass.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct IncrementalStatistics {
     n: usize,
     mean: f64,
@@ -245,7 +245,7 @@ impl Default for IncrementalStatistics {
 }
 
 /// Risk statistics — VaR, CVaR (Expected Shortfall), shortfall probability.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct RiskStatistics {
     inner: GeneralStatistics,
 }
@@ -338,7 +338,7 @@ impl Default for RiskStatistics {
 }
 
 /// Convergence tracker — records running mean/stderr for MC convergence checks.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ConvergenceStatistics {
     pub sample_sizes: Vec<usize>,
     pub means: Vec<f64>,

@@ -8,7 +8,7 @@ use ql_math::distributions::NormalDistribution;
 use tracing::info_span;
 
 /// Results from the analytic European engine.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct AnalyticEuropeanResults {
     /// Net present value.
     pub npv: f64,

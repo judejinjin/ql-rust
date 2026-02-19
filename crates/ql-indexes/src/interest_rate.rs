@@ -18,7 +18,7 @@ pub enum Compounding {
 }
 
 /// An interest rate with its associated conventions.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InterestRate {
     /// The rate value (e.g. 0.05 for 5%).
     pub rate: f64,

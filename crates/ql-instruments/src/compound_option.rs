@@ -3,10 +3,12 @@
 //! A compound option is an option whose underlying is itself an option.
 //! Types: call-on-call, call-on-put, put-on-call, put-on-put.
 
+use serde::{Deserialize, Serialize};
+
 use crate::payoff::OptionType;
 
 /// A compound option (option on an option).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompoundOption {
     /// Type of the outer (mother) option.
     pub mother_type: OptionType,

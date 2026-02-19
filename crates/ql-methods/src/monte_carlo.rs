@@ -10,7 +10,7 @@ use rand_distr::{Distribution, StandardNormal};
 use ql_processes::StochasticProcess1D;
 
 /// A single simulated path (time grid + spot values).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Path {
     /// Time points: `[0, dt, 2*dt, ..., T]`.
     pub times: Vec<f64>,
@@ -102,7 +102,7 @@ impl<P: StochasticProcess1D> PathGenerator<P> {
 }
 
 /// Multi-dimensional path for correlated processes.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MultiPath {
     /// Time points.
     pub times: Vec<f64>,

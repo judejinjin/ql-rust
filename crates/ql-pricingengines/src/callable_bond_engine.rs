@@ -8,7 +8,7 @@ use ql_instruments::callable_bond::{CallabilityType, CallableBond};
 use ql_time::Date;
 
 /// Result from the callable bond engine.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CallableBondResult {
     /// Net present value of the callable bond.
     pub npv: f64,

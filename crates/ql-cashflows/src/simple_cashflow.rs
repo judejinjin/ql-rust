@@ -7,7 +7,7 @@ use ql_time::Date;
 use crate::cashflow::CashFlow;
 
 /// A simple cash flow: a known amount paid on a known date.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SimpleCashFlow {
     /// Payment date.
     pub date: Date,

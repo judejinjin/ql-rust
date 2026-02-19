@@ -90,7 +90,7 @@ fn validate_data(xs: &[f64], ys: &[f64]) -> QLResult<()> {
 // ===========================================================================
 
 /// Piecewise linear interpolation.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct LinearInterpolation {
     xs: Vec<f64>,
     ys: Vec<f64>,
@@ -153,7 +153,7 @@ impl Interpolation for LinearInterpolation {
 ///
 /// Interpolates `ln(y)` linearly, so `y(x) = exp(linear_interp(x))`.
 /// All `y` values must be strictly positive.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct LogLinearInterpolation {
     xs: Vec<f64>,
     log_ys: Vec<f64>,
@@ -240,7 +240,7 @@ impl Interpolation for LogLinearInterpolation {
 // ===========================================================================
 
 /// Natural cubic spline interpolation (second derivative = 0 at endpoints).
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct CubicSplineInterpolation {
     xs: Vec<f64>,
     /// Spline coefficients: y(x) = a[i] + b[i]*(x-x[i]) + c[i]*(x-x[i])^2 + d[i]*(x-x[i])^3

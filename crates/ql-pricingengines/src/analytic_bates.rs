@@ -218,7 +218,7 @@ fn bates_cf(
 // ---------------------------------------------------------------------------
 
 /// Results from the Bates analytic engine.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct BatesResult {
     /// Net present value of the option.
     pub npv: f64,

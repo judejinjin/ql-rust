@@ -15,7 +15,7 @@ use ql_math::distributions::NormalDistribution;
 ///   p(t|Z) = Φ((Φ⁻¹(p(t)) − √ρ Z) / √(1−ρ))
 ///
 /// The LHP model assumes all names are identical.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct GaussianCopulaLHP {
     /// Number of names in the portfolio.
     pub n_names: usize,
@@ -168,7 +168,7 @@ pub fn nth_to_default_mc(
 }
 
 /// Result of n-th to default MC.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct NtdResult {
     pub price: f64,
     pub std_error: f64,

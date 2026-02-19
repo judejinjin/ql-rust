@@ -9,7 +9,7 @@ use crate::date::Date;
 use crate::period::{Frequency, Period, TimeUnit};
 
 /// Date-generation rule.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum DateGenerationRule {
     /// Date sequence goes forward from the effective date.
     Forward,
@@ -22,7 +22,7 @@ pub enum DateGenerationRule {
 }
 
 /// An ordered schedule of dates.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[allow(dead_code)]
 pub struct Schedule {
     dates: Vec<Date>,

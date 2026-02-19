@@ -12,7 +12,7 @@ use crate::coupon::Coupon;
 /// A CMS coupon pays `nominal * (swap_rate + spread) * accrual_period`.
 ///
 /// The swap rate is the par swap rate for a given tenor at the fixing date.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CmsCoupon {
     pub payment_date: Date,
     pub nominal: f64,

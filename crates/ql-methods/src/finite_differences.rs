@@ -6,7 +6,7 @@
 use tracing::{info, info_span};
 
 /// Result from a finite difference calculation.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct FDResult {
     /// Net present value.
     pub npv: f64,

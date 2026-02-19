@@ -13,7 +13,7 @@
 ///
 /// Represents L·u where L is a tridiagonal matrix with
 /// bands lower[i], diag[i], upper[i].
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TripleBandOp {
     pub n: usize,
     pub lower: Vec<f64>,
@@ -179,7 +179,7 @@ pub fn implicit_step(op: &TripleBandOp, v: &[f64], dt: f64) -> Vec<f64> {
 ///   ∂V/∂t + (r − q − v/2) ∂V/∂x + v/2 ∂²V/∂x²
 ///         + κ(θ−v) ∂V/∂v + σ²v/2 ∂²V/∂v²
 ///         + ρσv ∂²V/∂x∂v − rV = 0
-#[derive(Debug)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct Heston2dOps {
     /// Operator in x-direction (for each v slice).
     pub x_ops: Vec<TripleBandOp>,
@@ -340,7 +340,7 @@ pub fn apply_american_condition(values: &mut [f64], payoff: &[f64]) {
 // ─────────────────────────────────────────────────────────────
 
 /// Result of a 1D FD solve.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Fd1dResult {
     /// Grid locations.
     pub grid: Vec<f64>,
@@ -466,7 +466,7 @@ pub fn fd_1d_bs_solve(
 // ─────────────────────────────────────────────────────────────
 
 /// Result of 2D Heston FD solve.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct HestonFdResult {
     /// Option price.
     pub price: f64,

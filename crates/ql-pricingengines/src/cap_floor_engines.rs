@@ -7,7 +7,7 @@ use ql_instruments::cap_floor::CapFloor;
 use ql_math::distributions::NormalDistribution;
 
 /// Result from a cap/floor pricing engine.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CapFloorResult {
     /// Net present value.
     pub npv: f64,

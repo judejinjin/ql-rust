@@ -14,7 +14,7 @@ use nalgebra::{DMatrix, DVector};
 use crate::process::StochasticProcess;
 
 /// Parameters for the Heston process.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct HestonProcess {
     /// Initial spot price.
     pub s0: f64,

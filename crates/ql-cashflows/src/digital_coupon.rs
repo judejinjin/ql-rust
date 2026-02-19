@@ -19,7 +19,7 @@ use crate::coupon::Coupon;
 
 /// Digital (binary) coupon: pays a fixed cash rebate if the reference rate
 /// is above (call) or below (put) the strike.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DigitalCoupon {
     pub payment_date: Date,
     pub nominal: f64,
@@ -126,7 +126,7 @@ impl Coupon for DigitalCoupon {
 /// A floating-rate coupon with an optional cap and/or floor.
 ///
 /// Effective rate = max(floor, min(cap, gearing * reference_rate + spread)).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CapFlooredCoupon {
     pub payment_date: Date,
     pub nominal: f64,
@@ -229,7 +229,7 @@ impl Coupon for CapFlooredCoupon {
 /// of observation days where the reference rate lies within [lower, upper].
 ///
 /// Amount = nominal * rate * accrual_period * (days_in_range / total_days).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct RangeAccrualCoupon {
     pub payment_date: Date,
     pub nominal: f64,
@@ -330,7 +330,7 @@ impl Coupon for RangeAccrualCoupon {
 /// Sub-period coupon: a coupon with multiple sub-period fixings.
 ///
 /// The sub-period rates can be compounded or averaged.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum SubPeriodType {
     /// Compound: (1+r₁τ₁)(1+r₂τ₂)…−1
     Compounding,
@@ -339,7 +339,7 @@ pub enum SubPeriodType {
 }
 
 /// A coupon composed of multiple sub-period fixings.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SubPeriodCoupon {
     pub payment_date: Date,
     pub nominal: f64,

@@ -16,7 +16,7 @@ use rand::{Rng, SeedableRng};
 use rand_distr::StandardNormal;
 
 /// Configuration for an LMM simulation.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct LmmConfig {
     /// Number of forward rates.
     pub n_rates: usize,
@@ -104,7 +104,7 @@ impl LmmConfig {
 }
 
 /// State of forward rates at a given time.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct LmmCurveState {
     /// Current forward rates.
     pub forwards: Vec<f64>,
@@ -192,7 +192,7 @@ fn evolve_one_step(
 }
 
 /// Result of an LMM Monte Carlo simulation.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct LmmResult {
     /// Expected price.
     pub price: f64,

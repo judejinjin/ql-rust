@@ -22,7 +22,7 @@ pub trait Integrator {
 // ===========================================================================
 
 /// Composite Simpson's 1/3 rule.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct SimpsonIntegral {
     /// Number of intervals (must be even; will be rounded up).
     pub intervals: usize,
@@ -72,7 +72,7 @@ impl Integrator for SimpsonIntegral {
 /// Adaptive Gauss-Lobatto quadrature.
 ///
 /// Uses a 4-point Lobatto rule with adaptive subdivision for accuracy.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct GaussLobattoIntegral {
     pub max_evaluations: usize,
     pub absolute_accuracy: f64,
@@ -155,7 +155,7 @@ fn lobatto_adaptive<F: Fn(f64) -> f64>(
 // ===========================================================================
 
 /// Gauss-Legendre quadrature with precomputed nodes and weights.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct GaussLegendreIntegral {
     /// Nodes on [-1, 1].
     nodes: Vec<f64>,

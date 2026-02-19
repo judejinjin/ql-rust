@@ -23,7 +23,7 @@ use crate::bootstrap::RateHelper;
 /// The implied OIS rate from a discount curve is:
 /// $$r_{\text{OIS}} = \frac{df_{\text{start}} / df_{\text{end}} - 1}{\tau}$$
 /// where τ is the year fraction for the swap.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct OISRateHelper {
     /// Quoted OIS rate.
     rate: f64,
@@ -119,7 +119,7 @@ impl RateHelper for OISRateHelper {
 ///
 /// We solve for the yield that reproduces the market price, then convert
 /// to an implied par rate.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct BondHelper {
     /// Clean price of the bond.
     clean_price: f64,
@@ -216,7 +216,7 @@ impl RateHelper for BondHelper {
 /// Futures contracts (e.g. 3-month SOFR futures, Eurodollar futures) quote
 /// a price of `100 - rate`. The implied forward rate for the contract period
 /// is derived from discount factors.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct FuturesRateHelper {
     /// Futures price (e.g. 95.50 implies a rate of 4.50%).
     price: f64,
@@ -298,7 +298,7 @@ impl RateHelper for FuturesRateHelper {
 /// An FRA settles based on the difference between the contracted rate and
 /// the realised fixing rate. For bootstrap purposes, the implied rate is
 /// a simple forward rate between start and end dates.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct FRAHelper {
     /// Quoted FRA rate.
     rate: f64,

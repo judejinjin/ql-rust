@@ -24,7 +24,7 @@ use crate::yield_term_structure::YieldTermStructure;
 /// ```
 ///
 /// Parameters: `[β₀, β₁, β₂, τ]` where τ > 0.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct NelsonSiegelFitting {
     /// Parameters [β₀, β₁, β₂, τ]
     pub params: [f64; 4],
@@ -236,7 +236,7 @@ impl NelsonSiegelFitting {
 ///
 /// The extra hump term (β₃, τ₂) gives additional flexibility for fitting
 /// medium-term humps in the yield curve.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SvenssonFitting {
     /// Parameters [β₀, β₁, β₂, β₃, τ₁, τ₂]
     pub params: [f64; 6],
@@ -433,7 +433,7 @@ impl SvenssonFitting {
 ///
 /// Wraps either a `NelsonSiegelFitting` or `SvenssonFitting` as a
 /// `YieldTermStructure`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct FittedBondDiscountCurve {
     reference_date: Date,
     day_counter: DayCounter,
@@ -443,7 +443,7 @@ pub struct FittedBondDiscountCurve {
 }
 
 /// The parametric fitting method.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum FittingMethod {
     /// Nelson-Siegel 4-parameter model.
     NelsonSiegel(NelsonSiegelFitting),

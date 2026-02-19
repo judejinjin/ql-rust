@@ -27,7 +27,7 @@ pub trait FloatingRateCouponPricer: Send + Sync + std::fmt::Debug {
 ///
 /// For vanilla IBOR coupons, this just returns the forward rate without
 /// any convexity adjustment (appropriate for standard swap coupons).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct BlackIborCouponPricer;
 
 impl FloatingRateCouponPricer for BlackIborCouponPricer {

@@ -8,7 +8,7 @@ use ql_instruments::payoff::OptionType;
 use ql_math::distributions::NormalDistribution;
 
 /// Result from the lookback engine.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct LookbackResult {
     /// Net present value.
     pub npv: f64,

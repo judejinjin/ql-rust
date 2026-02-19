@@ -198,7 +198,7 @@ fn heston_cf(
 // ---------------------------------------------------------------------------
 
 /// Results from the Heston analytic engine.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct HestonResult {
     /// Net present value of the option.
     pub npv: f64,

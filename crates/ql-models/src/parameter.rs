@@ -20,7 +20,7 @@ pub trait Constraint: Send + Sync {
 }
 
 /// No constraint — any values are accepted.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct NoConstraint;
 
 impl Constraint for NoConstraint {
@@ -36,7 +36,7 @@ impl Constraint for NoConstraint {
 }
 
 /// All parameters must be strictly positive.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct PositiveConstraint;
 
 impl Constraint for PositiveConstraint {
@@ -52,7 +52,7 @@ impl Constraint for PositiveConstraint {
 }
 
 /// Each parameter must lie within [lo, hi].
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct BoundaryConstraint {
     /// Lower bounds.
     pub lo: Vec<f64>,

@@ -19,7 +19,7 @@ pub enum AveragingType {
 ///
 /// The payoff is max(omega * (A − K), 0) where A is the average
 /// of the underlying price over the monitoring dates.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AsianOption {
     /// Call or put.
     pub option_type: OptionType,

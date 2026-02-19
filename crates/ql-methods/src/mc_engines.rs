@@ -11,7 +11,7 @@ use tracing::{info, info_span};
 use ql_instruments::OptionType;
 
 /// Result of a Monte Carlo simulation.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MCResult {
     /// Net present value (discounted mean payoff).
     pub npv: f64,

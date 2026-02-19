@@ -6,7 +6,7 @@
 use tracing::info_span;
 
 /// Result from a lattice calculation.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct LatticeResult {
     /// Net present value.
     pub npv: f64,

@@ -8,10 +8,12 @@
 //! - **Fixed-strike lookback call**: payoff = max(S_max - K, 0)
 //! - **Fixed-strike lookback put**: payoff = max(K - S_min, 0)
 
+use serde::{Deserialize, Serialize};
+
 use crate::payoff::OptionType;
 
 /// The type of lookback option.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LookbackType {
     /// Floating strike: the strike is the realized min (call) or max (put).
     FloatingStrike,
@@ -20,7 +22,7 @@ pub enum LookbackType {
 }
 
 /// A lookback option.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LookbackOption {
     /// Call or put.
     pub option_type: OptionType,

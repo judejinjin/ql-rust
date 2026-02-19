@@ -54,7 +54,7 @@ pub trait DefaultProbabilityTermStructure: TermStructure {
 /// Constant hazard rate default probability curve.
 ///
 /// S(t) = exp(-λt), where λ is the constant hazard rate.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct FlatHazardRate {
     reference_date: Date,
     day_counter: DayCounter,
@@ -116,7 +116,7 @@ impl DefaultProbabilityTermStructure for FlatHazardRate {
 ///
 /// Bootstrapped from CDS spread quotes. Between knot points, the hazard rate
 /// is piecewise constant.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PiecewiseDefaultCurve {
     reference_date: Date,
     day_counter: DayCounter,

@@ -130,6 +130,7 @@ pub fn atm_rate(leg: &Leg, curve: &dyn YieldTermStructure, settle: Date) -> f64 
 ///
 /// Groups cash flows into time buckets (e.g. 0-1Y, 1-2Y, etc.)
 /// and returns the PV contribution of each bucket.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TimeBucket {
     pub start: f64,
     pub end: f64,

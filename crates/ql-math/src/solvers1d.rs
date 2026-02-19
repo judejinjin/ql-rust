@@ -32,7 +32,7 @@ pub trait Solver1D {
 /// Brent's method — combines bisection, secant, and inverse quadratic interpolation.
 ///
 /// This is the primary solver used in yield-curve bootstrapping.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct Brent;
 
 impl Solver1D for Brent {
@@ -145,7 +145,7 @@ impl Solver1D for Brent {
 /// The `f` closure should return the function value; the derivative is supplied
 /// via the `solve_with_derivative` method. For the `Solver1D` trait, a finite
 /// difference approximation is used.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct Newton;
 
 impl Newton {
@@ -214,7 +214,7 @@ impl Solver1D for Newton {
 // ===========================================================================
 
 /// Simple bisection solver — guaranteed convergence but slow.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct Bisection;
 
 impl Solver1D for Bisection {
@@ -270,7 +270,7 @@ impl Solver1D for Bisection {
 /// Secant method — derivative-free, superlinear convergence.
 ///
 /// Uses two initial evaluations and does not require a bracket.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct Secant;
 
 impl Solver1D for Secant {
@@ -330,7 +330,7 @@ impl Solver1D for Secant {
 // ===========================================================================
 
 /// Ridder's method — bracketing method with quadratic convergence.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct Ridder;
 
 impl Solver1D for Ridder {
@@ -426,7 +426,7 @@ impl Solver1D for Ridder {
 /// False position (regula falsi) method — bracketing with linear interpolation.
 ///
 /// Illinois variant for improved convergence.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct FalsePosition;
 
 impl Solver1D for FalsePosition {

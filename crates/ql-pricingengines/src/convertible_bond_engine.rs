@@ -8,7 +8,7 @@ use ql_instruments::convertible_bond::ConvertibleBond;
 use ql_time::Date;
 
 /// Result from the convertible bond engine.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ConvertibleBondResult {
     /// Net present value of the convertible bond.
     pub npv: f64,

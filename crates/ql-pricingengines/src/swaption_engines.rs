@@ -6,7 +6,7 @@ use ql_instruments::swaption::{Swaption, SwaptionType};
 use ql_math::distributions::NormalDistribution;
 
 /// Result from a swaption pricing engine.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SwaptionResult {
     /// Net present value.
     pub npv: f64,

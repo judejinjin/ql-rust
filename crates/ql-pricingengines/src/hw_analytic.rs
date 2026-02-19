@@ -13,7 +13,7 @@
 use ql_math::distributions::NormalDistribution;
 
 /// Result from an analytic Hull-White pricing.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct HWAnalyticResult {
     pub npv: f64,
 }

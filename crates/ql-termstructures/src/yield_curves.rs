@@ -19,7 +19,7 @@ use crate::yield_term_structure::YieldTermStructure;
 /// A flat forward rate — constant over all maturities.
 ///
 /// Useful as a testing workhorse and for simple discounting.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct FlatForward {
     reference_date: Date,
     rate: InterestRate,
@@ -92,7 +92,7 @@ impl YieldTermStructure for FlatForward {
 ///
 /// Uses log-linear interpolation on discount factors (linear in log-space),
 /// which is the most common convention for discount curves.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[allow(dead_code)]
 pub struct DiscountCurve {
     reference_date: Date,
@@ -182,7 +182,7 @@ impl YieldTermStructure for DiscountCurve {
 /// A yield curve defined by interpolated zero rates (continuous compounding).
 ///
 /// Uses linear interpolation on zero rates.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[allow(dead_code)]
 pub struct ZeroCurve {
     reference_date: Date,

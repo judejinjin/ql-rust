@@ -4,11 +4,13 @@
 //! (IBOR or overnight) leg. The swap's NPV is the difference between
 //! the two legs' present values.
 
+use serde::{Deserialize, Serialize};
+
 use ql_cashflows::Leg;
 use ql_time::{Date, DayCounter, Schedule};
 
 /// Type of swap (payer or receiver from the fixed-leg perspective).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SwapType {
     /// Pay fixed, receive floating.
     Payer,

@@ -115,7 +115,7 @@ fn sabr_atm_vol(
 ///
 /// Given calibrated SABR parameters and a forward, provides Black vols
 /// at any strike for the associated expiry.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SabrSmileSection {
     /// Forward price.
     pub forward: f64,

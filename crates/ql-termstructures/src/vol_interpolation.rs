@@ -9,7 +9,7 @@
 ///
 /// This is a strike-independent term structure suitable for
 /// ATM swaption or cap vol quotes.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct BlackVarianceCurve {
     /// Expiry dates (years).
     pub times: Vec<f64>,
@@ -97,7 +97,7 @@ impl BlackVarianceCurve {
 ///
 /// Each smile section provides σ(K) at a given expiry.
 /// Between expiries, variance is linearly interpolated.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SmileSectionSurface {
     /// Expiry times.
     pub expiries: Vec<f64>,

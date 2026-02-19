@@ -8,7 +8,7 @@
 ///
 /// The d-th dimension uses base = prime(d).
 /// Good for low dimensions (< 40); suffers from correlation in high dimensions.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct HaltonSequence {
     bases: Vec<u32>,
     index: u64,
@@ -71,7 +71,7 @@ fn radical_inverse(mut n: u64, base: u32) -> f64 {
 /// Simple direction-number-based Sobol sequence (up to 21 dimensions).
 ///
 /// Uses Joe-Kuo direction numbers for a basic implementation.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct SobolSequence {
     dimension: usize,
     count: u32,
@@ -149,7 +149,7 @@ fn trailing_zeros(n: u32) -> usize {
 ///
 /// Reorders time steps so that the most important (largest variance contribution)
 /// steps are assigned to the lowest-discrepancy quasi-random coordinates.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct BrownianBridge {
     /// Maps original time index → quasi-random coordinate index.
     pub order: Vec<usize>,

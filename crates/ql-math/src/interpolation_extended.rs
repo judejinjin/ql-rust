@@ -13,7 +13,7 @@ use ql_core::errors::{QLError, QLResult};
 
 /// Backward-flat step interpolation: value at x equals the value at the
 /// greatest knot ≤ x.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct BackwardFlatInterpolation {
     xs: Vec<f64>,
     ys: Vec<f64>,
@@ -50,7 +50,7 @@ impl BackwardFlatInterpolation {
 
 /// Forward-flat step interpolation: value at x equals the value at the
 /// smallest knot ≥ x.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ForwardFlatInterpolation {
     xs: Vec<f64>,
     ys: Vec<f64>,
@@ -88,7 +88,7 @@ impl ForwardFlatInterpolation {
 /// Bilinear interpolation on a rectangular grid.
 ///
 /// Grid values z\[i * ny + j\] correspond to (xs\[i\], ys\[j\]).
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct BilinearInterpolation {
     xs: Vec<f64>,
     ys: Vec<f64>,
@@ -159,7 +159,7 @@ impl BilinearInterpolation {
 /// Bicubic spline interpolation on a rectangular grid.
 ///
 /// Uses Catmull-Rom spline (a special case of Hermite interpolation).
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct BicubicSplineInterpolation {
     xs: Vec<f64>,
     ys: Vec<f64>,

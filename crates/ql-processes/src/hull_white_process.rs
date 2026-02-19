@@ -18,7 +18,7 @@ use crate::process::StochasticProcess1D;
 /// A mean-reverting Ornstein-Uhlenbeck process.
 ///
 /// dX = κ(θ − X) dt + σ dW
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct OrnsteinUhlenbeckProcess {
     /// Initial value X(0).
     pub x0: f64,
@@ -85,7 +85,7 @@ impl StochasticProcess1D for OrnsteinUhlenbeckProcess {
 ///
 /// In Phase 6 we use constant θ. The time-dependent θ(t) that fits
 /// an initial yield curve is implemented during calibration (Phase 8).
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct HullWhiteProcess {
     /// Initial short rate r(0).
     pub r0: f64,

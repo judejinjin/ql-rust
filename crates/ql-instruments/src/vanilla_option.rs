@@ -3,11 +3,13 @@
 //! A vanilla option is defined by a payoff (strike + call/put) and an
 //! exercise style (European/American/Bermudan).
 
+use serde::{Deserialize, Serialize};
+
 use crate::payoff::{Exercise, OptionType, Payoff};
 use ql_time::Date;
 
 /// A vanilla option (European, American, or Bermudan).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VanillaOption {
     /// The payoff specification.
     pub payoff: Payoff,

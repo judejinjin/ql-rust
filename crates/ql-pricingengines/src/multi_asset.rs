@@ -19,7 +19,7 @@ use rayon::prelude::*;
 // ===========================================================================
 
 /// Basket aggregation method.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
 pub enum BasketType {
     /// max(S₁, S₂, ..., Sₙ)
     MaxBasket,
@@ -34,7 +34,7 @@ pub enum BasketType {
 // ===========================================================================
 
 /// Results from a basket option simulation.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct BasketResult {
     /// Net present value.
     pub npv: f64,

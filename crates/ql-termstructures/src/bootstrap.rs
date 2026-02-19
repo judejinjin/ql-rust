@@ -44,7 +44,7 @@ pub trait RateHelper: Send + Sync {
 /// Helper for bootstrapping from money-market deposit rates.
 ///
 /// A deposit has a simple rate: `df = 1 / (1 + rate * yearfrac)`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DepositRateHelper {
     /// Quoted deposit rate.
     rate: f64,
@@ -100,7 +100,7 @@ impl RateHelper for DepositRateHelper {
 ///
 /// Assumes a fixed-for-floating swap where the fixed leg pays a known rate
 /// and we need to find discount factors such that the swap has zero NPV.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SwapRateHelper {
     /// Quoted par swap rate.
     rate: f64,
@@ -214,7 +214,7 @@ impl RateHelper for SwapRateHelper {
 /// For each helper (sorted by pillar date), the bootstrap uses the Brent
 /// solver to find the discount factor at the pillar date that makes the
 /// helper's implied quote match its market quote.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PiecewiseYieldCurve {
     reference_date: Date,
     day_counter: DayCounter,

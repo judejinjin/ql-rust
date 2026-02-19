@@ -8,7 +8,7 @@
 use ql_instruments::variance_swap::VarianceSwap;
 
 /// Result from the variance swap engine.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct VarianceSwapResult {
     /// Net present value.
     pub npv: f64,

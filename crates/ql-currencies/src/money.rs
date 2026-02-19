@@ -7,7 +7,7 @@ use ql_core::errors::{QLError, QLResult};
 use crate::currency::Currency;
 
 /// An amount of money in a specific currency.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct Money {
     /// The monetary amount.
     pub amount: f64,

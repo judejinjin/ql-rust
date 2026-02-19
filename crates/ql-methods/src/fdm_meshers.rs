@@ -9,7 +9,7 @@
 //! - `FdmMesherComposite`: tensor product of 1D meshers for N-dimensional grids
 
 /// A 1D grid mesher.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Mesher1d {
     /// Grid locations (sorted).
     pub locations: Vec<f64>,
@@ -176,7 +176,7 @@ pub fn heston_variance_mesher(
 }
 
 /// Composite N-dimensional mesher (tensor product of 1D meshers).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct FdmMesherComposite {
     /// 1D meshers for each dimension.
     pub meshers: Vec<Mesher1d>,

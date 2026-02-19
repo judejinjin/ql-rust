@@ -8,7 +8,7 @@ use crate::cashflow::CashFlow;
 use crate::coupon::Coupon;
 
 /// A fixed-rate interest coupon.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct FixedRateCoupon {
     /// Payment date.
     payment_date: Date,

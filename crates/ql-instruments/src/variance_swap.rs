@@ -7,8 +7,10 @@
 //!
 //! where K_var is the variance strike.
 
+use serde::{Deserialize, Serialize};
+
 /// A variance swap.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VarianceSwap {
     /// Notional in variance terms (vega notional / (2 × K_vol)).
     pub variance_notional: f64,

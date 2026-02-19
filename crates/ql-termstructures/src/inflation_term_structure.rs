@@ -29,7 +29,7 @@ pub trait ZeroInflationTermStructure: TermStructure {
 // =========================================================================
 
 /// Flat (constant) zero-coupon inflation rate.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct FlatZeroInflationCurve {
     reference_date: Date,
     day_counter: DayCounter,
@@ -85,7 +85,7 @@ impl ZeroInflationTermStructure for FlatZeroInflationCurve {
 // =========================================================================
 
 /// Piecewise-linear zero inflation curve bootstrapped from swap quotes.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PiecewiseZeroInflationCurve {
     reference_date: Date,
     day_counter: DayCounter,
@@ -161,7 +161,7 @@ impl ZeroInflationTermStructure for PiecewiseZeroInflationCurve {
 /// At maturity, the inflation leg pays: N × [CPI(T)/CPI(0) - 1]
 /// The fixed leg pays: N × [(1+K)^T - 1]
 /// where K is the fixed rate.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ZeroCouponInflationSwap {
     /// Notional.
     pub notional: f64,

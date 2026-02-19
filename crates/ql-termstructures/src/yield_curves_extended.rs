@@ -24,7 +24,7 @@ use crate::yield_term_structure::YieldTermStructure;
 ///
 /// The most common usage is an additive composite where the resulting
 /// zero rate is `z₁(t) + z₂(t)`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CompositeZeroYieldStructure {
     reference_date: Date,
     day_counter: DayCounter,
@@ -139,7 +139,7 @@ impl YieldTermStructure for CompositeZeroYieldStructure {
 /// $$\text{df}_{\text{impl}}(T) = \frac{\text{df}_{\text{base}}(T)}{\text{df}_{\text{base}}(T_1)}$$
 ///
 /// This is useful for forward-starting instruments.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[allow(dead_code)]
 pub struct ImpliedTermStructure {
     base_reference_date: Date,
@@ -236,7 +236,7 @@ impl YieldTermStructure for ImpliedTermStructure {
 /// The discount factor is computed as:
 /// $$\text{df}(t) = \exp\!\left(-\int_0^t f(s)\,ds\right)$$
 /// where the integral is computed by piecewise-linear trapezoidal rule.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ForwardCurve {
     reference_date: Date,
     day_counter: DayCounter,
@@ -368,7 +368,7 @@ impl YieldTermStructure for ForwardCurve {
 ///
 /// The discount curve is:
 /// $$P(t) = e^{-\text{ufr}\cdot t} + \sum_j \zeta_j \cdot W(t, u_j)$$
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct UltimateForwardTermStructure {
     reference_date: Date,
     day_counter: DayCounter,
@@ -554,7 +554,7 @@ impl YieldTermStructure for UltimateForwardTermStructure {
 // ===========================================================================
 
 /// A yield term structure that adds a constant zero-rate spread to a base curve.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SpreadedTermStructure {
     reference_date: Date,
     day_counter: DayCounter,

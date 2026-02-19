@@ -37,7 +37,7 @@ pub trait LocalVolTermStructure: TermStructure {
 use ql_time::{Calendar, Date, DayCounter};
 
 /// Flat (constant) Black volatility surface.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct BlackConstantVol {
     reference_date: Date,
     day_counter: DayCounter,
@@ -91,7 +91,7 @@ use ql_math::interpolation::{Interpolation, LinearInterpolation};
 ///
 /// Stores variances σ²·t at grid points and uses bilinear interpolation.
 /// Input `vols` is indexed as `vols[expiry_idx][strike_idx]`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct BlackVarianceSurface {
     reference_date: Date,
     day_counter: DayCounter,

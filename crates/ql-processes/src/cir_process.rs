@@ -13,7 +13,7 @@ use crate::process::StochasticProcess1D;
 /// CIR square-root process.
 ///
 /// dr = κ(θ − r) dt + σ √r dW
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct CoxIngersollRossProcess {
     /// Initial value r(0).
     pub r0: f64,

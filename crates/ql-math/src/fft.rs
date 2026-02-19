@@ -6,7 +6,7 @@
 use std::f64::consts::PI;
 
 /// Complex number (simple implementation to avoid extra dependency).
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Complex {
     pub re: f64,
     pub im: f64,
