@@ -5,6 +5,10 @@ edition = "2021"
 description = "Numerical pricing methods: Monte Carlo, finite differences, lattices"
 license = "MIT OR Apache-2.0"
 
+[features]
+default = ["parallel"]
+parallel = ["rayon"]
+
 [dependencies]
 ql-core = { workspace = true }
 ql-time = { workspace = true }
@@ -15,7 +19,7 @@ ql-instruments = { path = "../ql-instruments" }
 nalgebra = { workspace = true }
 rand = { workspace = true }
 rand_distr = { workspace = true }
-rayon = { workspace = true }
+rayon = { workspace = true, optional = true }
 serde = { workspace = true }
 tracing = { workspace = true }
 

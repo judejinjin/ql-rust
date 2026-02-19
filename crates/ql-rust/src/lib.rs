@@ -142,8 +142,10 @@ pub use ql_methods::{
 pub use ql_persistence::{
     Direction, EventType, InstrumentType, LifecycleEvent, MarketSnapshot, ObjectId,
     SnapshotType, Trade, TradeFilter, TradeStatus, VersionedObject,
-    EmbeddedStore, InMemoryStore, ObjectStore, Persistable,
+    InMemoryStore, ObjectStore, Persistable,
 };
+#[cfg(feature = "redb")]
+pub use ql_persistence::EmbeddedStore;
 
 // Re-export serde_json for convenience (instrument_data uses Value)
 pub use serde_json;

@@ -20,6 +20,11 @@ ql-methods = { workspace = true }
 ql-persistence = { workspace = true }
 serde_json = { workspace = true }
 
+[features]
+default = ["parallel", "redb"]
+parallel = ["ql-methods/parallel"]
+redb = ["ql-persistence/redb"]
+
 [dev-dependencies]
 approx = { workspace = true }
 tempfile = { workspace = true }

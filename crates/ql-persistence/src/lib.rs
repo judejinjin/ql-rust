@@ -30,6 +30,7 @@
 //! * [`EmbeddedStore`] — `redb`-backed, durable ACID storage with zero infrastructure.
 
 pub mod domain;
+#[cfg(feature = "redb")]
 pub mod embedded_store;
 pub mod memory_store;
 pub mod store;
@@ -38,6 +39,7 @@ pub use domain::{
     Direction, EventType, InstrumentType, LifecycleEvent, MarketSnapshot, ObjectId,
     SnapshotType, Trade, TradeFilter, TradeStatus, VersionedObject,
 };
+#[cfg(feature = "redb")]
 pub use embedded_store::EmbeddedStore;
 pub use memory_store::InMemoryStore;
 pub use store::{ObjectStore, Persistable};

@@ -5,10 +5,28 @@
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Poisson, StandardNormal};
+#[cfg(feature = "parallel")]
 use rayon::prelude::*;
 use tracing::{info, info_span};
 
 use ql_instruments::OptionType;
+
+/// Conditionally parallel collect: uses `par_iter` when the `parallel` feature
+/// is enabled, falling back to sequential `into_iter` otherwise.
+fn par_map_collect<T, F>(n: usize, f: F) -> Vec<T>
+where
+    T: Send,
+    F: Fn(usize) -> T + Send + Sync,
+{
+    #[cfg(feature = "parallel")]
+    {
+        (0..n).into_par_iter().map(&f).collect()
+    }
+    #[cfg(not(feature = "parallel"))]
+    {
+        (0..n).map(f).collect()
+    }
+}
 
 /// Result of a Monte Carlo simulation.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -52,9 +70,7 @@ pub fn mc_european(
     let batch_size = 10000_usize;
     let num_batches = effective_paths.div_ceil(batch_size);
 
-    let results: Vec<(f64, f64)> = (0..num_batches)
-        .into_par_iter()
-        .map(|batch_idx| {
+    let results: Vec<(f64, f64)> = par_map_collect(num_batches, |batch_idx| {
             let mut rng = SmallRng::seed_from_u64(seed.wrapping_add(batch_idx as u64));
             let start = batch_idx * batch_size;
             let end = (start + batch_size).min(effective_paths);
@@ -79,8 +95,7 @@ pub fn mc_european(
                 }
             }
             (sum, sum_sq)
-        })
-        .collect();
+        });
 
     let total_sum: f64 = results.iter().map(|(s, _)| s).sum();
     let total_sum_sq: f64 = results.iter().map(|(_, s)| s).sum();
@@ -135,9 +150,7 @@ pub fn mc_barrier(
     let batch_size = 5000_usize;
     let num_batches = num_paths.div_ceil(batch_size);
 
-    let results: Vec<(f64, f64, usize)> = (0..num_batches)
-        .into_par_iter()
-        .map(|batch_idx| {
+    let results: Vec<(f64, f64, usize)> = par_map_collect(num_batches, |batch_idx| {
             let mut rng = SmallRng::seed_from_u64(seed.wrapping_add(batch_idx as u64));
             let start = batch_idx * batch_size;
             let end = (start + batch_size).min(num_paths);
@@ -180,8 +193,7 @@ pub fn mc_barrier(
                 sum_sq += payoff * payoff;
             }
             (sum, sum_sq, count)
-        })
-        .collect();
+        });
 
     let total_sum: f64 = results.iter().map(|(s, _, _)| s).sum();
     let total_sum_sq: f64 = results.iter().map(|(_, s, _)| s).sum();
@@ -228,9 +240,7 @@ pub fn mc_asian(
     let batch_size = 5000_usize;
     let num_batches = num_paths.div_ceil(batch_size);
 
-    let results: Vec<(f64, f64, usize)> = (0..num_batches)
-        .into_par_iter()
-        .map(|batch_idx| {
+    let results: Vec<(f64, f64, usize)> = par_map_collect(num_batches, |batch_idx| {
             let mut rng = SmallRng::seed_from_u64(seed.wrapping_add(batch_idx as u64));
             let start = batch_idx * batch_size;
             let end = (start + batch_size).min(num_paths);
@@ -261,8 +271,7 @@ pub fn mc_asian(
                 sum_sq += payoff * payoff;
             }
             (sum, sum_sq, count)
-        })
-        .collect();
+        });
 
     let total_sum: f64 = results.iter().map(|(s, _, _)| s).sum();
     let total_sum_sq: f64 = results.iter().map(|(_, s, _)| s).sum();
@@ -311,9 +320,7 @@ pub fn mc_heston(
     let batch_size = 5000_usize;
     let num_batches = num_paths.div_ceil(batch_size);
 
-    let results: Vec<(f64, f64, usize)> = (0..num_batches)
-        .into_par_iter()
-        .map(|batch_idx| {
+    let results: Vec<(f64, f64, usize)> = par_map_collect(num_batches, |batch_idx| {
             let mut rng = SmallRng::seed_from_u64(seed.wrapping_add(batch_idx as u64));
             let start = batch_idx * batch_size;
             let end = (start + batch_size).min(num_paths);
@@ -347,8 +354,7 @@ pub fn mc_heston(
                 sum_sq += payoff * payoff;
             }
             (sum, sum_sq, count)
-        })
-        .collect();
+        });
 
     let total_sum: f64 = results.iter().map(|(s, _, _)| s).sum();
     let total_sum_sq: f64 = results.iter().map(|(_, s, _)| s).sum();
@@ -411,9 +417,7 @@ pub fn mc_bates(
     // Poisson distribution for jump counts
     let lambda_dt = lambda * dt;
 
-    let results: Vec<(f64, f64, usize)> = (0..num_batches)
-        .into_par_iter()
-        .map(|batch_idx| {
+    let results: Vec<(f64, f64, usize)> = par_map_collect(num_batches, |batch_idx| {
             let mut rng = SmallRng::seed_from_u64(seed.wrapping_add(batch_idx as u64));
             let start = batch_idx * batch_size;
             let end = (start + batch_size).min(num_paths);
@@ -461,8 +465,7 @@ pub fn mc_bates(
                 sum_sq += payoff * payoff;
             }
             (sum, sum_sq, count)
-        })
-        .collect();
+        });
 
     let total_sum: f64 = results.iter().map(|(s, _, _)| s).sum();
     let total_sum_sq: f64 = results.iter().map(|(_, s, _)| s).sum();
