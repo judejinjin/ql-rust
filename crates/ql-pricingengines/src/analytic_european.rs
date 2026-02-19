@@ -5,6 +5,7 @@
 
 use ql_instruments::VanillaOption;
 use ql_math::distributions::NormalDistribution;
+use tracing::info_span;
 
 /// Results from the analytic European engine.
 #[derive(Debug, Clone)]
@@ -39,6 +40,7 @@ pub fn price_european(
     volatility: f64,
     time_to_expiry: f64,
 ) -> AnalyticEuropeanResults {
+    let _span = info_span!("price_european", spot, volatility, time_to_expiry).entered();
     // Validate that this is a European option with PlainVanilla payoff
     let strike = option.strike();
     let omega = option.option_type().sign(); // +1 call, -1 put

@@ -3,6 +3,8 @@
 //! Implements a 1-D Crank-Nicolson PDE solver for Black-Scholes type problems.
 //! Supports American exercise via a penalty/projected SOR approach.
 
+use tracing::{info, info_span};
+
 /// Result from a finite difference calculation.
 #[derive(Debug, Clone)]
 pub struct FDResult {
@@ -35,6 +37,7 @@ pub fn fd_black_scholes(
     num_space: usize,
     num_time: usize,
 ) -> FDResult {
+    let _span = info_span!("fd_black_scholes", num_space, num_time, is_american).entered();
     // Transform to log-space: x = ln(S)
     let x0 = spot.ln();
     let sig2 = vol * vol;
@@ -174,12 +177,14 @@ pub fn fd_black_scholes(
         + (r - q) * spot * delta
         - r * npv);
 
-    FDResult {
+    let result = FDResult {
         npv,
         delta,
         gamma,
         theta,
-    }
+    };
+    info!(npv = result.npv, delta = result.delta, "FD solver complete");
+    result
 }
 
 #[cfg(test)]

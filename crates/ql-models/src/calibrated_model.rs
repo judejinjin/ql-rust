@@ -6,6 +6,7 @@
 
 use ql_core::errors::QLResult;
 use ql_math::optimization::{CostFunction, EndCriteria, Simplex};
+use tracing::{info, info_span};
 
 use crate::parameter::Parameter;
 
@@ -66,8 +67,10 @@ pub fn calibrate<M: CalibratedModel>(
     helpers: &[Box<dyn CalibrationHelper>],
     criteria: &EndCriteria,
 ) -> QLResult<f64> {
+    let _span = info_span!("calibrate", num_helpers = helpers.len(), num_params = model.params_as_vec().len()).entered();
     let initial = model.params_as_vec();
     let n = initial.len();
+    info!(num_helpers = helpers.len(), num_params = n, "Starting model calibration");
 
     let cost = CalibrationCost { helpers, n };
 
@@ -75,6 +78,7 @@ pub fn calibrate<M: CalibratedModel>(
     let result = simplex.minimize(&cost, &initial, criteria)?;
 
     model.set_params(&result.parameters);
+    info!(cost = result.value, iterations = result.iterations, "Calibration complete");
     Ok(result.value)
 }
 

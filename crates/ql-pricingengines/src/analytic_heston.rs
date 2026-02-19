@@ -10,6 +10,7 @@ use std::f64::consts::PI;
 
 use ql_math::integration::{GaussLobattoIntegral, Integrator};
 use ql_models::HestonModel;
+use tracing::info_span;
 
 // ---------------------------------------------------------------------------
 // Minimal complex number helper (avoids pulling in num-complex)
@@ -220,6 +221,7 @@ pub fn heston_price(
     time_to_expiry: f64,
     is_call: bool,
 ) -> HestonResult {
+    let _span = info_span!("heston_price", strike, time_to_expiry, is_call).entered();
     let s = model.spot();
     let k = strike;
     let tau = time_to_expiry;

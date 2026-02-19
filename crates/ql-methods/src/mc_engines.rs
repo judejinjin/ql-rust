@@ -6,6 +6,7 @@ use rand::rngs::SmallRng;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Poisson, StandardNormal};
 use rayon::prelude::*;
+use tracing::{info, info_span};
 
 use ql_instruments::OptionType;
 
@@ -40,6 +41,7 @@ pub fn mc_european(
     antithetic: bool,
     seed: u64,
 ) -> MCResult {
+    let _span = info_span!("mc_european", num_paths, antithetic).entered();
     let df = (-r * time_to_expiry).exp();
     let sqrt_t = time_to_expiry.sqrt();
     let drift = (r - q - 0.5 * vol * vol) * time_to_expiry;
@@ -88,7 +90,7 @@ pub fn mc_european(
     let variance = (total_sum_sq / n - mean * mean).max(0.0);
     let std_error = (variance / n).sqrt() * df;
 
-    MCResult {
+    let result = MCResult {
         npv: df * mean,
         std_error,
         num_paths: if antithetic {
@@ -96,7 +98,9 @@ pub fn mc_european(
         } else {
             effective_paths
         },
-    }
+    };
+    info!(npv = result.npv, std_error = result.std_error, paths = result.num_paths, "MC European complete");
+    result
 }
 
 // ===========================================================================

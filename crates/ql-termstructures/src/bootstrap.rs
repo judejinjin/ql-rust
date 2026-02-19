@@ -9,6 +9,7 @@
 use ql_core::errors::{QLError, QLResult};
 use ql_math::solvers1d::{Brent, Solver1D};
 use ql_time::{Calendar, Date, DayCounter};
+use tracing::{debug, info, info_span};
 
 use crate::term_structure::TermStructure;
 use crate::yield_term_structure::YieldTermStructure;
@@ -237,6 +238,9 @@ impl PiecewiseYieldCurve {
         day_counter: DayCounter,
         accuracy: f64,
     ) -> QLResult<Self> {
+        let _span = info_span!("bootstrap", num_helpers = helpers.len(), accuracy).entered();
+        info!(num_helpers = helpers.len(), "Starting yield-curve bootstrap");
+
         // Sort helpers by pillar date
         helpers.sort_by_key(|h| h.pillar_date());
 
@@ -288,7 +292,10 @@ impl PiecewiseYieldCurve {
             )?;
 
             dfs[n - 1] = df_solution;
+            debug!(pillar = %pillar, t = t_pillar, quote = market_quote, df = df_solution, "Bootstrap pillar solved");
         }
+
+        info!(pillars = times.len() - 1, "Bootstrap complete");
 
         let max_date = helpers
             .last()

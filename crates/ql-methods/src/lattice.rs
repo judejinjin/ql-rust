@@ -3,6 +3,8 @@
 //! Implements Cox-Ross-Rubinstein (CRR) binomial trees for
 //! European and American option pricing.
 
+use tracing::info_span;
+
 /// Result from a lattice calculation.
 #[derive(Debug, Clone)]
 pub struct LatticeResult {
@@ -35,6 +37,7 @@ pub fn binomial_crr(
     is_american: bool,
     num_steps: usize,
 ) -> LatticeResult {
+    let _span = info_span!("binomial_crr", num_steps, is_american).entered();
     let dt = time_to_expiry / num_steps as f64;
     let df = (-r * dt).exp(); // discount factor per step
     let u = (vol * dt.sqrt()).exp(); // up factor
