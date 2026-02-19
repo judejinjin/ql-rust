@@ -268,8 +268,10 @@ pub fn bates_price(
         }
     };
 
-    let integrator = GaussLegendreIntegral::new(128).expect("GL128");
-    let upper = 200.0;
+    let integrator = GaussLegendreIntegral::new(48).expect("GL48");
+
+    // Adaptive upper bound: scale with the decay rate of the CF integrand.
+    let upper = (50.0 / (v0 * tau).sqrt().max(0.05)).clamp(50.0, 200.0);
 
     let i1 = integrator.integrate(make_integrand(1), 1e-8, upper).unwrap_or(0.0);
     let i2 = integrator.integrate(make_integrand(2), 1e-8, upper).unwrap_or(0.0);

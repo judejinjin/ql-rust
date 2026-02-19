@@ -93,11 +93,18 @@ pub fn mc_american_longstaff_schwartz(
     }
 
     // Step 3: Backward induction
+    // Pre-allocate scratch vectors outside the loop to avoid per-step allocation
+    let mut itm_indices: Vec<usize> = Vec::with_capacity(num_paths);
+    let mut itm_x: Vec<f64> = Vec::with_capacity(num_paths);
+    let mut itm_y: Vec<f64> = Vec::with_capacity(num_paths);
+    let p = basis_degree + 1;
+    let mut basis_buf: Vec<f64> = Vec::with_capacity(num_paths * p);
+
     for step in (1..num_steps).rev() {
         // Find in-the-money paths at this step
-        let mut itm_indices: Vec<usize> = Vec::new();
-        let mut itm_x: Vec<f64> = Vec::new();
-        let mut itm_y: Vec<f64> = Vec::new();
+        itm_indices.clear();
+        itm_x.clear();
+        itm_y.clear();
 
         for i in 0..num_paths {
             let s = paths[i * stride + step];
@@ -120,8 +127,8 @@ pub fn mc_american_longstaff_schwartz(
         }
 
         // Regression: fit continuation value = f(S)
-        let basis_matrix = build_basis_matrix(&itm_x, basis_degree, basis);
-        let coeffs = least_squares_fit(&basis_matrix, basis_degree + 1, &itm_y);
+        build_basis_matrix_into(&itm_x, basis_degree, basis, &mut basis_buf);
+        let coeffs = least_squares_fit(&basis_buf, p, &itm_y);
 
         // Compare exercise vs fitted continuation
         for &i in itm_indices.iter() {
@@ -216,14 +223,15 @@ fn simulate_paths(
 // Regression (least-squares polynomial fit)
 // ===========================================================================
 
-/// Build the basis matrix for regression (flat row-major).
+/// Build the basis matrix for regression (flat row-major), reusing a buffer.
 ///
 /// Each row corresponds to one observation, columns are basis function values.
-/// Returns flat array of size `n * p` where `p = degree + 1`.
-fn build_basis_matrix(x: &[f64], degree: usize, basis: LSMBasis) -> Vec<f64> {
+/// Writes into `buf` which is resized as needed. Size: `n * p` where `p = degree + 1`.
+fn build_basis_matrix_into(x: &[f64], degree: usize, basis: LSMBasis, buf: &mut Vec<f64>) {
     let n = x.len();
-    let p = degree + 1; // number of basis functions
-    let mut matrix = vec![0.0; n * p];
+    let p = degree + 1;
+    buf.clear();
+    buf.resize(n * p, 0.0);
 
     for (i, xi) in x.iter().enumerate() {
         let row = i * p;
@@ -231,26 +239,24 @@ fn build_basis_matrix(x: &[f64], degree: usize, basis: LSMBasis) -> Vec<f64> {
             LSMBasis::Monomial => {
                 let mut xp = 1.0;
                 for col in 0..p {
-                    matrix[row + col] = xp;
+                    buf[row + col] = xp;
                     xp *= xi;
                 }
             }
             LSMBasis::Laguerre => {
-                matrix[row] = 1.0;
+                buf[row] = 1.0;
                 if p > 1 {
-                    matrix[row + 1] = 1.0 - xi;
+                    buf[row + 1] = 1.0 - xi;
                 }
                 if p > 2 {
-                    matrix[row + 2] = 1.0 - 2.0 * xi + 0.5 * xi * xi;
+                    buf[row + 2] = 1.0 - 2.0 * xi + 0.5 * xi * xi;
                 }
                 for j in 3..p {
-                    matrix[row + j] = xi.powi(j as i32);
+                    buf[row + j] = xi.powi(j as i32);
                 }
             }
         }
     }
-
-    matrix
 }
 
 /// Evaluate the fitted polynomial at a given point.

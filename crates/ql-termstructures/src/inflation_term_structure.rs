@@ -217,6 +217,115 @@ impl ZeroCouponInflationSwap {
     }
 }
 
+// =========================================================================
+// Year-on-Year Inflation Term Structure
+// =========================================================================
+
+/// Year-on-year (YoY) inflation term structure.
+///
+/// Maps time → YoY inflation rate, defined as:
+///   YoY(t) = CPI(t) / CPI(t−1) − 1
+pub trait YoYInflationTermStructure: TermStructure {
+    /// Year-on-year inflation rate at time `t`.
+    fn yoy_rate(&self, t: f64) -> f64;
+}
+
+/// Flat (constant) year-on-year inflation rate.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct FlatYoYInflationCurve {
+    reference_date: Date,
+    day_counter: DayCounter,
+    rate: f64,
+}
+
+impl FlatYoYInflationCurve {
+    /// Create a flat YoY inflation curve.
+    pub fn new(reference_date: Date, rate: f64, day_counter: DayCounter) -> Self {
+        Self {
+            reference_date,
+            day_counter,
+            rate,
+        }
+    }
+}
+
+impl TermStructure for FlatYoYInflationCurve {
+    fn reference_date(&self) -> Date {
+        self.reference_date
+    }
+    fn day_counter(&self) -> DayCounter {
+        self.day_counter
+    }
+    fn calendar(&self) -> Calendar {
+        Calendar::NullCalendar
+    }
+    fn max_date(&self) -> Date {
+        Date::from_serial(73050)
+    }
+}
+
+impl YoYInflationTermStructure for FlatYoYInflationCurve {
+    fn yoy_rate(&self, _t: f64) -> f64 {
+        self.rate
+    }
+}
+
+// =========================================================================
+// Year-on-Year Inflation Swap
+// =========================================================================
+
+/// A year-on-year inflation swap.
+///
+/// The inflation leg pays: N × YoY(tᵢ) each year (or period).
+/// The fixed leg pays: N × K each year.
+/// NPV = Σᵢ [N × (YoY(tᵢ) − K) × df(tᵢ)] for pay-fixed.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct YearOnYearInflationSwap {
+    /// Notional.
+    pub notional: f64,
+    /// Fixed rate (annualised).
+    pub fixed_rate: f64,
+    /// Number of annual payment periods.
+    pub num_periods: usize,
+    /// True if we pay fixed (receive YoY inflation).
+    pub pay_fixed: bool,
+}
+
+impl YearOnYearInflationSwap {
+    /// Create a new YoY inflation swap.
+    pub fn new(notional: f64, fixed_rate: f64, num_periods: usize, pay_fixed: bool) -> Self {
+        Self {
+            notional,
+            fixed_rate,
+            num_periods,
+            pay_fixed,
+        }
+    }
+
+    /// Price the swap given a YoY inflation curve and discount factors.
+    ///
+    /// `discount_factors` must have length = `num_periods`, one per annual payment.
+    /// `discount_factors[i]` is the discount factor to period `i+1`.
+    pub fn npv(
+        &self,
+        yoy_curve: &dyn YoYInflationTermStructure,
+        discount_factors: &[f64],
+    ) -> f64 {
+        assert_eq!(discount_factors.len(), self.num_periods);
+        let sign = if self.pay_fixed { 1.0 } else { -1.0 };
+
+        let mut total = 0.0;
+        for (i, &df) in discount_factors.iter().enumerate() {
+            let t = (i + 1) as f64;
+            let yoy_i = yoy_curve.yoy_rate(t);
+            // Net cashflow per period: N × (YoY − K)
+            let net_cf = self.notional * (yoy_i - self.fixed_rate);
+            total += sign * net_cf * df;
+        }
+        total
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -318,5 +427,65 @@ mod tests {
         let npv_rf = receive_fixed.npv(&curve, 0.90);
 
         assert_abs_diff_eq!(npv_pf + npv_rf, 0.0, epsilon = 1e-6);
+    }
+
+    // ======================================================================
+    // Year-on-Year tests
+    // ======================================================================
+
+    #[test]
+    fn flat_yoy_rate() {
+        let ref_date = Date::from_ymd(2025, Month::January, 15);
+        let curve = FlatYoYInflationCurve::new(ref_date, 0.03, DayCounter::Actual365Fixed);
+        assert_abs_diff_eq!(curve.yoy_rate(3.0), 0.03, epsilon = 1e-12);
+        assert_abs_diff_eq!(curve.yoy_rate(10.0), 0.03, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn yoy_inflation_swap_at_par() {
+        let ref_date = Date::from_ymd(2025, Month::January, 15);
+        let yoy_rate = 0.025;
+        let curve = FlatYoYInflationCurve::new(ref_date, yoy_rate, DayCounter::Actual365Fixed);
+
+        let swap = YearOnYearInflationSwap::new(
+            1_000_000.0,
+            yoy_rate, // fixed = YoY → NPV = 0
+            5,
+            true,
+        );
+
+        let dfs: Vec<f64> = (1..=5).map(|y| (-0.04 * y as f64).exp()).collect();
+        let npv = swap.npv(&curve, &dfs);
+        assert_abs_diff_eq!(npv, 0.0, epsilon = 1e-4);
+    }
+
+    #[test]
+    fn yoy_swap_pay_fixed_positive_when_inflation_high() {
+        let ref_date = Date::from_ymd(2025, Month::January, 15);
+        let curve = FlatYoYInflationCurve::new(ref_date, 0.04, DayCounter::Actual365Fixed);
+
+        let swap = YearOnYearInflationSwap::new(
+            1_000_000.0,
+            0.02, // fixed below inflation
+            5,
+            true, // pay fixed, receive YoY
+        );
+
+        let dfs: Vec<f64> = (1..=5).map(|y| (-0.04 * y as f64).exp()).collect();
+        let npv = swap.npv(&curve, &dfs);
+        assert!(npv > 0.0, "should be positive when inflation > fixed");
+    }
+
+    #[test]
+    fn yoy_swap_symmetry() {
+        let ref_date = Date::from_ymd(2025, Month::January, 15);
+        let curve = FlatYoYInflationCurve::new(ref_date, 0.03, DayCounter::Actual365Fixed);
+
+        let dfs: Vec<f64> = (1..=5).map(|y| (-0.04 * y as f64).exp()).collect();
+
+        let pf = YearOnYearInflationSwap::new(1_000_000.0, 0.025, 5, true);
+        let rf = YearOnYearInflationSwap::new(1_000_000.0, 0.025, 5, false);
+
+        assert_abs_diff_eq!(pf.npv(&curve, &dfs) + rf.npv(&curve, &dfs), 0.0, epsilon = 1e-4);
     }
 }

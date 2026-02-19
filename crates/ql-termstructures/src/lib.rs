@@ -79,4 +79,5 @@ pub use default_term_structure::{
 pub use inflation_term_structure::{
     ZeroInflationTermStructure, FlatZeroInflationCurve,
     PiecewiseZeroInflationCurve, ZeroCouponInflationSwap,
+    YoYInflationTermStructure, FlatYoYInflationCurve, YearOnYearInflationSwap,
 };

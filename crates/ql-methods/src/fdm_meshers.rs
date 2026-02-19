@@ -54,7 +54,7 @@ impl Mesher1d {
     pub fn lower_index(&self, x: f64) -> usize {
         match self
             .locations
-            .binary_search_by(|loc| loc.partial_cmp(&x).unwrap())
+            .binary_search_by(|loc| loc.total_cmp(&x))
         {
             Ok(i) => i,
             Err(i) => {

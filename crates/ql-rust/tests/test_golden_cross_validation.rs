@@ -156,7 +156,8 @@ mod golden_calendar {
             .calendar(Calendar::NullCalendar)
             .convention(ql_time::BusinessDayConvention::Unadjusted)
             .rule(DateGenerationRule::Forward)
-            .build();
+            .build()
+            .unwrap();
 
         let expected_dates: Vec<Date> = case["expected_dates"]
             .as_array()

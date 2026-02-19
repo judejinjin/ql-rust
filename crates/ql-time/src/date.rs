@@ -288,6 +288,7 @@ impl Date {
 
     /// Number of days in the given month.
     pub fn days_in_month(year: i32, month: u32) -> u32 {
+        debug_assert!((1..=12).contains(&month), "invalid month: {month}");
         match month {
             1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
             4 | 6 | 9 | 11 => 30,
@@ -298,7 +299,8 @@ impl Date {
                     28
                 }
             }
-            _ => panic!("invalid month: {month}"),
+            // Unreachable for valid months; return 30 as safe fallback.
+            _ => 30,
         }
     }
 

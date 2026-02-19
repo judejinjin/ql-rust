@@ -255,8 +255,13 @@ pub fn heston_price(
         }
     };
 
-    let integrator = GaussLegendreIntegral::new(128).expect("GL128");
-    let upper = 200.0;
+    let integrator = GaussLegendreIntegral::new(48).expect("GL48");
+
+    // Adaptive upper bound: the CF integrand decays ~ exp(-½σ²φ²τ),
+    // so we only need to integrate far enough for the integrand to vanish.
+    // For typical parameters, 50-100 suffices.  We scale with 1/sqrt(v0*tau)
+    // to adapt to the decay rate.
+    let upper = (50.0 / (v0 * tau).sqrt().max(0.05)).clamp(50.0, 200.0);
 
     let i1 = integrator
         .integrate(make_integrand(1), 1e-8, upper)

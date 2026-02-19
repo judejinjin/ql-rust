@@ -46,6 +46,7 @@ pub mod convertible_bond;
 pub mod lookback_option;
 pub mod compound_option;
 pub mod variance_swap;
+pub mod inflation_linked_bond;
 
 // Re-exports
 pub use payoff::{OptionType, Payoff, Exercise};
@@ -62,3 +63,4 @@ pub use convertible_bond::ConvertibleBond;
 pub use lookback_option::{LookbackOption, LookbackType};
 pub use compound_option::CompoundOption;
 pub use variance_swap::VarianceSwap;
+pub use inflation_linked_bond::InflationLinkedBond;

@@ -7,6 +7,7 @@ use crate::business_day_convention::BusinessDayConvention;
 use crate::calendar::Calendar;
 use crate::date::Date;
 use crate::period::{Frequency, Period, TimeUnit};
+use ql_core::{QLError, QLResult};
 
 /// Date-generation rule.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -182,21 +183,23 @@ impl ScheduleBuilder {
 
     /// Build the schedule.
     ///
-    /// # Panics
-    /// Panics if effective_date or termination_date is not set.
-    pub fn build(self) -> Schedule {
+    /// # Errors
+    /// Returns `QLError::InvalidArgument` if effective_date or termination_date
+    /// is not set, or if effective_date ≥ termination_date.
+    pub fn build(self) -> QLResult<Schedule> {
         let effective = self
             .effective_date
-            .unwrap_or_else(|| panic!("ScheduleBuilder: effective_date is required"));
+            .ok_or_else(|| QLError::InvalidArgument("ScheduleBuilder: effective_date is required".into()))?;
         let termination = self
             .termination_date
-            .unwrap_or_else(|| panic!("ScheduleBuilder: termination_date is required"));
+            .ok_or_else(|| QLError::InvalidArgument("ScheduleBuilder: termination_date is required".into()))?;
         let term_conv = self.termination_convention.unwrap_or(self.convention);
 
-        assert!(
-            effective < termination,
-            "effective date must be before termination date"
-        );
+        if effective >= termination {
+            return Err(QLError::InvalidArgument(
+                "effective date must be before termination date".into(),
+            ));
+        }
 
         let dates = match self.rule {
             DateGenerationRule::Zero => {
@@ -222,7 +225,7 @@ impl ScheduleBuilder {
             }
         }
 
-        Schedule {
+        Ok(Schedule {
             dates: adjusted,
             calendar: self.calendar,
             convention: self.convention,
@@ -230,7 +233,7 @@ impl ScheduleBuilder {
             frequency: self.frequency,
             rule: self.rule,
             end_of_month: self.end_of_month,
-        }
+        })
     }
 
     fn generate_forward(&self, effective: Date, termination: Date) -> Vec<Date> {
@@ -408,9 +411,8 @@ mod tests {
             .calendar(Calendar::NullCalendar)
             .convention(BusinessDayConvention::Unadjusted)
             .rule(DateGenerationRule::Forward)
-            .build();
-
-        // Expect: Jan 15 2025, Jul 15 2025, Jan 15 2026, Jul 15 2026, Jan 15 2027
+            .build()
+            .unwrap();
         assert_eq!(s.len(), 5);
         assert_eq!(s.date(0), Date::from_ymd(2025, Month::January, 15));
         assert_eq!(s.date(1), Date::from_ymd(2025, Month::July, 15));
@@ -428,9 +430,8 @@ mod tests {
             .calendar(Calendar::NullCalendar)
             .convention(BusinessDayConvention::Unadjusted)
             .rule(DateGenerationRule::Backward)
-            .build();
-
-        // Expect: Jan 15, Apr 15, Jul 15, Oct 15, Jan 15
+            .build()
+            .unwrap();
         assert_eq!(s.len(), 5);
         assert_eq!(s.date(0), Date::from_ymd(2025, Month::January, 15));
         assert_eq!(s.date(4), Date::from_ymd(2026, Month::January, 15));
@@ -445,9 +446,8 @@ mod tests {
             .calendar(Calendar::Target)
             .convention(BusinessDayConvention::ModifiedFollowing)
             .rule(DateGenerationRule::Forward)
-            .build();
-
-        // All dates should be business days under TARGET
+            .build()
+            .unwrap();
         let cal = Calendar::Target;
         for d in s.dates() {
             assert!(
@@ -465,9 +465,8 @@ mod tests {
             .termination_date(Date::from_ymd(2030, Month::January, 15))
             .frequency(Frequency::Annual)
             .rule(DateGenerationRule::Zero)
-            .build();
-
-        assert_eq!(s.len(), 2);
+            .build()
+            .unwrap();
         assert_eq!(s.date(0), Date::from_ymd(2025, Month::January, 15));
         assert_eq!(s.date(1), Date::from_ymd(2030, Month::January, 15));
     }
@@ -482,9 +481,8 @@ mod tests {
             .convention(BusinessDayConvention::Unadjusted)
             .rule(DateGenerationRule::Forward)
             .end_of_month(true)
-            .build();
-
-        // Feb end of month = 28
+            .build()
+            .unwrap();
         assert_eq!(s.date(1), Date::from_ymd(2025, Month::February, 28));
         // April end of month = 30
         assert_eq!(s.date(3), Date::from_ymd(2025, Month::April, 30));

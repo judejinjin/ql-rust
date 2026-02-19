@@ -101,7 +101,7 @@ impl GeneralStatistics {
 
     fn ensure_sorted(&mut self) {
         if !self.sorted {
-            self.samples.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            self.samples.sort_by(|a, b| a.total_cmp(b));
             self.sorted = true;
         }
     }

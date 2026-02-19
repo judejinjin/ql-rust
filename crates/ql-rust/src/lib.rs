@@ -52,9 +52,9 @@ pub use ql_instruments::{
     BarrierOption, BarrierType, CallableBond, CallabilityScheduleEntry, CallabilityType,
     CapFloor, CapFloorType, Caplet, CompoundOption, ConvertibleBond,
     CreditDefaultSwap, CdsProtectionSide, CdsPremiumPeriod, Exercise,
-    FixedRateBond, LookbackOption, LookbackType, OptionType, Payoff,
-    Swaption, SwaptionType, SettlementType, SwapType, VanillaOption,
-    VanillaSwap, VarianceSwap, AsianOption, AveragingType,
+    FixedRateBond, InflationLinkedBond, LookbackOption, LookbackType,
+    OptionType, Payoff, Swaption, SwaptionType, SettlementType, SwapType,
+    VanillaOption, VanillaSwap, VarianceSwap, AsianOption, AveragingType,
 };
 
 // Term structures
@@ -67,6 +67,8 @@ pub use ql_termstructures::{
     PiecewiseZeroInflationCurve, RateHelper, SabrSmileSection, SwapRateHelper,
     TermStructure, YieldTermStructure, ZeroCurve, ZeroCouponInflationSwap,
     ZeroInflationTermStructure, sabr_volatility,
+    // YoY inflation (Phase 25)
+    YoYInflationTermStructure, FlatYoYInflationCurve, YearOnYearInflationSwap,
     // Extended yield curves (Phase 24)
     CompositeZeroYieldStructure, ImpliedTermStructure, ForwardCurve,
     UltimateForwardTermStructure, SpreadedTermStructure,
@@ -93,6 +95,8 @@ pub use ql_cashflows::{
     // Extended analytics (Phase 23)
     convexity, modified_duration, dv01, z_spread, atm_rate,
     time_bucketed_cashflows, TimeBucket,
+    // CPI / inflation coupons (Phase 25)
+    CPICoupon, generate_cpi_coupons,
 };
 
 // Pricing engines

@@ -674,6 +674,7 @@ fn bench_schedule_generation(c: &mut Criterion) {
                 .convention(black_box(BusinessDayConvention::ModifiedFollowing))
                 .rule(black_box(DateGenerationRule::Forward))
                 .build()
+                .unwrap()
         })
     });
 }

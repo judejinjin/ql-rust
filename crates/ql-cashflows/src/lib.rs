@@ -51,6 +51,7 @@ pub mod cashflow_analytics;
 pub mod cms_coupon;
 pub mod digital_coupon;
 pub mod cashflow_analytics_extended;
+pub mod cpi_coupon;
 
 // Re-exports
 pub use cashflow::{CashFlow, Leg};
@@ -71,3 +72,4 @@ pub use cashflow_analytics_extended::{
     convexity, modified_duration, dv01, z_spread, atm_rate,
     time_bucketed_cashflows, TimeBucket,
 };
+pub use cpi_coupon::{CPICoupon, generate_cpi_coupons};

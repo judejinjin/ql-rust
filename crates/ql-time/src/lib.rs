@@ -40,7 +40,8 @@
 //!     .frequency(Frequency::Quarterly)
 //!     .calendar(Calendar::Target)
 //!     .convention(BusinessDayConvention::ModifiedFollowing)
-//!     .build();
+//!     .build()
+//!     .unwrap();
 //! assert!(schedule.len() >= 2);
 //! ```
 

@@ -68,14 +68,14 @@ fuzz_target!(|data: (u8, u8, u8, u8, u8, u8, u8, u8)| {
         };
 
         let _ = std::panic::catch_unwind(move || {
-            Schedule::builder()
+            let _ = Schedule::builder()
                 .effective_date(eff)
                 .termination_date(term)
                 .frequency(freq)
                 .calendar(Calendar::Target)
                 .convention(BusinessDayConvention::ModifiedFollowing)
                 .rule(rule)
-                .build()
+                .build();
         });
     }
 });
