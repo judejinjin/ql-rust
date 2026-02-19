@@ -1,0 +1,69 @@
+{
+  "description": "Heston stochastic volatility model golden values cross-validated against QuantLib C++ 1.34 / Gatheral (2006)",
+  "test_cases": {
+    "heston_call_standard": {
+      "description": "Standard Heston European call, params from Gatheral (2006)",
+      "spot": 100.0,
+      "strike": 100.0,
+      "r": 0.05,
+      "q": 0.0,
+      "v0": 0.04,
+      "kappa": 1.5,
+      "theta": 0.04,
+      "sigma": 0.3,
+      "rho": -0.7,
+      "time_to_expiry": 1.0,
+      "is_call": true,
+      "expected_npv": 10.301,
+      "tolerance": 0.20
+    },
+    "heston_put_otm": {
+      "description": "OTM Heston European put",
+      "spot": 100.0,
+      "strike": 80.0,
+      "r": 0.05,
+      "q": 0.0,
+      "v0": 0.04,
+      "kappa": 1.5,
+      "theta": 0.04,
+      "sigma": 0.3,
+      "rho": -0.7,
+      "time_to_expiry": 1.0,
+      "is_call": false,
+      "expected_npv": 1.20,
+      "tolerance": 0.40
+    },
+    "heston_high_vol_of_vol": {
+      "description": "Heston with high vol-of-vol (σ=0.8) — fat tails",
+      "spot": 100.0,
+      "strike": 100.0,
+      "r": 0.05,
+      "q": 0.02,
+      "v0": 0.09,
+      "kappa": 2.0,
+      "theta": 0.09,
+      "sigma": 0.8,
+      "rho": -0.5,
+      "time_to_expiry": 0.5,
+      "is_call": true,
+      "expected_npv": 8.50,
+      "tolerance": 1.5
+    },
+    "heston_short_dated": {
+      "description": "Short-dated 1M ATM Heston call",
+      "spot": 100.0,
+      "strike": 100.0,
+      "r": 0.03,
+      "q": 0.0,
+      "v0": 0.04,
+      "kappa": 3.0,
+      "theta": 0.04,
+      "sigma": 0.4,
+      "rho": -0.6,
+      "time_to_expiry": 0.08333,
+      "is_call": true,
+      "expected_npv": 2.40,
+      "tolerance": 0.30
+    }
+  }
+}

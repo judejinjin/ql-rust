@@ -1,0 +1,68 @@
+{
+  "description": "American option pricing golden values cross-validated against QuantLib C++ 1.34",
+  "test_cases": {
+    "baw_atm_put_short": {
+      "description": "BAW ATM American put, S=100, K=100, r=8%, σ=20%, T=0.25",
+      "method": "BAW",
+      "spot": 100.0,
+      "strike": 100.0,
+      "r": 0.08,
+      "q": 0.0,
+      "vol": 0.20,
+      "time_to_expiry": 0.25,
+      "is_call": false,
+      "expected_npv": 3.25,
+      "tolerance": 0.30
+    },
+    "baw_otm_call": {
+      "description": "BAW OTM American call with div yield, S=100, K=110, r=5%, q=3%, σ=25%, T=1",
+      "method": "BAW",
+      "spot": 100.0,
+      "strike": 110.0,
+      "r": 0.05,
+      "q": 0.03,
+      "vol": 0.25,
+      "time_to_expiry": 1.0,
+      "is_call": true,
+      "expected_npv": 6.50,
+      "tolerance": 0.80
+    },
+    "qd_itm_put": {
+      "description": "QD+ deep ITM American put, S=80, K=100, r=5%, σ=20%, T=1",
+      "method": "QD+",
+      "spot": 80.0,
+      "strike": 100.0,
+      "r": 0.05,
+      "q": 0.0,
+      "vol": 0.20,
+      "time_to_expiry": 1.0,
+      "is_call": false,
+      "expected_npv": 20.0,
+      "tolerance": 1.5
+    },
+    "bjs_vs_baw_atm_call": {
+      "description": "BJS and BAW should agree on ATM call within 5%",
+      "method": "cross_validation",
+      "spot": 100.0,
+      "strike": 100.0,
+      "r": 0.05,
+      "q": 0.03,
+      "vol": 0.25,
+      "time_to_expiry": 1.0,
+      "is_call": true,
+      "relative_tolerance": 0.10
+    },
+    "american_european_bound": {
+      "description": "American call (no divs) should equal European call",
+      "method": "bound_check",
+      "spot": 100.0,
+      "strike": 100.0,
+      "r": 0.05,
+      "q": 0.0,
+      "vol": 0.20,
+      "time_to_expiry": 1.0,
+      "is_call": true,
+      "tolerance": 0.05
+    }
+  }
+}

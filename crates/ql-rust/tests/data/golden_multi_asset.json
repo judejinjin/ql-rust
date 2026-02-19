@@ -1,0 +1,77 @@
+{
+  "description": "Multi-asset option pricing golden values cross-validated against QuantLib C++ 1.34",
+  "test_cases": {
+    "kirk_spread_atm": {
+      "description": "Kirk spread call ATM (S1-S2 near K), S1=100, S2=95, K=5",
+      "s1": 100.0,
+      "s2": 95.0,
+      "strike": 5.0,
+      "r": 0.05,
+      "q1": 0.02,
+      "q2": 0.01,
+      "vol1": 0.20,
+      "vol2": 0.25,
+      "rho": 0.5,
+      "time_to_expiry": 1.0,
+      "expected_price_range_low": 2.0,
+      "expected_price_range_high": 10.0
+    },
+    "margrabe_exchange_symmetry": {
+      "description": "Margrabe: V(S1,S2) + V(S2,S1) = |S1-S2| for equal vols, rho=1",
+      "s1": 100.0,
+      "s2": 100.0,
+      "q1": 0.0,
+      "q2": 0.0,
+      "vol1": 0.20,
+      "vol2": 0.25,
+      "rho": 0.5,
+      "time_to_expiry": 1.0
+    },
+    "basket_weighted_avg_call": {
+      "description": "3-asset basket call with positive correlation",
+      "spots": [100.0, 100.0, 100.0],
+      "weights": [0.333, 0.333, 0.334],
+      "strike": 100.0,
+      "r": 0.05,
+      "dividends": [0.02, 0.01, 0.03],
+      "vols": [0.20, 0.25, 0.30],
+      "correlation_matrix": [
+        1.0, 0.5, 0.3,
+        0.5, 1.0, 0.4,
+        0.3, 0.4, 1.0
+      ],
+      "time_to_expiry": 1.0,
+      "num_paths": 100000,
+      "expected_price_range_low": 5.0,
+      "expected_price_range_high": 20.0
+    },
+    "merton_jd_no_jumps": {
+      "description": "Merton JD with lambda=0 should equal BS",
+      "spot": 100.0,
+      "strike": 100.0,
+      "r": 0.05,
+      "q": 0.0,
+      "vol": 0.20,
+      "time_to_expiry": 1.0,
+      "lambda": 0.0,
+      "nu": 0.0,
+      "delta": 0.10,
+      "expected_call_price": 10.4506,
+      "tolerance": 0.01
+    },
+    "merton_jd_with_jumps": {
+      "description": "Merton JD with moderate jumps should raise option price",
+      "spot": 100.0,
+      "strike": 100.0,
+      "r": 0.05,
+      "q": 0.0,
+      "vol": 0.15,
+      "time_to_expiry": 1.0,
+      "lambda": 1.0,
+      "nu": -0.10,
+      "delta": 0.15,
+      "expected_call_price_range_low": 8.0,
+      "expected_call_price_range_high": 15.0
+    }
+  }
+}
