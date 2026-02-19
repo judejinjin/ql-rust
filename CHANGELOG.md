@@ -95,9 +95,16 @@ All notable changes to the ql-rust project are documented in this file.
 - Updated facade crate (ql-rust) with all Phase 13-24 re-exports
 - New integration tests: American pricing pipeline, multi-asset pipeline,
   short-rate model pipeline, yield curve fitting pipeline, advanced cashflows pipeline
-- New benchmarks: American approximation, Nelson-Siegel fit, FD Heston 2D, MC basket
-- Golden cross-validation tests for American, spread, and Nelson-Siegel results
-- 910+ tests total, zero clippy warnings
+- New benchmarks: American approximation, Nelson-Siegel fit, FD Heston 2D, MC basket,
+  Vasicek bond, G2 swaption, FFT, Cholesky, CMS caplet, LMM cap, CDO tranche, CDS option
+- Golden cross-validation tests for American, spread, Nelson-Siegel, short-rate,
+  FD advanced, credit models, LMM, CMS, and advanced curves (65 total)
+- Heston/Bates quadrature optimised (Gauss-Legendre 128-point, replacing adaptive)
+- LSM regression flat-array optimisation (cache-friendly row-major layout)
+- Calendar Easter-Monday cache and interpolation small-array linear scan
+- 8 fuzz targets (BS pricing, date, interpolation, SABR, schedule,
+  serde instruments, serde term structures, Heston/Bates)
+- 963 tests total, zero clippy warnings
 
 ## [0.1.1] — 2026-02-17
 

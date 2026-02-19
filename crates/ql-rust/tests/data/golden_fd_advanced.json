@@ -1,0 +1,48 @@
+{
+  "description": "Golden cross-validation: FD methods and advanced pricing",
+  "source": "QuantLib C++ reference / known analytic values",
+  "test_cases": {
+    "fd_heston_european_call": {
+      "description": "2D Heston FD (Douglas ADI) European call",
+      "spot": 100.0, "strike": 100.0, "r": 0.05, "q": 0.0,
+      "v0": 0.04, "kappa": 1.5, "theta": 0.04, "sigma": 0.3, "rho": -0.7,
+      "time_to_expiry": 1.0, "is_call": true,
+      "ns": 80, "nv": 40, "nt": 80,
+      "expected_npv": { "min": 8.0, "max": 13.0 },
+      "tolerance": 0.5
+    },
+    "fd_bs_american_put": {
+      "description": "1D Crank-Nicolson American put",
+      "spot": 100.0, "strike": 110.0, "r": 0.05, "q": 0.0,
+      "vol": 0.30, "time_to_expiry": 1.0,
+      "ns": 400, "nt": 400,
+      "expected_npv": { "min": 14.0, "max": 18.0 },
+      "tolerance": 0.3
+    },
+    "fd_bs_european_call": {
+      "description": "1D Crank-Nicolson European call vs analytic",
+      "spot": 100.0, "strike": 105.0, "r": 0.05, "q": 0.02,
+      "vol": 0.20, "time_to_expiry": 1.0,
+      "ns": 200, "nt": 200,
+      "expected_npv": 8.021,
+      "tolerance": 0.15
+    },
+    "merton_jd_call": {
+      "description": "Merton jump-diffusion European call",
+      "spot": 100.0, "strike": 100.0, "r": 0.05, "q": 0.0,
+      "vol": 0.15, "time_to_expiry": 1.0,
+      "lambda": 0.5, "nu": -0.1, "delta": 0.15,
+      "is_call": true,
+      "expected_npv": { "min": 8.0, "max": 14.0 },
+      "tolerance": 0.5
+    },
+    "bates_vs_heston_no_jumps": {
+      "description": "Bates with lambda=0 should match Heston",
+      "spot": 100.0, "strike": 100.0, "r": 0.05, "q": 0.0,
+      "v0": 0.04, "kappa": 1.5, "theta": 0.04, "sigma": 0.3, "rho": -0.7,
+      "lambda": 0.0, "nu": 0.0, "delta": 0.01,
+      "time_to_expiry": 1.0, "is_call": true,
+      "tolerance": 0.001
+    }
+  }
+}

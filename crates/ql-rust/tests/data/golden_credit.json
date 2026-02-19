@@ -1,0 +1,39 @@
+{
+  "description": "Golden cross-validation: credit models and exotic instruments",
+  "source": "QuantLib C++ reference / known analytic values",
+  "test_cases": {
+    "gaussian_copula_cdo_equity": {
+      "description": "Gaussian copula LHP CDO equity tranche",
+      "num_names": 125,
+      "hazard_rate": 0.01,
+      "recovery": 0.4,
+      "correlation": 0.3,
+      "maturity": 5.0,
+      "attachment": 0.0,
+      "detachment": 0.03,
+      "expected_loss": { "min": 0.0, "max": 0.03 }
+    },
+    "gaussian_copula_cdo_mezzanine": {
+      "description": "Gaussian copula LHP CDO mezzanine tranche",
+      "num_names": 125,
+      "hazard_rate": 0.01,
+      "recovery": 0.4,
+      "correlation": 0.3,
+      "maturity": 5.0,
+      "attachment": 0.03,
+      "detachment": 0.07,
+      "expected_loss": { "min": 0.0, "max": 0.04 }
+    },
+    "cds_option_black": {
+      "description": "CDS option via Black's formula",
+      "fwd_spread": 0.01,
+      "strike_spread": 0.012,
+      "annuity": 4.5,
+      "vol": 0.40,
+      "time_to_expiry": 1.0,
+      "notional": 10000000.0,
+      "is_payer": true,
+      "expected_premium": { "min": 10000.0, "max": 500000.0 }
+    }
+  }
+}

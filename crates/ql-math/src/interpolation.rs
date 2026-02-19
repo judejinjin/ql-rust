@@ -57,7 +57,16 @@ fn locate(xs: &[f64], x: f64) -> QLResult<usize> {
     if x >= xs[n - 2] {
         return Ok(n - 2);
     }
-    // Binary search
+    // For small arrays (typical yield curves ≤ 20 points), linear scan is faster
+    if n <= 20 {
+        for (i, xi) in xs.iter().enumerate().take(n).skip(1) {
+            if *xi > x {
+                return Ok(i - 1);
+            }
+        }
+        return Ok(n - 2);
+    }
+    // Binary search for larger arrays
     match xs.binary_search_by(|probe| probe.total_cmp(&x)) {
         Ok(i) => Ok(i.min(n - 2)),
         Err(i) => Ok((i - 1).min(n - 2)),

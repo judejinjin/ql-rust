@@ -15,7 +15,7 @@
 
 use std::f64::consts::PI;
 
-use ql_math::integration::{GaussLobattoIntegral, Integrator};
+use ql_math::integration::{GaussLegendreIntegral, Integrator};
 use ql_models::BatesModel;
 
 // ---------------------------------------------------------------------------
@@ -268,7 +268,7 @@ pub fn bates_price(
         }
     };
 
-    let integrator = GaussLobattoIntegral::new(10000, 1e-12);
+    let integrator = GaussLegendreIntegral::new(128).expect("GL128");
     let upper = 200.0;
 
     let i1 = integrator.integrate(make_integrand(1), 1e-8, upper).unwrap_or(0.0);

@@ -77,8 +77,9 @@ pub fn mc_american_longstaff_schwartz(
     let drift = (r - q - 0.5 * vol * vol) * dt;
     let omega = option_type.sign();
 
-    // Step 1: Simulate paths forward (all at once for regression)
-    // paths[i][j] = spot at time step j for path i
+    // Step 1: Simulate paths forward (flat row-major array)
+    // paths[i * stride + j] = spot at time step j for path i
+    let stride = num_steps + 1;
     let paths = simulate_paths(spot, drift, vol, sqrt_dt, num_paths, num_steps, seed);
 
     // Step 2: Initialize with terminal payoff
@@ -88,7 +89,7 @@ pub fn mc_american_longstaff_schwartz(
     let mut cashflow_value = vec![0.0_f64; num_paths];
 
     for i in 0..num_paths {
-        cashflow_value[i] = (omega * (paths[i][num_steps] - strike)).max(0.0);
+        cashflow_value[i] = (omega * (paths[i * stride + num_steps] - strike)).max(0.0);
     }
 
     // Step 3: Backward induction
@@ -99,7 +100,7 @@ pub fn mc_american_longstaff_schwartz(
         let mut itm_y: Vec<f64> = Vec::new();
 
         for i in 0..num_paths {
-            let s = paths[i][step];
+            let s = paths[i * stride + step];
             let exercise_val = omega * (s - strike);
             if exercise_val > 0.0 {
                 // Discount the future cashflow back to this step
@@ -120,11 +121,11 @@ pub fn mc_american_longstaff_schwartz(
 
         // Regression: fit continuation value = f(S)
         let basis_matrix = build_basis_matrix(&itm_x, basis_degree, basis);
-        let coeffs = least_squares_fit(&basis_matrix, &itm_y);
+        let coeffs = least_squares_fit(&basis_matrix, basis_degree + 1, &itm_y);
 
         // Compare exercise vs fitted continuation
         for &i in itm_indices.iter() {
-            let s = paths[i][step];
+            let s = paths[i * stride + step];
             let exercise_val = omega * (s - strike);
             let fitted_cont = evaluate_basis(s, &coeffs, basis);
 
@@ -164,7 +165,8 @@ pub fn mc_american_longstaff_schwartz(
 // ===========================================================================
 
 /// Simulate GBM paths forward.
-/// Returns `paths[path_idx][step]` = spot value.
+/// Returns flat array in row-major order: `paths[path_idx * stride + step]` = spot value,
+/// where `stride = num_steps + 1`.
 fn simulate_paths(
     spot: f64,
     drift_dt: f64,
@@ -173,73 +175,76 @@ fn simulate_paths(
     num_paths: usize,
     num_steps: usize,
     seed: u64,
-) -> Vec<Vec<f64>> {
+) -> Vec<f64> {
+    let stride = num_steps + 1;
     // Use parallel batches for speed
     let batch_size = 5000_usize;
     let num_batches = num_paths.div_ceil(batch_size);
 
-    let batches: Vec<Vec<Vec<f64>>> = (0..num_batches)
+    let batches: Vec<Vec<f64>> = (0..num_batches)
         .into_par_iter()
         .map(|batch_idx| {
             let mut rng = SmallRng::seed_from_u64(seed.wrapping_add(batch_idx as u64));
             let start = batch_idx * batch_size;
             let end = (start + batch_size).min(num_paths);
-            let mut batch_paths = Vec::with_capacity(end - start);
+            let count = end - start;
+            let mut buf = vec![0.0_f64; count * stride];
 
-            for _ in start..end {
-                let mut path = Vec::with_capacity(num_steps + 1);
-                path.push(spot);
+            for p in 0..count {
+                let base = p * stride;
+                buf[base] = spot;
                 let mut s = spot;
-                for _ in 0..num_steps {
+                for j in 1..stride {
                     let z: f64 = StandardNormal.sample(&mut rng);
                     s *= (drift_dt + vol * sqrt_dt * z).exp();
-                    path.push(s);
+                    buf[base + j] = s;
                 }
-                batch_paths.push(path);
             }
-            batch_paths
+            buf
         })
         .collect();
 
-    batches.into_iter().flatten().collect()
+    // Flatten batches into single contiguous array
+    let mut paths = Vec::with_capacity(num_paths * stride);
+    for b in batches {
+        paths.extend_from_slice(&b);
+    }
+    paths
 }
 
 // ===========================================================================
 // Regression (least-squares polynomial fit)
 // ===========================================================================
 
-/// Build the basis matrix for regression.
+/// Build the basis matrix for regression (flat row-major).
 ///
 /// Each row corresponds to one observation, columns are basis function values.
-fn build_basis_matrix(x: &[f64], degree: usize, basis: LSMBasis) -> Vec<Vec<f64>> {
+/// Returns flat array of size `n * p` where `p = degree + 1`.
+fn build_basis_matrix(x: &[f64], degree: usize, basis: LSMBasis) -> Vec<f64> {
     let n = x.len();
     let p = degree + 1; // number of basis functions
-    let mut matrix = vec![vec![0.0; p]; n];
+    let mut matrix = vec![0.0; n * p];
 
     for (i, xi) in x.iter().enumerate() {
+        let row = i * p;
         match basis {
             LSMBasis::Monomial => {
                 let mut xp = 1.0;
-                for col in matrix[i].iter_mut().take(p) {
-                    *col = xp;
+                for col in 0..p {
+                    matrix[row + col] = xp;
                     xp *= xi;
                 }
             }
             LSMBasis::Laguerre => {
-                // Weighted Laguerre polynomials L_k(x) evaluated at normalized x
-                // L_0 = 1
-                // L_1 = 1 - x
-                // L_2 = 1 - 2x + x²/2
-                matrix[i][0] = 1.0;
+                matrix[row] = 1.0;
                 if p > 1 {
-                    matrix[i][1] = 1.0 - xi;
+                    matrix[row + 1] = 1.0 - xi;
                 }
                 if p > 2 {
-                    matrix[i][2] = 1.0 - 2.0 * xi + 0.5 * xi * xi;
+                    matrix[row + 2] = 1.0 - 2.0 * xi + 0.5 * xi * xi;
                 }
-                // For higher degrees, fall back to monomial
-                for (j, col) in matrix[i].iter_mut().enumerate().skip(3).take(p.saturating_sub(3)) {
-                    *col = xi.powi(j as i32);
+                for j in 3..p {
+                    matrix[row + j] = xi.powi(j as i32);
                 }
             }
         }
@@ -280,46 +285,50 @@ fn evaluate_basis(x: f64, coeffs: &[f64], basis: LSMBasis) -> f64 {
 /// Solve the least-squares problem A·c = y using the normal equations.
 ///
 /// Uses A^T·A·c = A^T·y with simple Cholesky factorization.
-fn least_squares_fit(basis_matrix: &[Vec<f64>], y: &[f64]) -> Vec<f64> {
-    let n = basis_matrix.len();
-    let p = if n > 0 { basis_matrix[0].len() } else { return vec![]; };
+/// `basis_matrix` is flat row-major with `p` columns.
+fn least_squares_fit(basis_matrix: &[f64], p: usize, y: &[f64]) -> Vec<f64> {
+    let n = y.len();
+    if n == 0 || p == 0 {
+        return vec![];
+    }
 
-    // Build A^T A (p × p) and A^T y (p × 1)
-    let mut ata = vec![vec![0.0; p]; p];
+    // Build A^T A (p × p) and A^T y (p × 1) — flat row-major
+    let mut ata = vec![0.0; p * p];
     let mut aty = vec![0.0; p];
 
-    for (row, yi) in basis_matrix.iter().zip(y.iter()) {
-        for (j, &bj) in row.iter().enumerate() {
+    for (i, &yi) in y.iter().enumerate() {
+        let row = i * p;
+        for j in 0..p {
+            let bj = basis_matrix[row + j];
             aty[j] += bj * yi;
-            for (k, &bk) in row.iter().enumerate().skip(j) {
-                ata[j][k] += bj * bk;
+            for k in j..p {
+                ata[j * p + k] += bj * basis_matrix[row + k];
             }
         }
     }
-    // Symmetrize — we need cross-row indexing, so iterator style is impractical
-    #[allow(clippy::needless_range_loop)]
+    // Symmetrize
     for j in 1..p {
         for k in 0..j {
-            ata[j][k] = ata[k][j];
+            ata[j * p + k] = ata[k * p + j];
         }
     }
 
     // Add small regularization for numerical stability
-    for (j, row) in ata.iter_mut().enumerate().take(p) {
-        row[j] += 1e-8;
+    for j in 0..p {
+        ata[j * p + j] += 1e-8;
     }
 
-    // Cholesky solve: A^T A = L L^T
-    let l = cholesky(p, &ata);
+    // Cholesky solve: A^T A = L L^T  (flat row-major)
+    let l = cholesky_flat(p, &ata);
 
     // Forward substitution: L z = A^T y
     let mut z = vec![0.0; p];
     for i in 0..p {
         let mut sum = aty[i];
         for j in 0..i {
-            sum -= l[i][j] * z[j];
+            sum -= l[i * p + j] * z[j];
         }
-        z[i] = sum / l[i][i];
+        z[i] = sum / l[i * p + i];
     }
 
     // Back substitution: L^T c = z
@@ -327,25 +336,25 @@ fn least_squares_fit(basis_matrix: &[Vec<f64>], y: &[f64]) -> Vec<f64> {
     for i in (0..p).rev() {
         let mut sum = z[i];
         for j in (i + 1)..p {
-            sum -= l[j][i] * c[j];
+            sum -= l[j * p + i] * c[j];
         }
-        c[i] = sum / l[i][i];
+        c[i] = sum / l[i * p + i];
     }
 
     c
 }
 
-/// Cholesky decomposition of a symmetric positive-definite matrix.
-fn cholesky(n: usize, a: &[Vec<f64>]) -> Vec<Vec<f64>> {
-    let mut l = vec![vec![0.0; n]; n];
+/// Cholesky decomposition of a symmetric positive-definite matrix (flat row-major).
+fn cholesky_flat(n: usize, a: &[f64]) -> Vec<f64> {
+    let mut l = vec![0.0; n * n];
     for i in 0..n {
         for j in 0..=i {
-            let sum: f64 = (0..j).map(|k| l[i][k] * l[j][k]).sum();
+            let sum: f64 = (0..j).map(|k| l[i * n + k] * l[j * n + k]).sum();
             if i == j {
-                let val = a[i][i] - sum;
-                l[i][j] = if val > 0.0 { val.sqrt() } else { 1e-15 };
+                let val = a[i * n + i] - sum;
+                l[i * n + j] = if val > 0.0 { val.sqrt() } else { 1e-15 };
             } else {
-                l[i][j] = (a[i][j] - sum) / l[j][j];
+                l[i * n + j] = (a[i * n + j] - sum) / l[j * n + j];
             }
         }
     }

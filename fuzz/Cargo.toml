@@ -10,9 +10,11 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4"
 arbitrary = { version = "1", features = ["derive"] }
+serde_json = "1"
 ql-time = { path = "../crates/ql-time" }
 ql-math = { path = "../crates/ql-math" }
 ql-instruments = { path = "../crates/ql-instruments" }
+ql-models = { path = "../crates/ql-models" }
 ql-pricingengines = { path = "../crates/ql-pricingengines" }
 ql-termstructures = { path = "../crates/ql-termstructures" }
 ql-methods = { path = "../crates/ql-methods" }
@@ -43,4 +45,19 @@ doc = false
 [[bin]]
 name = "fuzz_sabr"
 path = "fuzz_targets/fuzz_sabr.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_serde_instruments"
+path = "fuzz_targets/fuzz_serde_instruments.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_serde_termstructures"
+path = "fuzz_targets/fuzz_serde_termstructures.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_heston_bates"
+path = "fuzz_targets/fuzz_heston_bates.rs"
 doc = false

@@ -1,14 +1,14 @@
 //! Analytic Heston pricing engine.
 //!
 //! Prices European options under the Heston stochastic volatility model
-//! using the characteristic function approach with Gauss-Lobatto integration.
+//! using the characteristic function approach with Gauss-Legendre integration.
 //!
 //! Uses the Gatheral (2006) log-strike formulation with the Albrecher et al.
 //! (2007) rotation-count correction for numerical stability.
 
 use std::f64::consts::PI;
 
-use ql_math::integration::{GaussLobattoIntegral, Integrator};
+use ql_math::integration::{GaussLegendreIntegral, Integrator};
 use ql_models::HestonModel;
 use tracing::info_span;
 
@@ -255,7 +255,7 @@ pub fn heston_price(
         }
     };
 
-    let integrator = GaussLobattoIntegral::new(10000, 1e-12);
+    let integrator = GaussLegendreIntegral::new(128).expect("GL128");
     let upper = 200.0;
 
     let i1 = integrator

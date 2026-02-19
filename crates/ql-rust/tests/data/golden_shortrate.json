@@ -1,0 +1,46 @@
+{
+  "description": "Golden cross-validation: short-rate models (Vasicek, CIR, Hull-White, G2)",
+  "source": "QuantLib C++ reference / analytic formulas",
+  "test_cases": {
+    "vasicek_bond_1y": {
+      "description": "Vasicek zero-coupon bond price, T=1",
+      "model": { "r0": 0.05, "kappa": 0.3, "theta": 0.05, "sigma": 0.02 },
+      "maturity": 1.0,
+      "expected_price": { "min": 0.949, "max": 0.952 },
+      "tolerance": 0.002
+    },
+    "vasicek_bond_5y": {
+      "description": "Vasicek zero-coupon bond price, T=5",
+      "model": { "r0": 0.05, "kappa": 0.3, "theta": 0.05, "sigma": 0.02 },
+      "maturity": 5.0,
+      "expected_price": { "min": 0.775, "max": 0.785 },
+      "tolerance": 0.005
+    },
+    "cir_bond_1y": {
+      "description": "CIR zero-coupon bond price, T=1",
+      "model": { "r0": 0.05, "kappa": 0.5, "theta": 0.05, "sigma": 0.1 },
+      "maturity": 1.0,
+      "expected_price": { "min": 0.949, "max": 0.952 },
+      "tolerance": 0.002
+    },
+    "hw_bond_option": {
+      "description": "Hull-White analytic bond option",
+      "model": { "a": 0.03, "sigma": 0.01 },
+      "bond_maturity": 10.0,
+      "option_expiry": 1.0,
+      "strike": 0.96,
+      "notional": 1000000.0,
+      "is_call": true,
+      "expected_npv": { "min": 1000.0, "max": 50000.0 }
+    },
+    "hw_jamshidian_swaption": {
+      "description": "Hull-White Jamshidian swaption decomposition (10Y swap, 1Y option)",
+      "model": { "a": 0.03, "sigma": 0.01 },
+      "option_expiry": 1.0,
+      "swap_rate": 0.04,
+      "notional": 1000000.0,
+      "is_payer": true,
+      "expected_npv": { "min": 1000.0, "max": 100000.0 }
+    }
+  }
+}

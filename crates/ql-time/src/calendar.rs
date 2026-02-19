@@ -431,9 +431,26 @@ fn uk_is_business_day(date: Date) -> bool {
 //  Easter computation (Anonymous Gregorian algorithm)
 // ============================================================================
 
-/// Compute the date of Easter Monday for a given year.
+/// Compute the date of Easter Monday for a given year (cached).
 /// Returns (month, day) of Easter Monday.
 fn easter_monday(year: i32) -> (u32, u32) {
+    use std::cell::RefCell;
+    thread_local! {
+        static CACHE: RefCell<(i32, u32, u32)> = const { RefCell::new((0, 0, 0)) };
+    }
+    CACHE.with(|c| {
+        let cached = *c.borrow();
+        if cached.0 == year {
+            return (cached.1, cached.2);
+        }
+        let (m, d) = easter_monday_impl(year);
+        *c.borrow_mut() = (year, m, d);
+        (m, d)
+    })
+}
+
+/// Raw Easter Monday computation (Anonymous Gregorian algorithm).
+fn easter_monday_impl(year: i32) -> (u32, u32) {
     let a = year % 19;
     let b = year / 100;
     let c = year % 100;

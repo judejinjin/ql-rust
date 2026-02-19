@@ -18,6 +18,7 @@ use ql_pricingengines::{
     kirk_spread_call, mc_basket, BasketType,
     hw_jamshidian_swaption,
     merton_jump_diffusion, bates_price_flat,
+    GaussianCopulaLHP, cds_option_black,
 };
 use ql_termstructures::{
     DepositRateHelper, FlatForward, NelsonSiegelFitting, PiecewiseYieldCurve,
@@ -677,6 +678,139 @@ fn bench_schedule_generation(c: &mut Criterion) {
     });
 }
 
+// ── Vasicek bond pricing ─────────────────────────────────────────────────────
+
+fn bench_vasicek_bond(c: &mut Criterion) {
+    let model = ql_models::VasicekModel::new(0.3, 0.05, 0.02, 0.05);
+
+    c.bench_function("vasicek_bond_5y", |b| {
+        b.iter(|| model.bond_price(black_box(5.0)))
+    });
+}
+
+// ── G2 swaption pricing ─────────────────────────────────────────────────────
+
+fn bench_g2_swaption(c: &mut Criterion) {
+    let model = ql_models::G2Model::new(0.1, 0.01, 0.15, 0.008, -0.5, 0.04);
+    let swap_tenors: Vec<f64> = (1..=10).map(|y| y as f64).collect();
+
+    c.bench_function("g2_swaption_10y", |b| {
+        b.iter(|| {
+            model.swaption_price(
+                black_box(1.0),
+                black_box(&swap_tenors),
+                black_box(0.04),
+                black_box(1_000_000.0),
+                black_box(true),
+            )
+        })
+    });
+}
+
+// ── FFT benchmark ────────────────────────────────────────────────────────────
+
+fn bench_fft(c: &mut Criterion) {
+    use ql_math::fft::{fft, Complex};
+
+    let n = 8192;
+    let data: Vec<Complex> = (0..n)
+        .map(|i| Complex {
+            re: (i as f64 / n as f64 * 6.28).sin(),
+            im: 0.0,
+        })
+        .collect();
+
+    c.bench_function("fft_8192", |b| {
+        b.iter(|| {
+            let mut d = data.clone();
+            fft(black_box(&mut d), false);
+            d
+        })
+    });
+}
+
+// ── Cholesky decomposition ──────────────────────────────────────────────────
+
+fn bench_cholesky(c: &mut Criterion) {
+    use ql_math::matrix::Matrix;
+
+    // Build a 50×50 positive definite matrix
+    let n = 50;
+    let mut m = Matrix::zeros(n, n);
+    for i in 0..n {
+        for j in 0..n {
+            m[(i, j)] = if i == j {
+                n as f64 + 1.0
+            } else {
+                0.5_f64.powi((i as i32 - j as i32).unsigned_abs() as i32)
+            };
+        }
+    }
+
+    c.bench_function("cholesky_50x50", |b| {
+        b.iter(|| ql_math::matrix::cholesky(black_box(&m)))
+    });
+}
+
+// ── CMS coupon pricing ──────────────────────────────────────────────────────
+
+fn bench_cms_caplet(c: &mut Criterion) {
+    c.bench_function("cms_caplet_pricing", |b| {
+        b.iter(|| {
+            ql_cashflows::cms_caplet_price(
+                black_box(0.04), black_box(0.05),
+                black_box(0.20), black_box(1.0),
+                black_box(1.0), black_box(0.95),
+                black_box(1_000_000.0), black_box(0.5),
+            )
+        })
+    });
+}
+
+// ── LMM cap pricing ─────────────────────────────────────────────────────────
+
+fn bench_lmm_cap(c: &mut Criterion) {
+    let config = ql_models::LmmConfig::flat(10, 0.04, 0.5, 0.15, 0.5);
+
+    c.bench_function("lmm_cap_10k_paths", |b| {
+        b.iter(|| {
+            ql_models::lmm_cap_price(
+                black_box(&config),
+                black_box(0.05),
+                black_box(10_000),
+                black_box(42),
+            )
+        })
+    });
+}
+
+// ── Gaussian copula CDO tranche ─────────────────────────────────────────────
+
+fn bench_gaussian_copula_cdo(c: &mut Criterion) {
+    let default_prob = 1.0 - (-0.01_f64 * 5.0).exp();
+    let copula = GaussianCopulaLHP::new(125, 0.3, 0.4, default_prob);
+
+    c.bench_function("gaussian_copula_cdo_tranche", |b| {
+        b.iter(|| {
+            copula.tranche_expected_loss(black_box(0.0), black_box(0.03))
+        })
+    });
+}
+
+// ── CDS option (Black) ──────────────────────────────────────────────────────
+
+fn bench_cds_option(c: &mut Criterion) {
+    c.bench_function("cds_option_black", |b| {
+        b.iter(|| {
+            cds_option_black(
+                black_box(0.01), black_box(0.012),
+                black_box(0.40), black_box(1.0),
+                black_box(4.5), black_box(true),
+            )
+        })
+    });
+}
+
 criterion_group!(
     benches,
     bench_bs_pricing,
@@ -710,5 +844,14 @@ criterion_group!(
     bench_merton_jd,
     bench_bates_analytic,
     bench_schedule_generation,
+    // -- Phase 16+ benchmarks --
+    bench_vasicek_bond,
+    bench_g2_swaption,
+    bench_fft,
+    bench_cholesky,
+    bench_cms_caplet,
+    bench_lmm_cap,
+    bench_gaussian_copula_cdo,
+    bench_cds_option,
 );
 criterion_main!(benches);

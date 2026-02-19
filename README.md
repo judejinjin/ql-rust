@@ -3,7 +3,7 @@
 A modern Rust reimplementation of the [QuantLib](https://www.quantlib.org/) quantitative finance library.
 
 [![Build](https://img.shields.io/badge/build-passing-brightgreen)]()
-[![Tests](https://img.shields.io/badge/tests-910_passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-963_passing-brightgreen)]()
 [![Rust](https://img.shields.io/badge/rust-2021_edition-orange)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
 
@@ -231,7 +231,7 @@ ql-cli list --book equity
 ## Testing
 
 ```bash
-# Run all 910 tests
+# Run all 963 tests
 cargo test --workspace
 
 # Run integration tests only
@@ -248,10 +248,10 @@ cargo bench -p ql-rust
 
 | Category | Count | Description |
 |----------|-------|-------------|
-| Unit tests | 827 | Per-crate functionality |
-| Integration tests | 47 | Cross-crate pipelines (options, swaps, yield curve, American, multi-asset, short-rate, cashflows) |
+| Unit tests | 845 | Per-crate functionality |
+| Integration tests | 42 | Cross-crate pipelines (options, swaps, yield curve, American, multi-asset, short-rate, cashflows) |
 | Property-based tests | 11 | Mathematical invariants via proptest (put-call parity, bounds, monotonicity) |
-| Golden cross-validation | 21 | Calendar, yield curve, BS, American, spread, Nelson-Siegel vs reference values |
+| Golden cross-validation | 65 | Calendar, yield curve, BS, American, spread, Nelson-Siegel, short-rate, FD, credit, LMM, CMS, advanced curves |
 
 ### Benchmarks
 
@@ -277,6 +277,14 @@ cargo bench -p ql-rust
 | `american_bjerksund_stensland_put` | Bjerksund-Stensland American put |
 | `american_qd_plus_put` | QD+ high-precision American put |
 | `nelson_siegel_fit_11_points` | Nelson-Siegel 4-param curve fitting |
+| `vasicek_bond_5y` | Vasicek analytic bond price (5Y) |
+| `g2_swaption_10y` | G2 two-factor swaption pricing |
+| `fft_8192` | In-place FFT on 8192-point complex array |
+| `cholesky_50x50` | Cholesky decomposition (50×50 matrix) |
+| `cms_caplet_pricing` | CMS caplet via linear TSR model |
+| `lmm_cap_10k_paths` | LMM cap pricing (10K MC paths) |
+| `gaussian_copula_cdo_tranche` | CDO equity tranche expected loss (LHP) |
+| `cds_option_black` | CDS option via Black's formula |
 
 ## Building
 
