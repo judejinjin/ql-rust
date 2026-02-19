@@ -9,15 +9,20 @@ use ql_indexes::IborIndex;
 use ql_instruments::{FixedRateBond, OptionType, VanillaOption, SwapType, VanillaSwap};
 use ql_math::interpolation::{CubicSplineInterpolation, Interpolation, LinearInterpolation};
 use ql_math::optimization::EndCriteria;
-use ql_methods::{binomial_crr, fd_black_scholes, mc_european};
+use ql_methods::{binomial_crr, fd_black_scholes, fd_heston_solve, mc_asian, mc_barrier, mc_bates, mc_european, mc_heston};
 use ql_models::{CalibrationHelper, HestonModel, calibrate};
 use ql_pricingengines::{
     heston_price, implied_volatility, price_bond, price_european, price_swap,
     barone_adesi_whaley, bjerksund_stensland, qd_plus_american,
+    mc_american_longstaff_schwartz, LSMBasis,
+    kirk_spread_call, mc_basket, BasketType,
+    hw_jamshidian_swaption,
+    merton_jump_diffusion, bates_price_flat,
 };
 use ql_termstructures::{
     DepositRateHelper, FlatForward, NelsonSiegelFitting, PiecewiseYieldCurve,
     RateHelper, SwapRateHelper, YieldTermStructure,
+    sabr_volatility, svi_calibrate,
 };
 use ql_time::{
     BusinessDayConvention, Calendar, Date, DayCounter, Month, Period, Schedule,
@@ -377,7 +382,7 @@ fn bench_american_approx(c: &mut Criterion) {
                 black_box(100.0), black_box(110.0),
                 black_box(0.05), black_box(0.02),
                 black_box(0.30), black_box(1.0),
-                black_box(OptionType::Put),
+                black_box(false),
             )
         })
     });
@@ -388,7 +393,7 @@ fn bench_american_approx(c: &mut Criterion) {
                 black_box(100.0), black_box(110.0),
                 black_box(0.05), black_box(0.02),
                 black_box(0.30), black_box(1.0),
-                black_box(OptionType::Put),
+                black_box(false),
             )
         })
     });
@@ -399,7 +404,7 @@ fn bench_american_approx(c: &mut Criterion) {
                 black_box(100.0), black_box(110.0),
                 black_box(0.05), black_box(0.02),
                 black_box(0.30), black_box(1.0),
-                black_box(OptionType::Put),
+                black_box(false),
             )
         })
     });
@@ -423,6 +428,255 @@ fn bench_nelson_siegel_fit(c: &mut Criterion) {
     });
 }
 
+// ── MC Barrier (down-and-out call) ───────────────────────────────────────────
+
+fn bench_mc_barrier(c: &mut Criterion) {
+    c.bench_function("mc_barrier_down_and_out_50k", |b| {
+        b.iter(|| {
+            mc_barrier(
+                black_box(100.0), black_box(100.0), black_box(80.0), black_box(0.0),
+                black_box(0.05), black_box(0.0), black_box(0.2), black_box(1.0),
+                black_box(OptionType::Call), black_box(false), black_box(false),
+                black_box(50_000), black_box(252), black_box(42),
+            )
+        })
+    });
+}
+
+// ── MC Asian (arithmetic average call) ───────────────────────────────────────
+
+fn bench_mc_asian(c: &mut Criterion) {
+    c.bench_function("mc_asian_arithmetic_50k", |b| {
+        b.iter(|| {
+            mc_asian(
+                black_box(100.0), black_box(100.0),
+                black_box(0.05), black_box(0.0), black_box(0.2), black_box(1.0),
+                black_box(OptionType::Call), black_box(true),
+                black_box(50_000), black_box(252), black_box(42),
+            )
+        })
+    });
+}
+
+// ── MC Heston European ──────────────────────────────────────────────────────
+
+fn bench_mc_heston(c: &mut Criterion) {
+    c.bench_function("mc_heston_european_50k", |b| {
+        b.iter(|| {
+            mc_heston(
+                black_box(100.0), black_box(100.0),
+                black_box(0.05), black_box(0.0),
+                black_box(0.04), black_box(1.5), black_box(0.04),
+                black_box(0.3), black_box(-0.7), black_box(1.0),
+                black_box(OptionType::Call),
+                black_box(50_000), black_box(252), black_box(42),
+            )
+        })
+    });
+}
+
+// ── MC Bates (Heston + jumps) ───────────────────────────────────────────────
+
+fn bench_mc_bates(c: &mut Criterion) {
+    c.bench_function("mc_bates_european_50k", |b| {
+        b.iter(|| {
+            mc_bates(
+                black_box(100.0), black_box(100.0),
+                black_box(0.05), black_box(0.0),
+                black_box(0.04), black_box(1.5), black_box(0.04),
+                black_box(0.3), black_box(-0.7),
+                black_box(0.5), black_box(-0.1), black_box(0.15),
+                black_box(1.0), black_box(OptionType::Call),
+                black_box(50_000), black_box(252), black_box(42),
+            )
+        })
+    });
+}
+
+// ── FD Heston 2D Douglas ADI ────────────────────────────────────────────────
+
+fn bench_fd_heston(c: &mut Criterion) {
+    c.bench_function("fd_heston_european_50x30x50", |b| {
+        b.iter(|| {
+            fd_heston_solve(
+                black_box(100.0), black_box(100.0),
+                black_box(0.05), black_box(0.0),
+                black_box(0.04), black_box(1.5), black_box(0.04),
+                black_box(0.3), black_box(-0.7), black_box(1.0),
+                black_box(true), black_box(false),
+                black_box(50), black_box(30), black_box(50),
+            )
+        })
+    });
+}
+
+// ── Longstaff-Schwartz MC American ──────────────────────────────────────────
+
+fn bench_lsm_american(c: &mut Criterion) {
+    c.bench_function("lsm_american_put_50k", |b| {
+        b.iter(|| {
+            mc_american_longstaff_schwartz(
+                black_box(100.0), black_box(110.0),
+                black_box(0.05), black_box(0.0),
+                black_box(0.30), black_box(1.0),
+                black_box(OptionType::Put),
+                black_box(50_000), black_box(50),
+                black_box(3), black_box(LSMBasis::Laguerre),
+                black_box(42),
+            )
+        })
+    });
+}
+
+// ── Kirk spread option ──────────────────────────────────────────────────────
+
+fn bench_kirk_spread(c: &mut Criterion) {
+    c.bench_function("kirk_spread_call", |b| {
+        b.iter(|| {
+            kirk_spread_call(
+                black_box(100.0), black_box(96.0), black_box(3.0),
+                black_box(0.05), black_box(0.02), black_box(0.01),
+                black_box(0.20), black_box(0.25), black_box(0.5),
+                black_box(1.0),
+            )
+        })
+    });
+}
+
+// ── MC Basket (3-asset correlated) ──────────────────────────────────────────
+
+fn bench_mc_basket(c: &mut Criterion) {
+    let spots = [100.0, 100.0, 100.0];
+    let weights = [1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0];
+    let divs = [0.02, 0.01, 0.03];
+    let vols = [0.20, 0.25, 0.30];
+    // 3×3 correlation matrix (row-major)
+    #[rustfmt::skip]
+    let corr = [
+        1.0, 0.5, 0.3,
+        0.5, 1.0, 0.4,
+        0.3, 0.4, 1.0,
+    ];
+
+    c.bench_function("mc_basket_3_asset_50k", |b| {
+        b.iter(|| {
+            mc_basket(
+                black_box(&spots), black_box(&weights), black_box(100.0),
+                black_box(0.05), black_box(&divs), black_box(&vols),
+                black_box(&corr), black_box(1.0), black_box(true),
+                black_box(BasketType::WeightedAverage),
+                black_box(50_000), black_box(42),
+            )
+        })
+    });
+}
+
+// ── SABR volatility ─────────────────────────────────────────────────────────
+
+fn bench_sabr(c: &mut Criterion) {
+    c.bench_function("sabr_implied_vol", |b| {
+        b.iter(|| {
+            sabr_volatility(
+                black_box(0.03), black_box(0.025),
+                black_box(5.0), black_box(0.035),
+                black_box(0.5), black_box(-0.3), black_box(0.4),
+            )
+        })
+    });
+}
+
+// ── SVI calibration ─────────────────────────────────────────────────────────
+
+fn bench_svi_calibrate(c: &mut Criterion) {
+    let strikes = vec![80.0, 85.0, 90.0, 95.0, 100.0, 105.0, 110.0, 115.0, 120.0];
+    let vols = vec![0.28, 0.25, 0.22, 0.20, 0.19, 0.20, 0.22, 0.25, 0.29];
+
+    c.bench_function("svi_calibrate_9_strikes", |b| {
+        b.iter(|| {
+            svi_calibrate(
+                black_box(&strikes), black_box(&vols),
+                black_box(100.0), black_box(1.0),
+            )
+        })
+    });
+}
+
+// ── HW Jamshidian swaption ──────────────────────────────────────────────────
+
+fn bench_hw_swaption(c: &mut Criterion) {
+    let swap_tenors: Vec<f64> = (1..=10).map(|y| y as f64).collect();
+    let dfs: Vec<f64> = swap_tenors.iter().map(|&t| (-0.04 * t).exp()).collect();
+
+    c.bench_function("hw_jamshidian_swaption_10y", |b| {
+        b.iter(|| {
+            hw_jamshidian_swaption(
+                black_box(0.03), black_box(0.01),
+                black_box(1.0), black_box(&swap_tenors),
+                black_box(0.04), black_box(&dfs),
+                black_box((-0.04_f64).exp()), black_box(1_000_000.0),
+                black_box(true),
+            )
+        })
+    });
+}
+
+// ── Merton jump-diffusion ───────────────────────────────────────────────────
+
+fn bench_merton_jd(c: &mut Criterion) {
+    c.bench_function("merton_jump_diffusion_call", |b| {
+        b.iter(|| {
+            merton_jump_diffusion(
+                black_box(100.0), black_box(100.0),
+                black_box(0.05), black_box(0.0),
+                black_box(0.15), black_box(1.0),
+                black_box(0.5), black_box(-0.1), black_box(0.15),
+                black_box(true),
+            )
+        })
+    });
+}
+
+// ── Bates analytic (flat) ───────────────────────────────────────────────────
+
+fn bench_bates_analytic(c: &mut Criterion) {
+    c.bench_function("bates_analytic_flat_call", |b| {
+        b.iter(|| {
+            bates_price_flat(
+                black_box(100.0), black_box(100.0),
+                black_box(0.05), black_box(0.0), black_box(1.0),
+                black_box(0.04), black_box(1.5), black_box(0.04),
+                black_box(0.3), black_box(-0.7),
+                black_box(0.5), black_box(-0.1), black_box(0.15),
+                black_box(true),
+            )
+        })
+    });
+}
+
+// ── Schedule generation ─────────────────────────────────────────────────────
+
+fn bench_schedule_generation(c: &mut Criterion) {
+    use ql_time::schedule::DateGenerationRule;
+    use ql_time::Frequency;
+
+    let effective = Date::from_ymd(2025, Month::January, 15);
+    let termination = Date::from_ymd(2055, Month::January, 15);
+    let cal = Calendar::UnitedStates(ql_time::calendar::USMarket::NYSE);
+
+    c.bench_function("schedule_30y_semiannual", |b| {
+        b.iter(|| {
+            Schedule::builder()
+                .effective_date(black_box(effective))
+                .termination_date(black_box(termination))
+                .frequency(black_box(Frequency::Semiannual))
+                .calendar(black_box(cal.clone()))
+                .convention(black_box(BusinessDayConvention::ModifiedFollowing))
+                .rule(black_box(DateGenerationRule::Forward))
+                .build()
+        })
+    });
+}
+
 criterion_group!(
     benches,
     bench_bs_pricing,
@@ -441,5 +695,20 @@ criterion_group!(
     bench_interpolation,
     bench_american_approx,
     bench_nelson_siegel_fit,
+    // -- New benchmarks --
+    bench_mc_barrier,
+    bench_mc_asian,
+    bench_mc_heston,
+    bench_mc_bates,
+    bench_fd_heston,
+    bench_lsm_american,
+    bench_kirk_spread,
+    bench_mc_basket,
+    bench_sabr,
+    bench_svi_calibrate,
+    bench_hw_swaption,
+    bench_merton_jd,
+    bench_bates_analytic,
+    bench_schedule_generation,
 );
 criterion_main!(benches);

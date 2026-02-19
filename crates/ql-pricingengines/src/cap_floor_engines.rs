@@ -148,7 +148,7 @@ mod tests {
                 accrual_fraction: 0.5,
                 notional: 1_000_000.0,
                 forward_rate,
-                discount: 0.97_f64.powi(i as i32 + 1),
+                discount: 0.97_f64.powi(i + 1),
             })
             .collect()
     }
