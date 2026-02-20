@@ -52,6 +52,7 @@ pub mod cms_coupon;
 pub mod digital_coupon;
 pub mod cashflow_analytics_extended;
 pub mod cpi_coupon;
+pub mod dividend;
 
 // Re-exports
 pub use cashflow::{CashFlow, Leg};
@@ -73,3 +74,4 @@ pub use cashflow_analytics_extended::{
     time_bucketed_cashflows, TimeBucket,
 };
 pub use cpi_coupon::{CPICoupon, generate_cpi_coupons};
+pub use dividend::{Dividend, DividendSchedule};

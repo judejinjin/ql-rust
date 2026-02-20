@@ -632,6 +632,109 @@ impl YieldTermStructure for SpreadedTermStructure {
 }
 
 // ===========================================================================
+// QuantoTermStructure — quanto-adjusted yield curve
+// ===========================================================================
+
+/// A yield curve adjusted for quanto effects.
+///
+/// The quanto-adjusted discount factor is:
+///   P_q(t) = P_d(t) · exp(−ρ · σ_eq · σ_fx · t)
+///
+/// where:
+/// - P_d(t) is the domestic discount factor
+/// - ρ is the correlation between the equity and FX processes
+/// - σ_eq is the equity volatility
+/// - σ_fx is the FX volatility
+///
+/// This allows any vanilla engine to price quanto options by simply
+/// replacing the domestic curve with a `QuantoTermStructure`.
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct QuantoTermStructure {
+    reference_date: Date,
+    day_counter: DayCounter,
+    calendar: Calendar,
+    max_date: Date,
+    /// Sampled base discount factors.
+    base_times: Vec<f64>,
+    base_dfs: Vec<f64>,
+    /// Quanto adjustment: ρ · σ_eq · σ_fx (a continuous rate adjustment).
+    quanto_adjustment: f64,
+}
+
+impl QuantoTermStructure {
+    /// Create a quanto-adjusted yield curve.
+    ///
+    /// # Parameters
+    /// - `base` — the domestic yield curve
+    /// - `equity_vol` — volatility of the equity underlying
+    /// - `fx_vol` — volatility of the domestic/foreign FX rate
+    /// - `correlation` — correlation between equity and FX
+    /// - `max_years` — maximum maturity to sample
+    pub fn new(
+        base: &dyn YieldTermStructure,
+        equity_vol: f64,
+        fx_vol: f64,
+        correlation: f64,
+        max_years: f64,
+    ) -> Self {
+        let ref_date = base.reference_date();
+        let dc = base.day_counter();
+        let num_samples = 100;
+        let mut base_times = Vec::with_capacity(num_samples);
+        let mut base_dfs = Vec::with_capacity(num_samples);
+
+        for i in 0..num_samples {
+            let t = max_years * (i as f64) / ((num_samples - 1) as f64);
+            base_times.push(t);
+            base_dfs.push(base.discount_t(t));
+        }
+
+        let max_days = (max_years * 365.25) as i32;
+        let max_date = ref_date + max_days;
+
+        Self {
+            reference_date: ref_date,
+            day_counter: dc,
+            calendar: base.calendar().clone(),
+            max_date,
+            base_times,
+            base_dfs,
+            quanto_adjustment: correlation * equity_vol * fx_vol,
+        }
+    }
+
+    /// The continuous quanto adjustment rate: ρ·σ_eq·σ_fx.
+    pub fn quanto_adjustment(&self) -> f64 {
+        self.quanto_adjustment
+    }
+}
+
+impl TermStructure for QuantoTermStructure {
+    fn reference_date(&self) -> Date {
+        self.reference_date
+    }
+    fn day_counter(&self) -> DayCounter {
+        self.day_counter
+    }
+    fn calendar(&self) -> &Calendar {
+        &self.calendar
+    }
+    fn max_date(&self) -> Date {
+        self.max_date
+    }
+}
+
+impl YieldTermStructure for QuantoTermStructure {
+    fn discount_impl(&self, t: f64) -> f64 {
+        if t <= 0.0 {
+            return 1.0;
+        }
+        let base_df = interpolate_log_linear_vec(&self.base_times, &self.base_dfs, t);
+        base_df * (-self.quanto_adjustment * t).exp()
+    }
+}
+
+// ===========================================================================
 // Helpers
 // ===========================================================================
 
@@ -874,5 +977,48 @@ mod tests {
             let df_sp = spreaded.discount_impl(t);
             assert_abs_diff_eq!(df_base, df_sp, epsilon = 1e-6);
         }
+    }
+
+    #[test]
+    fn quanto_term_structure_positive_corr_lowers_df() {
+        let base = FlatForward::new(ref_date(), 0.03, DayCounter::Actual365Fixed);
+        // Positive correlation → quanto adjustment increases rate → lowers DF
+        let quanto = QuantoTermStructure::new(&base, 0.20, 0.10, 0.5, 30.0);
+        let df_base = base.discount_impl(5.0);
+        let df_quanto = quanto.discount_impl(5.0);
+        assert!(
+            df_quanto < df_base,
+            "Positive corr should lower DF: base={df_base}, quanto={df_quanto}"
+        );
+    }
+
+    #[test]
+    fn quanto_term_structure_zero_corr_matches_base() {
+        let base = FlatForward::new(ref_date(), 0.05, DayCounter::Actual365Fixed);
+        let quanto = QuantoTermStructure::new(&base, 0.20, 0.10, 0.0, 30.0);
+        for t in [1.0, 5.0, 10.0] {
+            assert_abs_diff_eq!(
+                quanto.discount_impl(t),
+                base.discount_impl(t),
+                epsilon = 1e-6
+            );
+        }
+    }
+
+    #[test]
+    fn quanto_term_structure_adjustment_value() {
+        let base = FlatForward::new(ref_date(), 0.03, DayCounter::Actual365Fixed);
+        let equity_vol = 0.25;
+        let fx_vol = 0.12;
+        let corr = 0.6;
+        let quanto = QuantoTermStructure::new(&base, equity_vol, fx_vol, corr, 30.0);
+
+        // ρ·σ_eq·σ_fx = 0.6*0.25*0.12 = 0.018
+        assert_abs_diff_eq!(quanto.quanto_adjustment(), 0.018, epsilon = 1e-12);
+
+        // Effective rate = 0.03 + 0.018 = 0.048
+        let df5 = quanto.discount_impl(5.0);
+        let expected = (-0.048_f64 * 5.0).exp();
+        assert_abs_diff_eq!(df5, expected, epsilon = 1e-4);
     }
 }

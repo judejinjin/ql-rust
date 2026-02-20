@@ -24,6 +24,8 @@ pub mod hull_white_process;
 pub mod bates_process;
 pub mod cir_process;
 pub mod g2_process;
+pub mod merton76_process;
+pub mod gjr_garch_process;
 
 // Re-exports
 pub use process::{StochasticProcess, StochasticProcess1D};
@@ -33,3 +35,5 @@ pub use hull_white_process::{OrnsteinUhlenbeckProcess, HullWhiteProcess};
 pub use bates_process::BatesProcess;
 pub use cir_process::{CoxIngersollRossProcess, SquareRootProcess};
 pub use g2_process::G2Process;
+pub use merton76_process::Merton76Process;
+pub use gjr_garch_process::GjrGarchProcess;

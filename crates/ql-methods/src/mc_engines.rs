@@ -13,7 +13,7 @@ use ql_instruments::OptionType;
 
 /// Conditionally parallel collect: uses `par_iter` when the `parallel` feature
 /// is enabled, falling back to sequential `into_iter` otherwise.
-fn par_map_collect<T, F>(n: usize, f: F) -> Vec<T>
+pub(crate) fn par_map_collect<T, F>(n: usize, f: F) -> Vec<T>
 where
     T: Send,
     F: Fn(usize) -> T + Send + Sync,

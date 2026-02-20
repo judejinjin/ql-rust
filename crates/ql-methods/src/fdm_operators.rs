@@ -336,6 +336,310 @@ pub fn apply_american_condition(values: &mut [f64], payoff: &[f64]) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// ADI scheme selection
+// ─────────────────────────────────────────────────────────────
+
+/// Choice of ADI (Alternating Direction Implicit) scheme for 2D PDE solvers.
+///
+/// - **Douglas**: Classic Douglas–Rachford. Ignores the cross-derivative term.
+///   Very fast but inaccurate for high |ρ|.
+/// - **HundsdorferVerwer**: Second-order scheme with two predictor-corrector
+///   stages. Handles cross-derivatives explicitly.
+/// - **ModifiedCraigSneyd**: The most popular scheme for Heston PDE.
+///   Includes an extra explicit cross-derivative correction for improved
+///   stability at large time steps.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub enum AdiScheme {
+    /// Douglas–Rachford (θ = 0.5). Drops mixed partial.
+    Douglas,
+    /// Hundsdorfer–Verwer with θ = 0.5.
+    HundsdorferVerwer,
+    /// Modified Craig–Sneyd with θ = 1/3, μ = 1/2.
+    ModifiedCraigSneyd,
+}
+
+// ─────────────────────────────────────────────────────────────
+// Cross-derivative operator
+// ─────────────────────────────────────────────────────────────
+
+/// Apply the mixed partial ∂²V/∂x∂v explicitly using a 4-point stencil:
+///
+/// $$\frac{\partial^2 V}{\partial x \partial v} \approx
+///   \frac{V_{i+1,j+1} - V_{i+1,j-1} - V_{i-1,j+1} + V_{i-1,j-1}}
+///        {4 \Delta x \Delta v}$$
+///
+/// Result: `cross[i*nv+j] = ρσv_j * (∂²V/∂x∂v)_{i,j}` on interior; 0 on boundary.
+pub fn apply_cross_derivative(
+    ops: &Heston2dOps,
+    x_grid: &[f64],
+    v_grid: &[f64],
+    values: &[f64],
+) -> Vec<f64> {
+    let nx = ops.nx;
+    let nv = ops.nv;
+    let mut result = vec![0.0; nx * nv];
+
+    for i in 1..nx - 1 {
+        let dx = 0.5 * (x_grid[i + 1] - x_grid[i - 1]);
+        for j in 1..nv - 1 {
+            let dv = 0.5 * (v_grid[j + 1] - v_grid[j - 1]);
+            let d2 = values[(i + 1) * nv + (j + 1)]
+                - values[(i + 1) * nv + (j - 1)]
+                - values[(i - 1) * nv + (j + 1)]
+                + values[(i - 1) * nv + (j - 1)];
+            result[i * nv + j] = ops.cross_coeffs[j] * d2 / (4.0 * dx * dv);
+        }
+    }
+    result
+}
+
+// ─────────────────────────────────────────────────────────────
+// Hundsdorfer-Verwer ADI
+// ─────────────────────────────────────────────────────────────
+
+/// Hundsdorfer-Verwer ADI step for 2D problems with cross-derivative.
+///
+/// A second-order scheme that handles mixed partial derivatives via
+/// explicit inclusion in two predictor-corrector stages.
+///
+/// Given $F(V) = L_x V + L_v V + L_{xv} V$:
+///
+/// 1. $Y_0 = V^n + \Delta t \, F(V^n)$
+/// 2. $(I - \theta\,\Delta t\,L_x)\,Y_1 = Y_0 - \theta\,\Delta t\,L_x V^n$
+/// 3. $(I - \theta\,\Delta t\,L_v)\,\hat{V} = Y_1 - \theta\,\Delta t\,L_v V^n$
+/// 4. $Y_2 = \hat{V} + \tfrac12 \Delta t \,(F(\hat{V}) - F(V^n))$
+/// 5. $(I - \theta\,\Delta t\,L_x)\,Y_3 = Y_2 - \theta\,\Delta t\,L_x \hat{V}$
+/// 6. $(I - \theta\,\Delta t\,L_v)\,V^{n+1} = Y_3 - \theta\,\Delta t\,L_v \hat{V}$
+///
+/// With $\theta = \tfrac12$ this is second-order in time.
+pub fn hundsdorfer_verwer_step(
+    ops: &Heston2dOps,
+    x_grid: &[f64],
+    v_grid: &[f64],
+    values: &mut [f64],
+    dt: f64,
+    theta: f64,
+) {
+    let nx = ops.nx;
+    let nv = ops.nv;
+
+    // Compute F(V^n) = L_x V^n + L_v V^n + L_cross V^n
+    let f_vn = full_operator_apply(ops, x_grid, v_grid, values);
+
+    // Y_0 = V^n + dt * F(V^n)
+    let mut y0 = vec![0.0; nx * nv];
+    for i in 0..nx * nv {
+        y0[i] = values[i] + dt * f_vn[i];
+    }
+
+    // Stage 1: implicit x-sweep
+    // (I - theta*dt*L_x) Y_1 = Y_0 - theta*dt*L_x V^n
+    let lx_vn = x_direction_apply(ops, values);
+    let mut rhs1 = y0.clone();
+    for i in 0..nx * nv {
+        rhs1[i] -= theta * dt * lx_vn[i];
+    }
+    let mut y1 = implicit_x_sweep(ops, &rhs1, theta, dt);
+
+    // Stage 2: implicit v-sweep
+    // (I - theta*dt*L_v) V_hat = Y_1 - theta*dt*L_v V^n
+    let lv_vn = v_direction_apply(ops, values);
+    for i in 0..nx * nv {
+        y1[i] -= theta * dt * lv_vn[i];
+    }
+    let v_hat = implicit_v_sweep(ops, &y1, theta, dt);
+
+    // Compute F(V_hat)
+    let f_vh = full_operator_apply(ops, x_grid, v_grid, &v_hat);
+
+    // Y_2 = V_hat + 0.5 * dt * (F(V_hat) - F(V^n))
+    let mut y2 = vec![0.0; nx * nv];
+    for i in 0..nx * nv {
+        y2[i] = v_hat[i] + 0.5 * dt * (f_vh[i] - f_vn[i]);
+    }
+
+    // Stage 3: implicit x-sweep (correction)
+    let lx_vh = x_direction_apply(ops, &v_hat);
+    let mut rhs3 = y2.clone();
+    for i in 0..nx * nv {
+        rhs3[i] -= theta * dt * lx_vh[i];
+    }
+    let mut y3 = implicit_x_sweep(ops, &rhs3, theta, dt);
+
+    // Stage 4: implicit v-sweep (correction)
+    let lv_vh = v_direction_apply(ops, &v_hat);
+    for i in 0..nx * nv {
+        y3[i] -= theta * dt * lv_vh[i];
+    }
+    let result = implicit_v_sweep(ops, &y3, theta, dt);
+
+    values.copy_from_slice(&result);
+}
+
+// ─────────────────────────────────────────────────────────────
+// Modified Craig-Sneyd ADI
+// ─────────────────────────────────────────────────────────────
+
+/// Modified Craig-Sneyd ADI step for 2D problems.
+///
+/// The most popular ADI scheme for Heston PDE due to its excellent stability
+/// and accuracy with the cross-derivative term. The key innovation is a
+/// second explicit cross-derivative correction after the implicit sweeps.
+///
+/// 1. $Y_0 = V^n + \Delta t\,(L_x + L_v + L_{xv})\,V^n$
+/// 2. $(I - \theta\,\Delta t\,L_x)\,Y_1 = Y_0 - \theta\,\Delta t\,L_x\,V^n$
+/// 3. $(I - \theta\,\Delta t\,L_v)\,\tilde{Y} = Y_1 - \theta\,\Delta t\,L_v\,V^n$
+/// 4. $\hat{Y}_0 = \tilde{Y} + \mu\,\Delta t\,(L_{xv}\,\tilde{Y} - L_{xv}\,V^n)$
+/// 5. $(I - \theta\,\Delta t\,L_x)\,\hat{Y}_1 = \hat{Y}_0 - \theta\,\Delta t\,L_x\,\tilde{Y}$
+/// 6. $(I - \theta\,\Delta t\,L_v)\,V^{n+1} = \hat{Y}_1 - \theta\,\Delta t\,L_v\,\tilde{Y}$
+///
+/// Default parameters: $\theta = \frac13$, $\mu = \frac12$.
+pub fn modified_craig_sneyd_step(
+    ops: &Heston2dOps,
+    x_grid: &[f64],
+    v_grid: &[f64],
+    values: &mut [f64],
+    dt: f64,
+    theta: f64,
+    mu: f64,
+) {
+    let nx = ops.nx;
+    let nv = ops.nv;
+
+    // Compute operator components on V^n
+    let lx_vn = x_direction_apply(ops, values);
+    let lv_vn = v_direction_apply(ops, values);
+    let lc_vn = apply_cross_derivative(ops, x_grid, v_grid, values);
+
+    // Y_0 = V^n + dt * (L_x + L_v + L_cross) V^n
+    let mut y0 = vec![0.0; nx * nv];
+    for i in 0..nx * nv {
+        y0[i] = values[i] + dt * (lx_vn[i] + lv_vn[i] + lc_vn[i]);
+    }
+
+    // Stage 1: (I - theta*dt*L_x) Y_1 = Y_0 - theta*dt*L_x V^n
+    let mut rhs1 = y0;
+    for i in 0..nx * nv {
+        rhs1[i] -= theta * dt * lx_vn[i];
+    }
+    let y1 = implicit_x_sweep(ops, &rhs1, theta, dt);
+
+    // Stage 2: (I - theta*dt*L_v) Y_tilde = Y_1 - theta*dt*L_v V^n
+    let mut rhs2 = y1;
+    for i in 0..nx * nv {
+        rhs2[i] -= theta * dt * lv_vn[i];
+    }
+    let y_tilde = implicit_v_sweep(ops, &rhs2, theta, dt);
+
+    // MCS correction: Y_hat_0 = Y_tilde + mu*dt*(L_cross Y_tilde - L_cross V^n)
+    let lc_yt = apply_cross_derivative(ops, x_grid, v_grid, &y_tilde);
+    let mut y_hat0 = vec![0.0; nx * nv];
+    for i in 0..nx * nv {
+        y_hat0[i] = y_tilde[i] + mu * dt * (lc_yt[i] - lc_vn[i]);
+    }
+
+    // Stage 3: (I - theta*dt*L_x) Y_hat_1 = Y_hat_0 - theta*dt*L_x Y_tilde
+    let lx_yt = x_direction_apply(ops, &y_tilde);
+    let mut rhs3 = y_hat0;
+    for i in 0..nx * nv {
+        rhs3[i] -= theta * dt * lx_yt[i];
+    }
+    let y_hat1 = implicit_x_sweep(ops, &rhs3, theta, dt);
+
+    // Stage 4: (I - theta*dt*L_v) V^{n+1} = Y_hat_1 - theta*dt*L_v Y_tilde
+    let lv_yt = v_direction_apply(ops, &y_tilde);
+    let mut rhs4 = y_hat1;
+    for i in 0..nx * nv {
+        rhs4[i] -= theta * dt * lv_yt[i];
+    }
+    let result = implicit_v_sweep(ops, &rhs4, theta, dt);
+
+    values.copy_from_slice(&result);
+}
+
+// ─────────────────────────────────────────────────────────────
+// ADI helper functions
+// ─────────────────────────────────────────────────────────────
+
+/// Apply L_x to all v-slices.
+fn x_direction_apply(ops: &Heston2dOps, values: &[f64]) -> Vec<f64> {
+    let nx = ops.nx;
+    let nv = ops.nv;
+    let mut result = vec![0.0; nx * nv];
+    for j in 0..nv {
+        let row: Vec<f64> = (0..nx).map(|i| values[i * nv + j]).collect();
+        let lx = ops.x_ops[j].apply(&row);
+        for i in 0..nx {
+            result[i * nv + j] = lx[i];
+        }
+    }
+    result
+}
+
+/// Apply L_v to all x-slices.
+fn v_direction_apply(ops: &Heston2dOps, values: &[f64]) -> Vec<f64> {
+    let nx = ops.nx;
+    let nv = ops.nv;
+    let mut result = vec![0.0; nx * nv];
+    for i in 0..nx {
+        let col: Vec<f64> = (0..nv).map(|j| values[i * nv + j]).collect();
+        let lv = ops.v_ops[i].apply(&col);
+        for j in 0..nv {
+            result[i * nv + j] = lv[j];
+        }
+    }
+    result
+}
+
+/// Full operator: L_x + L_v + L_cross.
+fn full_operator_apply(
+    ops: &Heston2dOps,
+    x_grid: &[f64],
+    v_grid: &[f64],
+    values: &[f64],
+) -> Vec<f64> {
+    let lx = x_direction_apply(ops, values);
+    let lv = v_direction_apply(ops, values);
+    let lc = apply_cross_derivative(ops, x_grid, v_grid, values);
+    let n = values.len();
+    let mut result = vec![0.0; n];
+    for i in 0..n {
+        result[i] = lx[i] + lv[i] + lc[i];
+    }
+    result
+}
+
+/// Implicit x-sweep: solve (I - theta*dt*L_x) for each v-level.
+fn implicit_x_sweep(ops: &Heston2dOps, rhs: &[f64], theta: f64, dt: f64) -> Vec<f64> {
+    let nx = ops.nx;
+    let nv = ops.nv;
+    let mut result = vec![0.0; nx * nv];
+    for j in 0..nv {
+        let rhs_row: Vec<f64> = (0..nx).map(|i| rhs[i * nv + j]).collect();
+        let solved = ops.x_ops[j].solve_implicit(&rhs_row, theta, dt);
+        for i in 0..nx {
+            result[i * nv + j] = solved[i];
+        }
+    }
+    result
+}
+
+/// Implicit v-sweep: solve (I - theta*dt*L_v) for each x-level.
+fn implicit_v_sweep(ops: &Heston2dOps, rhs: &[f64], theta: f64, dt: f64) -> Vec<f64> {
+    let nx = ops.nx;
+    let nv = ops.nv;
+    let mut result = vec![0.0; nx * nv];
+    for i in 0..nx {
+        let rhs_col: Vec<f64> = (0..nv).map(|j| rhs[i * nv + j]).collect();
+        let solved = ops.v_ops[i].solve_implicit(&rhs_col, theta, dt);
+        for j in 0..nv {
+            result[i * nv + j] = solved[j];
+        }
+    }
+    result
+}
+
+// ─────────────────────────────────────────────────────────────
 // 1D FD solver
 // ─────────────────────────────────────────────────────────────
 
@@ -608,6 +912,146 @@ pub fn fd_heston_solve(
     }
 }
 
+/// Solve Heston PDE with a selectable ADI scheme.
+///
+/// Identical to [`fd_heston_solve`] but allows choosing between
+/// Douglas, Hundsdorfer-Verwer, and Modified Craig-Sneyd ADI.
+pub fn fd_heston_solve_adi(
+    spot: f64,
+    strike: f64,
+    r: f64,
+    q: f64,
+    v0: f64,
+    kappa: f64,
+    theta_h: f64,
+    sigma: f64,
+    rho: f64,
+    expiry: f64,
+    is_call: bool,
+    is_american: bool,
+    nx: usize,
+    nv: usize,
+    n_time: usize,
+    scheme: AdiScheme,
+) -> HestonFdResult {
+    let x0 = spot.ln();
+    let vol_approx = v0.sqrt();
+    let std_dev = vol_approx * expiry.sqrt();
+    let x_lo = x0 - 5.0 * std_dev;
+    let x_hi = x0 + 5.0 * std_dev;
+
+    let v_max = (5.0 * theta_h).max(3.0 * v0).max(1.0);
+
+    let x_grid: Vec<f64> = (0..nx)
+        .map(|i| x_lo + i as f64 * (x_hi - x_lo) / (nx - 1) as f64)
+        .collect();
+    let v_grid: Vec<f64> = (0..nv)
+        .map(|j| j as f64 * v_max / (nv - 1) as f64)
+        .collect();
+
+    let dt = expiry / n_time as f64;
+
+    // Terminal payoff
+    let mut values = vec![0.0; nx * nv];
+    let mut payoff = vec![0.0; nx * nv];
+    for i in 0..nx {
+        let s = x_grid[i].exp();
+        let pf = if is_call {
+            (s - strike).max(0.0)
+        } else {
+            (strike - s).max(0.0)
+        };
+        for j in 0..nv {
+            values[i * nv + j] = pf;
+            payoff[i * nv + j] = pf;
+        }
+    }
+
+    let ops = build_heston_ops(&x_grid, &v_grid, r, q, kappa, theta_h, sigma, rho);
+
+    // Time-step backward
+    for _ in 0..n_time {
+        match scheme {
+            AdiScheme::Douglas => douglas_adi_step(&ops, &mut values, dt, 0.5),
+            AdiScheme::HundsdorferVerwer => {
+                hundsdorfer_verwer_step(&ops, &x_grid, &v_grid, &mut values, dt, 0.5);
+            }
+            AdiScheme::ModifiedCraigSneyd => {
+                modified_craig_sneyd_step(
+                    &ops, &x_grid, &v_grid, &mut values, dt,
+                    1.0 / 3.0, 0.5,
+                );
+            }
+        }
+
+        if is_american {
+            apply_american_condition(&mut values, &payoff);
+        }
+
+        // Boundary conditions at x boundaries
+        for j in 0..nv {
+            values[j] = if is_call { 0.0 } else { (strike - x_grid[0].exp()).max(0.0) };
+            values[(nx - 1) * nv + j] = if is_call {
+                (x_grid[nx - 1].exp() - strike * (-r * expiry).exp()).max(0.0)
+            } else {
+                0.0
+            };
+        }
+    }
+
+    // Interpolate at (x0, v0)
+    let xi = x_grid
+        .iter()
+        .position(|&x| x >= x0)
+        .unwrap_or(nx - 1)
+        .max(1)
+        .min(nx - 2);
+    let vj = v_grid
+        .iter()
+        .position(|&v| v >= v0)
+        .unwrap_or(nv - 1)
+        .max(1)
+        .min(nv - 2);
+
+    let tx = (x0 - x_grid[xi - 1]) / (x_grid[xi] - x_grid[xi - 1]);
+    let tv = (v0 - v_grid[vj - 1]) / (v_grid[vj] - v_grid[vj - 1]);
+
+    let v00 = values[(xi - 1) * nv + (vj - 1)];
+    let v10 = values[xi * nv + (vj - 1)];
+    let v01 = values[(xi - 1) * nv + vj];
+    let v11 = values[xi * nv + vj];
+
+    let price = v00 * (1.0 - tx) * (1.0 - tv)
+        + v10 * tx * (1.0 - tv)
+        + v01 * (1.0 - tx) * tv
+        + v11 * tx * tv;
+
+    let dx = x_grid[xi] - x_grid[xi - 1];
+    let dv_dx = (v10 * (1.0 - tv) + v11 * tv - v00 * (1.0 - tv) - v01 * tv) / dx;
+    let delta = dv_dx / spot;
+
+    let xi2 = xi.min(nx - 2);
+    let v20 = values[(xi2 + 1) * nv + (vj - 1)];
+    let v21 = values[(xi2 + 1) * nv + vj];
+    let v_plus = v20 * (1.0 - tv) + v21 * tv;
+    let v_mid = v10 * (1.0 - tv) + v11 * tv;
+    let v_minus = v00 * (1.0 - tv) + v01 * tv;
+    let dx2 = x_grid[xi2 + 1] - x_grid[xi2];
+    let d2v_dx2 = (v_plus - 2.0 * v_mid + v_minus) / (dx * dx2);
+    let gamma = (d2v_dx2 - dv_dx) / (spot * spot);
+
+    let dv = v_grid[vj] - v_grid[vj - 1];
+    let vega_raw = (v01 * (1.0 - tx) + v11 * tx - v00 * (1.0 - tx) - v10 * tx) / dv;
+    let vega = vega_raw * 2.0 * v0.sqrt();
+
+    HestonFdResult {
+        price,
+        delta,
+        gamma,
+        vega,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -800,6 +1244,93 @@ mod tests {
             result.delta > 0.0 && result.delta < 1.0,
             "Heston call delta should be in (0,1): {}",
             result.delta
+        );
+    }
+
+    // ── ADI scheme tests ─────────────────────────────────────
+
+    #[test]
+    fn fd_heston_mcs_european_call_positive() {
+        let result = fd_heston_solve_adi(
+            100.0, 100.0, 0.05, 0.0,
+            0.04, 1.5, 0.04, 0.5, -0.7,
+            1.0, true, false, 50, 25, 100,
+            AdiScheme::ModifiedCraigSneyd,
+        );
+        assert!(result.price > 0.0, "MCS Heston FD price should be positive: {}", result.price);
+        assert!(result.price < 50.0, "MCS price unreasonably large: {}", result.price);
+    }
+
+    #[test]
+    fn fd_heston_hv_european_call_positive() {
+        let result = fd_heston_solve_adi(
+            100.0, 100.0, 0.05, 0.0,
+            0.04, 1.5, 0.04, 0.5, -0.7,
+            1.0, true, false, 50, 25, 100,
+            AdiScheme::HundsdorferVerwer,
+        );
+        assert!(result.price > 0.0, "HV Heston FD price should be positive: {}", result.price);
+        assert!(result.price < 50.0, "HV price unreasonably large: {}", result.price);
+    }
+
+    #[test]
+    fn fd_heston_mcs_vs_douglas() {
+        // Both schemes should give similar prices for same parameters
+        let douglas = fd_heston_solve_adi(
+            100.0, 100.0, 0.05, 0.0,
+            0.04, 1.5, 0.04, 0.5, -0.7,
+            1.0, true, false, 60, 30, 120,
+            AdiScheme::Douglas,
+        );
+        let mcs = fd_heston_solve_adi(
+            100.0, 100.0, 0.05, 0.0,
+            0.04, 1.5, 0.04, 0.5, -0.7,
+            1.0, true, false, 60, 30, 120,
+            AdiScheme::ModifiedCraigSneyd,
+        );
+        // Prices should agree within a few dollars on coarse grids
+        assert!(
+            (douglas.price - mcs.price).abs() < 3.0,
+            "Douglas ({:.4}) and MCS ({:.4}) should be close",
+            douglas.price, mcs.price
+        );
+    }
+
+    #[test]
+    fn fd_heston_mcs_delta_reasonable() {
+        // Verify MCS produces reasonable greeks
+        let result = fd_heston_solve_adi(
+            100.0, 100.0, 0.05, 0.0,
+            0.04, 1.5, 0.04, 0.5, -0.7,
+            1.0, true, false, 50, 25, 100,
+            AdiScheme::ModifiedCraigSneyd,
+        );
+        assert!(
+            result.delta > 0.0 && result.delta < 1.0,
+            "MCS call delta in (0,1): {}",
+            result.delta
+        );
+        assert!(result.vega > 0.0, "MCS call vega positive: {}", result.vega);
+    }
+
+    #[test]
+    fn fd_heston_mcs_american_put() {
+        let european = fd_heston_solve_adi(
+            100.0, 105.0, 0.05, 0.0,
+            0.04, 1.5, 0.04, 0.5, -0.7,
+            1.0, false, false, 50, 25, 100,
+            AdiScheme::ModifiedCraigSneyd,
+        );
+        let american = fd_heston_solve_adi(
+            100.0, 105.0, 0.05, 0.0,
+            0.04, 1.5, 0.04, 0.5, -0.7,
+            1.0, false, true, 50, 25, 100,
+            AdiScheme::ModifiedCraigSneyd,
+        );
+        assert!(
+            american.price >= european.price - 0.5,
+            "MCS American put ({}) should >= European ({})",
+            american.price, european.price
         );
     }
 }

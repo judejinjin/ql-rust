@@ -128,6 +128,172 @@ pub fn binomial_crr(
     }
 }
 
+/// Price a European or American option on a CRR tree with discrete dividends.
+///
+/// At each tree step that coincides with a dividend date, the spot is
+/// adjusted downward (cash dividends subtracted, proportional dividends
+/// multiplied). The continuous yield `q` still applies for any
+/// remaining continuous dividend component.
+///
+/// # Dividend handling
+///
+/// For cash dividends, each node's spot is reduced by the dividend amount.
+/// For proportional dividends, each node's spot is multiplied by `(1 - rate)`.
+/// This is the standard "stock price adjustment" approach.
+#[allow(clippy::too_many_arguments)]
+pub fn binomial_crr_discrete_dividends(
+    spot: f64,
+    strike: f64,
+    r: f64,
+    q: f64,
+    vol: f64,
+    time_to_expiry: f64,
+    is_call: bool,
+    is_american: bool,
+    num_steps: usize,
+    dividends: &ql_cashflows::DividendSchedule,
+) -> LatticeResult {
+    let dt = time_to_expiry / num_steps as f64;
+    let df = (-r * dt).exp();
+    let u = (vol * dt.sqrt()).exp();
+    let d = 1.0 / u;
+    let growth = ((r - q) * dt).exp();
+    let p_up = (growth - d) / (u - d);
+    let omega: f64 = if is_call { 1.0 } else { -1.0 };
+    let n = num_steps;
+
+    // Precompute which steps have dividends
+    // Map step index → list of dividend adjustments
+    let mut step_divs: Vec<Vec<(bool, f64)>> = vec![Vec::new(); n + 1];
+    for div in dividends.iter() {
+        let t_div = div.time();
+        if t_div > 0.0 && t_div <= time_to_expiry {
+            // Find the closest step (round to nearest)
+            let step_f = t_div / dt;
+            let step = (step_f.round() as usize).min(n).max(1);
+            match div {
+                ql_cashflows::Dividend::Cash { amount, .. } => {
+                    step_divs[step].push((true, *amount));
+                }
+                ql_cashflows::Dividend::Proportional { rate, .. } => {
+                    step_divs[step].push((false, *rate));
+                }
+            }
+        }
+    }
+
+    // Build spot tree forward, storing spots at each step
+    // spots[step] = Vec of spot values at each node
+    let mut spots: Vec<Vec<f64>> = Vec::with_capacity(n + 1);
+
+    // Step 0
+    spots.push(vec![spot]);
+
+    for step in 1..=n {
+        let prev = &spots[step - 1];
+        let mut current = Vec::with_capacity(step + 1);
+        for j in 0..=step {
+            // Node (step, j): from node (step-1, j-1) going up, or (step-1, j) going down
+            // Spot = base * u^j * d^(step-j) with dividend adjustments
+            let s = if j == 0 {
+                prev[0] * d
+            } else if j == step {
+                prev[step - 1] * u
+            } else {
+                // Take average of up and down paths for consistency
+                prev[j - 1] * u
+            };
+            current.push(s);
+        }
+
+        // Apply dividends at this step
+        for &(is_cash, val) in &step_divs[step] {
+            for s in current.iter_mut() {
+                if is_cash {
+                    *s = (*s - val).max(0.0);
+                } else {
+                    *s *= 1.0 - val;
+                }
+            }
+        }
+
+        spots.push(current);
+    }
+
+    // Build terminal payoffs
+    let mut values: Vec<f64> = spots[n]
+        .iter()
+        .map(|&s| (omega * (s - strike)).max(0.0))
+        .collect();
+
+    let mut val_step_1 = [0.0; 3];
+    let mut val_step_2 = [0.0; 3];
+
+    // Backward induction
+    for step in (0..n).rev() {
+        let mut new_values = vec![0.0; step + 1];
+        for j in 0..=step {
+            let continuation = df * (p_up * values[j + 1] + (1.0 - p_up) * values[j]);
+            new_values[j] = if is_american {
+                let intrinsic = (omega * (spots[step][j] - strike)).max(0.0);
+                continuation.max(intrinsic)
+            } else {
+                continuation
+            };
+        }
+
+        if step == 2 && n >= 3 {
+            val_step_2[0] = new_values[0];
+            val_step_2[1] = new_values[1];
+            val_step_2[2] = new_values[2];
+        }
+        if step == 1 {
+            val_step_1[0] = new_values[0];
+            val_step_1[1] = new_values[1];
+        }
+
+        values = new_values;
+    }
+
+    let npv = values[0];
+
+    let su = spots[1].last().copied().unwrap_or(spot * u);
+    let sd = spots[1].first().copied().unwrap_or(spot * d);
+    let delta = if n >= 1 && (su - sd).abs() > 1e-15 {
+        (val_step_1[1] - val_step_1[0]) / (su - sd)
+    } else {
+        0.0
+    };
+
+    let gamma = if n >= 3 {
+        let s_uu = spots[2].last().copied().unwrap_or(spot * u * u);
+        let s_dd = spots[2].first().copied().unwrap_or(spot * d * d);
+        let h = 0.5 * (s_uu - s_dd);
+        if h.abs() > 1e-15 {
+            let d_up = (val_step_2[2] - val_step_2[1]) / (s_uu - spot);
+            let d_dn = (val_step_2[1] - val_step_2[0]) / (spot - s_dd);
+            (d_up - d_dn) / h
+        } else {
+            0.0
+        }
+    } else {
+        0.0
+    };
+
+    let theta = if n >= 2 {
+        (val_step_2[1] - npv) / (2.0 * dt)
+    } else {
+        0.0
+    };
+
+    LatticeResult {
+        npv,
+        delta,
+        gamma,
+        theta,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -226,5 +392,64 @@ mod tests {
             fine.npv,
             coarse.npv
         );
+    }
+
+    // ── Discrete dividend tree tests ─────────────────────────
+
+    #[test]
+    fn crr_discrete_div_empty_matches_plain() {
+        use ql_cashflows::DividendSchedule;
+        let plain = binomial_crr(100.0, 100.0, 0.05, 0.0, 0.2, 1.0, true, false, 500);
+        let with_div = binomial_crr_discrete_dividends(
+            100.0, 100.0, 0.05, 0.0, 0.2, 1.0, true, false, 500,
+            &DividendSchedule::empty(),
+        );
+        assert_abs_diff_eq!(with_div.npv, plain.npv, epsilon = 0.1);
+    }
+
+    #[test]
+    fn crr_discrete_cash_div_reduces_call() {
+        use ql_cashflows::{Dividend, DividendSchedule};
+        let no_div = binomial_crr(100.0, 100.0, 0.05, 0.0, 0.2, 1.0, true, false, 500);
+        let divs = DividendSchedule::new(vec![Dividend::cash(0.5, 3.0)]);
+        let with_div = binomial_crr_discrete_dividends(
+            100.0, 100.0, 0.05, 0.0, 0.2, 1.0, true, false, 500, &divs,
+        );
+        assert!(
+            with_div.npv < no_div.npv,
+            "Cash div should reduce call: {} vs {}",
+            with_div.npv, no_div.npv
+        );
+    }
+
+    #[test]
+    fn crr_discrete_div_american_call_early_exercise() {
+        use ql_cashflows::{Dividend, DividendSchedule};
+        // With dividends, American call may be worth more than European
+        let divs = DividendSchedule::new(vec![Dividend::cash(0.5, 5.0)]);
+        let euro = binomial_crr_discrete_dividends(
+            100.0, 100.0, 0.05, 0.0, 0.2, 1.0, true, false, 500, &divs,
+        );
+        let amer = binomial_crr_discrete_dividends(
+            100.0, 100.0, 0.05, 0.0, 0.2, 1.0, true, true, 500, &divs,
+        );
+        // American call with dividends should be >= European
+        assert!(
+            amer.npv >= euro.npv - 0.01,
+            "American call with divs ({}) should >= European ({})",
+            amer.npv, euro.npv
+        );
+    }
+
+    #[test]
+    fn crr_discrete_proportional_div() {
+        use ql_cashflows::{Dividend, DividendSchedule};
+        let no_div = binomial_crr(100.0, 100.0, 0.05, 0.0, 0.2, 1.0, true, false, 500);
+        let divs = DividendSchedule::new(vec![Dividend::proportional(0.5, 0.03)]);
+        let with_div = binomial_crr_discrete_dividends(
+            100.0, 100.0, 0.05, 0.0, 0.2, 1.0, true, false, 500, &divs,
+        );
+        assert!(with_div.npv < no_div.npv);
+        assert!(with_div.npv > 0.0);
     }
 }

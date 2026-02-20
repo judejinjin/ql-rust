@@ -175,6 +175,64 @@ pub fn implied_volatility(
     solver.solve(objective, 0.0, 0.2, 0.001, 5.0, 1e-12, 100)
 }
 
+/// Price a European call or put with **discrete dividends** using the
+/// escrowed dividend model.
+///
+/// The spot is adjusted by subtracting the PV of cash dividends and
+/// multiplying by the cumulative proportional factor. Black-Scholes
+/// is then applied to the adjusted spot with `q = 0`.
+///
+/// This approach is exact when all dividends are known and the volatility
+/// applies to the forward (ex-dividend) stock price process.
+///
+/// # Returns
+///
+/// The same `AnalyticEuropeanResults` struct with NPV and Greeks.
+/// Delta is the *total* delta w.r.t. the unadjusted spot.
+#[allow(clippy::too_many_arguments)]
+pub fn price_european_discrete_dividends(
+    spot: f64,
+    strike: f64,
+    r: f64,
+    vol: f64,
+    t: f64,
+    option_type: OptionType,
+    dividends: &ql_cashflows::DividendSchedule,
+) -> AnalyticEuropeanResults {
+    let s_adj = dividends.escrowed_spot(spot, r, t);
+    if s_adj <= 0.0 {
+        // Dividends exceed spot: call worthless, put deep ITM
+        let omega = option_type.sign();
+        let df_r = (-r * t).exp();
+        return AnalyticEuropeanResults {
+            npv: if omega < 0.0 {
+                (strike * df_r - s_adj.max(0.0)).max(0.0)
+            } else {
+                0.0
+            },
+            delta: 0.0,
+            gamma: 0.0,
+            vega: 0.0,
+            theta: 0.0,
+            rho: 0.0,
+        };
+    }
+    // Use BS with adjusted spot and q=0
+    let result = black_scholes_price(s_adj, strike, r, 0.0, vol, t, option_type);
+
+    // Adjust delta: d(NPV)/dS = d(NPV)/dS* × dS*/dS
+    // where dS*/dS = proportional_factor(t)
+    let prop_factor = dividends.proportional_factor(t);
+    AnalyticEuropeanResults {
+        npv: result.npv,
+        delta: result.delta * prop_factor,
+        gamma: result.gamma * prop_factor * prop_factor,
+        vega: result.vega,
+        theta: result.theta,
+        rho: result.rho,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -309,5 +367,62 @@ mod tests {
         let opt = VanillaOption::european_call(100.0, Date::from_ymd(2024, Month::January, 2));
         let result = price_european(&opt, 110.0, 0.05, 0.0, 0.20, 0.0);
         assert_abs_diff_eq!(result.npv, 10.0, epsilon = 1e-10); // intrinsic value
+    }
+
+    #[test]
+    fn discrete_div_reduces_call() {
+        use ql_cashflows::{Dividend, DividendSchedule};
+        let divs = DividendSchedule::new(vec![
+            Dividend::cash(0.25, 2.0),
+            Dividend::cash(0.75, 2.0),
+        ]);
+        let no_div = black_scholes_price(100.0, 100.0, 0.05, 0.0, 0.20, 1.0, OptionType::Call);
+        let with_div = price_european_discrete_dividends(
+            100.0, 100.0, 0.05, 0.20, 1.0, OptionType::Call, &divs,
+        );
+        assert!(
+            with_div.npv < no_div.npv,
+            "Discrete dividends should reduce call price: {} vs {}",
+            with_div.npv, no_div.npv
+        );
+    }
+
+    #[test]
+    fn discrete_div_empty_matches_no_div() {
+        use ql_cashflows::DividendSchedule;
+        let divs = DividendSchedule::empty();
+        let no_div = black_scholes_price(100.0, 100.0, 0.05, 0.0, 0.20, 1.0, OptionType::Call);
+        let with_div = price_european_discrete_dividends(
+            100.0, 100.0, 0.05, 0.20, 1.0, OptionType::Call, &divs,
+        );
+        assert_abs_diff_eq!(with_div.npv, no_div.npv, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn discrete_div_put_call_parity() {
+        use ql_cashflows::{Dividend, DividendSchedule};
+        let divs = DividendSchedule::new(vec![Dividend::cash(0.5, 3.0)]);
+        let call = price_european_discrete_dividends(
+            100.0, 100.0, 0.05, 0.20, 1.0, OptionType::Call, &divs,
+        );
+        let put = price_european_discrete_dividends(
+            100.0, 100.0, 0.05, 0.20, 1.0, OptionType::Put, &divs,
+        );
+        let s_adj = divs.escrowed_spot(100.0, 0.05, 1.0);
+        let parity = s_adj - 100.0 * (-0.05_f64).exp();
+        assert_abs_diff_eq!(call.npv - put.npv, parity, epsilon = 0.01);
+    }
+
+    #[test]
+    fn discrete_proportional_div() {
+        use ql_cashflows::{Dividend, DividendSchedule};
+        let divs = DividendSchedule::new(vec![Dividend::proportional(0.5, 0.03)]);
+        let result = price_european_discrete_dividends(
+            100.0, 100.0, 0.05, 0.20, 1.0, OptionType::Call, &divs,
+        );
+        // With 3% proportional dividend, effective spot is 97 → lower call price
+        let no_div = black_scholes_price(100.0, 100.0, 0.05, 0.0, 0.20, 1.0, OptionType::Call);
+        assert!(result.npv < no_div.npv);
+        assert!(result.npv > 0.0);
     }
 }

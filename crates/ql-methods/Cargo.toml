@@ -16,6 +16,7 @@ ql-math = { path = "../ql-math" }
 ql-processes = { path = "../ql-processes" }
 ql-termstructures = { path = "../ql-termstructures" }
 ql-instruments = { path = "../ql-instruments" }
+ql-cashflows = { path = "../ql-cashflows" }
 nalgebra = { workspace = true }
 rand = { workspace = true }
 rand_distr = { workspace = true }

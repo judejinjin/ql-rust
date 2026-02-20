@@ -42,6 +42,7 @@ pub mod payoff;
 pub mod instrument;
 pub mod vanilla_option;
 pub mod vanilla_swap;
+pub mod nonstandard_swap;
 pub mod bond;
 pub mod floating_rate_bond;
 pub mod zero_coupon_bond;
@@ -61,18 +62,24 @@ pub mod lookback_option;
 pub mod compound_option;
 pub mod variance_swap;
 pub mod inflation_linked_bond;
+pub mod inflation_cap_floor;
 pub mod double_barrier_option;
 pub mod chooser_option;
 pub mod cliquet_option;
 pub mod stock;
 pub mod bond_forward;
 pub mod composite_instrument;
+pub mod asset_swap;
 
 // Re-exports
 pub use payoff::{OptionType, Payoff, Exercise};
 pub use instrument::{Instrument, expired_count, filter_by_type, total_notional};
 pub use vanilla_option::VanillaOption;
 pub use vanilla_swap::{VanillaSwap, SwapType};
+pub use nonstandard_swap::{
+    NonstandardSwap, NonstandardSwapResults, AmortizationType,
+    price_nonstandard_swap,
+};
 pub use bond::FixedRateBond;
 pub use floating_rate_bond::FloatingRateBond;
 pub use zero_coupon_bond::ZeroCouponBond;
@@ -95,6 +102,14 @@ pub use chooser_option::ChooserOption;
 pub use cliquet_option::CliquetOption;
 pub use variance_swap::VarianceSwap;
 pub use inflation_linked_bond::InflationLinkedBond;
+pub use inflation_cap_floor::{
+    InflationCapFloorType, YoYInflationCapFloor, YoYInflationCaplet,
+    ZeroCouponInflationCapFloor, build_yoy_cap_floor,
+};
 pub use stock::Stock;
 pub use bond_forward::{BondForward, BondForwardType};
 pub use composite_instrument::{CompositeInstrument, CompositeComponent};
+pub use asset_swap::{
+    AssetSwap, AssetSwapConvention, AssetSwapResult, price_asset_swap,
+    EquityTRS, EquityTRSResult, price_equity_trs, equity_trs_fair_spread,
+};

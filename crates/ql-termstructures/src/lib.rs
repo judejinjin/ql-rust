@@ -48,6 +48,7 @@ pub mod default_term_structure;
 pub mod inflation_term_structure;
 pub mod swaption_vol;
 pub mod andreasen_huge;
+pub mod noarb_sabr;
 
 // Re-exports
 pub use term_structure::TermStructure;
@@ -55,7 +56,7 @@ pub use yield_term_structure::YieldTermStructure;
 pub use yield_curves::{FlatForward, DiscountCurve, ZeroCurve};
 pub use yield_curves_extended::{
     CompositeZeroYieldStructure, ImpliedTermStructure, ForwardCurve,
-    UltimateForwardTermStructure, SpreadedTermStructure,
+    UltimateForwardTermStructure, SpreadedTermStructure, QuantoTermStructure,
 };
 pub use bootstrap::{
     RateHelper, DepositRateHelper, SwapRateHelper, PiecewiseYieldCurve,
@@ -71,6 +72,7 @@ pub use vol_term_structure::{
     BlackConstantVol, BlackVarianceSurface, LocalVolSurface,
 };
 pub use sabr::{sabr_volatility, SabrSmileSection};
+pub use noarb_sabr::{NoArbSabrSmileSection, check_smile_arbitrage, kahale_call_prices, ArbitrageCheckResult};
 pub use svi::{svi_volatility, svi_total_variance, svi_calibrate, SviSmileSection};
 pub use zabr::{zabr_volatility, ZabrSmileSection};
 pub use optionlet_stripper::{strip_optionlet_volatilities, interpolate_optionlet_vol, StrippedOptionletVolatilities};

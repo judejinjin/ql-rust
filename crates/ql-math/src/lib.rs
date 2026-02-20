@@ -48,3 +48,4 @@ pub mod optimization;
 pub mod quasi_random;
 pub mod solvers1d;
 pub mod statistics;
+pub mod abcd;

@@ -40,6 +40,7 @@
 // Core types and errors
 pub use ql_core::{QLError, QLResult};
 pub use ql_core::quote::SimpleQuote;
+pub use ql_core::engine::{PricingEngine, LazyInstrument, ClosureEngine};
 
 // Time types
 pub use ql_time::{
@@ -67,6 +68,15 @@ pub use ql_instruments::{
     OptionType, Payoff, Stock, Swaption, SwaptionType, SettlementType, SwapType,
     VanillaOption, VanillaSwap, VarianceSwap, AsianOption, AveragingType,
     ZeroCouponBond,
+    // Inflation cap/floor instruments (Phase 29)
+    InflationCapFloorType, YoYInflationCapFloor, YoYInflationCaplet,
+    ZeroCouponInflationCapFloor, build_yoy_cap_floor,
+    // Nonstandard (amortizing/step-up) swaps (Phase 29)
+    NonstandardSwap, NonstandardSwapResults, AmortizationType,
+    price_nonstandard_swap,
+    // Asset swap + Equity TRS (Phase 29)
+    AssetSwap, AssetSwapConvention, AssetSwapResult, price_asset_swap,
+    EquityTRS, EquityTRSResult, price_equity_trs, equity_trs_fair_spread,
 };
 
 // Term structures
@@ -83,7 +93,7 @@ pub use ql_termstructures::{
     YoYInflationTermStructure, FlatYoYInflationCurve, YearOnYearInflationSwap,
     // Extended yield curves (Phase 24)
     CompositeZeroYieldStructure, ImpliedTermStructure, ForwardCurve,
-    UltimateForwardTermStructure, SpreadedTermStructure,
+    UltimateForwardTermStructure, SpreadedTermStructure, QuantoTermStructure,
     // Extended rate helpers (Phase 24)
     OISRateHelper, BondHelper, FuturesRateHelper, FRAHelper,
     // Nelson-Siegel / Svensson fitting (Phase 24)
@@ -91,6 +101,9 @@ pub use ql_termstructures::{
     // SVI / ZABR smile models (Phase 18)
     SviSmileSection, ZabrSmileSection, svi_volatility, svi_total_variance,
     svi_calibrate, zabr_volatility,
+    // NoArb-SABR + Kahale arbitrage-free interpolation (Phase 29)
+    NoArbSabrSmileSection, ArbitrageCheckResult, check_smile_arbitrage,
+    kahale_call_prices,
     // Optionlet stripping (Phase 18)
     strip_optionlet_volatilities, interpolate_optionlet_vol, StrippedOptionletVolatilities,
     // Vol interpolation (Phase 18)
@@ -118,6 +131,8 @@ pub use ql_cashflows::{
     time_bucketed_cashflows, TimeBucket,
     // CPI / inflation coupons (Phase 25)
     CPICoupon, generate_cpi_coupons,
+    // Discrete dividends (Phase 29)
+    Dividend, DividendSchedule,
 };
 
 // Pricing engines
@@ -180,6 +195,11 @@ pub use ql_pricingengines::{
     power_option, PowerResult,
     forward_start_option, ForwardStartResult,
     digital_barrier, DigitalBarrierResult, DigitalBarrierType,
+    // Discrete-dividend European & inflation cap/floor engines (Phase 29)
+    price_european_discrete_dividends,
+    InflationCapFloorResult,
+    black_yoy_inflation_cap_floor, bachelier_yoy_inflation_cap_floor,
+    black_zc_inflation_cap_floor, bachelier_zc_inflation_cap_floor,
     // Stochastic Local Vol
     DupireLocalVol, SlvModel, SlvCalibrationResult,
     calibrate_slv, mc_slv, SlvMcResult,
@@ -198,6 +218,10 @@ pub use ql_processes::{
     BatesProcess, CoxIngersollRossProcess, SquareRootProcess,
     // G2++ two-factor process
     G2Process,
+    // Merton76 jump-diffusion process
+    Merton76Process,
+    // GJR-GARCH process (Phase 29)
+    GjrGarchProcess,
 };
 
 // Models
@@ -219,9 +243,15 @@ pub use ql_methods::{
     LatticeResult, binomial_crr,
     // Bates MC (Phase 14)
     mc_bates,
+    // MC control variates (Phase 29)
+    mc_asian_cv, mc_european_cv, geometric_asian_cf,
+    // Binomial with discrete dividends (Phase 29)
+    binomial_crr_discrete_dividends,
     // FDM framework (Phase 19)
     Mesher1d, FdmMesherComposite, Fd1dResult, HestonFdResult,
     fd_1d_bs_solve, fd_heston_solve,
+    // ADI schemes (Phase 29)
+    AdiScheme, fd_heston_solve_adi,
 };
 
 // Persistence

@@ -40,6 +40,7 @@
 //! assert!(safe_sqrt(-1.0).is_err());
 //! ```
 
+pub mod engine;
 pub mod errors;
 pub mod handle;
 pub mod lazy;

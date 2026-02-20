@@ -30,6 +30,7 @@
 
 pub mod monte_carlo;
 pub mod mc_engines;
+pub mod mc_control_variates;
 pub mod finite_differences;
 pub mod lattice;
 pub mod fdm_meshers;
@@ -38,17 +39,19 @@ pub mod fdm_operators;
 // Re-exports
 pub use monte_carlo::{Path, PathGenerator, MultiPath, MultiPathGenerator};
 pub use mc_engines::{MCResult, mc_european, mc_barrier, mc_asian, mc_heston, mc_bates};
+pub use mc_control_variates::{mc_asian_cv, mc_european_cv, geometric_asian_cf};
 pub use finite_differences::{FDResult, fd_black_scholes};
-pub use lattice::{LatticeResult, binomial_crr};
+pub use lattice::{LatticeResult, binomial_crr, binomial_crr_discrete_dividends};
 pub use fdm_meshers::{
     Mesher1d, FdmMesherComposite,
     uniform_1d_mesher, concentrating_1d_mesher, log_spot_mesher,
     heston_variance_mesher,
 };
 pub use fdm_operators::{
-    TripleBandOp, Heston2dOps, Fd1dResult, HestonFdResult,
+    TripleBandOp, Heston2dOps, Fd1dResult, HestonFdResult, AdiScheme,
     build_bs_operator, build_heston_ops,
     crank_nicolson_step, implicit_step, douglas_adi_step,
-    apply_american_condition,
-    fd_1d_bs_solve, fd_heston_solve,
+    apply_american_condition, apply_cross_derivative,
+    hundsdorfer_verwer_step, modified_craig_sneyd_step,
+    fd_1d_bs_solve, fd_heston_solve, fd_heston_solve_adi,
 };

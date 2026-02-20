@@ -40,6 +40,7 @@ pub mod analytic_bates;
 pub mod discounting;
 pub mod swaption_engines;
 pub mod cap_floor_engines;
+pub mod inflation_cap_floor_engine;
 pub mod cds_engine;
 pub mod callable_bond_engine;
 pub mod convertible_bond_engine;
@@ -58,7 +59,7 @@ pub mod cliquet_engine;
 pub use american_engines::{
     barone_adesi_whaley, bjerksund_stensland, qd_plus_american, AmericanApproxResult,
 };
-pub use analytic_european::{price_european, implied_volatility, black_scholes_price, AnalyticEuropeanResults};
+pub use analytic_european::{price_european, price_european_discrete_dividends, implied_volatility, black_scholes_price, AnalyticEuropeanResults};
 pub use analytic_heston::{heston_price, HestonResult};
 pub use analytic_bates::{bates_price, bates_price_flat, BatesResult};
 pub use discounting::{
@@ -67,6 +68,11 @@ pub use discounting::{
 };
 pub use swaption_engines::{black_swaption, bachelier_swaption, SwaptionResult};
 pub use cap_floor_engines::{black_cap_floor, bachelier_cap_floor, CapFloorResult};
+pub use inflation_cap_floor_engine::{
+    InflationCapFloorResult,
+    black_yoy_inflation_cap_floor, bachelier_yoy_inflation_cap_floor,
+    black_zc_inflation_cap_floor, bachelier_zc_inflation_cap_floor,
+};
 pub use cds_engine::{midpoint_cds_engine, CdsResult};
 pub use callable_bond_engine::{price_callable_bond, CallableBondResult};
 pub use convertible_bond_engine::{price_convertible_bond, ConvertibleBondResult};
