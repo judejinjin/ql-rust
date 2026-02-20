@@ -47,14 +47,23 @@ pub use ql_time::{
     TimeUnit, Weekday,
 };
 
+// Indexes
+pub use ql_indexes::{
+    Compounding, IborIndex, InterestRate, OvernightIndex, SwapIndex, Index, IndexManager,
+};
+
 // Instruments
 pub use ql_instruments::{
+    AmortizingBond,
     BarrierOption, BarrierType, CallableBond, CallabilityScheduleEntry, CallabilityType,
-    CapFloor, CapFloorType, Caplet, CompoundOption, ConvertibleBond,
-    CreditDefaultSwap, CdsProtectionSide, CdsPremiumPeriod, Exercise,
-    FixedRateBond, InflationLinkedBond, LookbackOption, LookbackType,
+    CapFloor, CapFloorType, Caplet, ChooserOption, CliquetOption, CompoundOption,
+    ConvertibleBond, CreditDefaultSwap, CdsProtectionSide, CdsPremiumPeriod,
+    DoubleBarrierOption, DoubleBarrierType, Exercise, FixedRateBond,
+    InflationLinkedBond, LookbackOption, LookbackType,
+    OISSwap,
     OptionType, Payoff, Swaption, SwaptionType, SettlementType, SwapType,
     VanillaOption, VanillaSwap, VarianceSwap, AsianOption, AveragingType,
+    ZeroCouponBond,
 };
 
 // Term structures
@@ -88,6 +97,8 @@ pub use ql_termstructures::{
 // Cash flows
 pub use ql_cashflows::{
     CashFlow, Leg,
+    // Leg builders
+    fixed_leg, ibor_leg, overnight_leg, add_notional_exchange,
     // CMS coupons (Phase 23)
     CmsCoupon, cms_convexity_adjustment, cms_caplet_price,
     // Digital / capped-floored / range-accrual / sub-period coupons (Phase 23)
@@ -140,6 +151,11 @@ pub use ql_pricingengines::{
     fd_hw_swaption, mc_hw_cap_floor, TreeResult, FdResult, McHwResult,
     // Credit models (Phase 21)
     GaussianCopulaLHP, NtdResult, nth_to_default_mc, cds_option_black,
+    // Double-barrier / chooser / cliquet engines (Phase 26)
+    double_barrier_knockout, double_barrier_knockin, DoubleBarrierResult,
+    chooser_price, ChooserResult,
+    cliquet_price, CliquetResult,
+    black_scholes_price,
 };
 
 // Stochastic processes

@@ -39,6 +39,8 @@ pub enum DayCounter {
     Thirty360(Thirty360Convention),
     /// Actual/Actual variants
     ActualActual(ActualActualConvention),
+    /// Business/252 (Brazilian convention: business days / 252).
+    Business252,
 }
 
 impl DayCounter {
@@ -49,6 +51,9 @@ impl DayCounter {
                 d2.serial() - d1.serial()
             }
             DayCounter::Thirty360(convention) => thirty360_day_count(d1, d2, *convention),
+            DayCounter::Business252 => {
+                crate::calendar::Calendar::Brazil.business_days_between(d1, d2)
+            }
         }
     }
 
@@ -70,6 +75,9 @@ impl DayCounter {
             DayCounter::ActualActual(convention) => {
                 actual_actual_year_fraction(d1, d2, *convention)
             }
+            DayCounter::Business252 => {
+                self.day_count(d1, d2) as Real / 252.0
+            }
         }
     }
 
@@ -83,6 +91,7 @@ impl DayCounter {
             DayCounter::ActualActual(ActualActualConvention::ISDA) => "Actual/Actual (ISDA)",
             DayCounter::ActualActual(ActualActualConvention::ISMA) => "Actual/Actual (ISMA)",
             DayCounter::ActualActual(ActualActualConvention::AFB) => "Actual/Actual (AFB)",
+            DayCounter::Business252 => "Business/252",
         }
     }
 }
@@ -262,5 +271,17 @@ mod tests {
             DayCounter::Thirty360(Thirty360Convention::BondBasis).name(),
             "30/360 (Bond Basis)"
         );
+        assert_eq!(DayCounter::Business252.name(), "Business/252");
+    }
+
+    #[test]
+    fn business252_year_fraction() {
+        let dc = DayCounter::Business252;
+        // Monday to Friday (same week) = 4 business days
+        let d1 = Date::from_ymd(2025, Month::June, 16); // Monday
+        let d2 = Date::from_ymd(2025, Month::June, 20); // Friday
+        let bd = dc.day_count(d1, d2);
+        assert!(bd > 0);
+        assert_relative_eq!(dc.year_fraction(d1, d2), bd as f64 / 252.0, epsilon = 1e-12);
     }
 }

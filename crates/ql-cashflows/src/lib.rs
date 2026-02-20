@@ -61,7 +61,7 @@ pub use fixed_rate_coupon::FixedRateCoupon;
 pub use ibor_coupon::IborCoupon;
 pub use overnight_coupon::OvernightIndexedCoupon;
 pub use coupon_pricer::{FloatingRateCouponPricer, BlackIborCouponPricer};
-pub use leg::{fixed_leg, ibor_leg, add_notional_exchange};
+pub use leg::{fixed_leg, ibor_leg, overnight_leg, add_notional_exchange};
 pub use cashflow_analytics::{npv, bps, accrued_amount, duration};
 pub use cms_coupon::{CmsCoupon, cms_convexity_adjustment, cms_caplet_price};
 pub use digital_coupon::{

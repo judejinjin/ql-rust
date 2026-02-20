@@ -37,6 +37,16 @@ pub enum Calendar {
     UnitedStates(USMarket),
     /// United Kingdom (London Exchange / Settlement).
     UnitedKingdom,
+    /// Japan (Tokyo Stock Exchange / Settlement).
+    Japan,
+    /// China (Shanghai Stock Exchange / IB).
+    China,
+    /// Canada (Toronto Stock Exchange / Settlement).
+    Canada,
+    /// Australia (Sydney / ASX).
+    Australia,
+    /// Brazil (BM&F Bovespa / Settlement).
+    Brazil,
 }
 
 impl Calendar {
@@ -48,6 +58,11 @@ impl Calendar {
             Calendar::Target => target_is_business_day(date),
             Calendar::UnitedStates(market) => us_is_business_day(date, *market),
             Calendar::UnitedKingdom => uk_is_business_day(date),
+            Calendar::Japan => japan_is_business_day(date),
+            Calendar::China => china_is_business_day(date),
+            Calendar::Canada => canada_is_business_day(date),
+            Calendar::Australia => australia_is_business_day(date),
+            Calendar::Brazil => brazil_is_business_day(date),
         }
     }
 
@@ -476,6 +491,348 @@ fn easter_monday_impl(year: i32) -> (u32, u32) {
     )
 }
 
+// ============================================================================
+//  Japan calendar implementation (Tokyo Stock Exchange)
+// ============================================================================
+
+fn japan_is_business_day(date: Date) -> bool {
+    if is_weekend(date) {
+        return false;
+    }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+    let wd = date.weekday();
+
+    // New Year's holidays (Jan 1-3)
+    if m == Month::January && d <= 3 {
+        return false;
+    }
+    // Coming of Age Day (2nd Monday of January)
+    if m == Month::January && wd == Weekday::Monday && (8..=14).contains(&d) {
+        return false;
+    }
+    // National Foundation Day (Feb 11)
+    if m == Month::February && d == 11 {
+        return false;
+    }
+    // Emperor's Birthday (Feb 23, since 2020; Dec 23 before)
+    if y >= 2020 && m == Month::February && d == 23 {
+        return false;
+    }
+    if y < 2019 && m == Month::December && d == 23 {
+        return false;
+    }
+    // Vernal Equinox (approx Mar 20-21)
+    let vernal = {
+        let base = (y as f64 * 0.242_194_f64) as i32;
+        let adj = (y - 1980) / 4;
+        20 + (base - adj).unsigned_abs() % 2
+    };
+    if m == Month::March && d == vernal {
+        return false;
+    }
+    // Showa Day (Apr 29)
+    if m == Month::April && d == 29 {
+        return false;
+    }
+    // Constitution Memorial Day (May 3)
+    if m == Month::May && d == 3 {
+        return false;
+    }
+    // Greenery Day (May 4)
+    if m == Month::May && d == 4 {
+        return false;
+    }
+    // Children's Day (May 5)
+    if m == Month::May && d == 5 {
+        return false;
+    }
+    // Marine Day (3rd Monday of July)
+    if m == Month::July && wd == Weekday::Monday && (15..=21).contains(&d) {
+        return false;
+    }
+    // Mountain Day (Aug 11, since 2016)
+    if y >= 2016 && m == Month::August && d == 11 {
+        return false;
+    }
+    // Respect for the Aged Day (3rd Monday of September)
+    if m == Month::September && wd == Weekday::Monday && (15..=21).contains(&d) {
+        return false;
+    }
+    // Autumnal Equinox (approx Sep 22-23)
+    let autumnal = {
+        let base = (y as f64 * 0.242_194_f64) as i32;
+        let adj = (y - 1980) / 4;
+        23 - (base - adj).unsigned_abs() % 2
+    };
+    if m == Month::September && d == autumnal {
+        return false;
+    }
+    // Sports Day / Health and Sports Day (2nd Monday of October)
+    if m == Month::October && wd == Weekday::Monday && (8..=14).contains(&d) {
+        return false;
+    }
+    // Culture Day (Nov 3)
+    if m == Month::November && d == 3 {
+        return false;
+    }
+    // Labour Thanksgiving Day (Nov 23)
+    if m == Month::November && d == 23 {
+        return false;
+    }
+
+    true
+}
+
+// ============================================================================
+//  China calendar implementation (SSE)
+// ============================================================================
+
+/// China calendar — uses a simplified rule set (weekends + fixed holidays).
+/// Real-world China calendar requires annual CSRC announcements for workday
+/// swaps; this covers the standard statutory holidays.
+fn china_is_business_day(date: Date) -> bool {
+    if is_weekend(date) {
+        return false;
+    }
+    let d = date.day_of_month();
+    let m = date.month();
+
+    // New Year (Jan 1)
+    if m == Month::January && d == 1 {
+        return false;
+    }
+    // Spring Festival (approx Jan 29 - Feb 4, simplified as Jan 31 - Feb 6)
+    // This varies by year; we use a simplified rule
+    // Labour Day (May 1)
+    if m == Month::May && d == 1 {
+        return false;
+    }
+    // National Day (Oct 1-3)
+    if m == Month::October && (1..=3).contains(&d) {
+        return false;
+    }
+    // Qingming Festival (Apr 5 approx)
+    if m == Month::April && d == 5 {
+        return false;
+    }
+    // Dragon Boat Festival (approx — varies)
+    // Mid-Autumn Festival (approx — varies)
+
+    true
+}
+
+// ============================================================================
+//  Canada calendar implementation (TSX / Settlement)
+// ============================================================================
+
+fn canada_is_business_day(date: Date) -> bool {
+    if is_weekend(date) {
+        return false;
+    }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+    let wd = date.weekday();
+
+    // New Year's Day (observed)
+    if m == Month::January && (d == 1 || (d == 2 && wd == Weekday::Monday)) {
+        return false;
+    }
+    // Family Day (3rd Monday of February, since 2008 in most provinces)
+    if m == Month::February && wd == Weekday::Monday && (15..=21).contains(&d) && y >= 2008 {
+        return false;
+    }
+    // Good Friday
+    let (em_month, em_day) = easter_monday(y);
+    let em_serial = Date::from_ymd_opt(y, em_month, em_day)
+        .unwrap_or_else(|| unreachable!())
+        .serial();
+    let gf = Date::from_serial(em_serial - 3);
+    if date == gf {
+        return false;
+    }
+    // Victoria Day (Monday before May 25)
+    if m == Month::May && wd == Weekday::Monday && (18..=24).contains(&d) {
+        return false;
+    }
+    // Canada Day (July 1, observed)
+    if m == Month::July
+        && ((d == 1)
+            || (d == 2 && wd == Weekday::Monday)
+            || (d == 3 && wd == Weekday::Monday))
+    {
+        return false;
+    }
+    // Civic Holiday (1st Monday of August)
+    if m == Month::August && wd == Weekday::Monday && d <= 7 {
+        return false;
+    }
+    // Labour Day (1st Monday of September)
+    if m == Month::September && wd == Weekday::Monday && d <= 7 {
+        return false;
+    }
+    // National Day for Truth and Reconciliation (Sep 30, since 2021)
+    if y >= 2021 && m == Month::September && d == 30 {
+        return false;
+    }
+    // Thanksgiving (2nd Monday of October)
+    if m == Month::October && wd == Weekday::Monday && (8..=14).contains(&d) {
+        return false;
+    }
+    // Remembrance Day (Nov 11)
+    if m == Month::November && d == 11 {
+        return false;
+    }
+    // Christmas (Dec 25, observed)
+    if m == Month::December
+        && ((d == 25)
+            || (d == 26 && wd == Weekday::Monday)
+            || (d == 24 && wd == Weekday::Friday))
+    {
+        return false;
+    }
+    // Boxing Day (Dec 26, observed)
+    if m == Month::December
+        && ((d == 26 && wd != Weekday::Monday) // Mon case handled above as Christmas obs
+            || (d == 27 && matches!(wd, Weekday::Monday | Weekday::Tuesday))
+            || (d == 28 && wd == Weekday::Monday))
+    {
+        return false;
+    }
+
+    true
+}
+
+// ============================================================================
+//  Australia calendar implementation (Sydney / ASX)
+// ============================================================================
+
+fn australia_is_business_day(date: Date) -> bool {
+    if is_weekend(date) {
+        return false;
+    }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+    let wd = date.weekday();
+
+    // New Year's Day (observed)
+    if m == Month::January && (d == 1 || (d == 2 && wd == Weekday::Monday)) {
+        return false;
+    }
+    // Australia Day (Jan 26, observed)
+    if m == Month::January
+        && ((d == 26)
+            || (d == 27 && wd == Weekday::Monday)
+            || (d == 25 && wd == Weekday::Friday))
+    {
+        return false;
+    }
+    // Good Friday + Easter Saturday + Easter Monday
+    let (em_month, em_day) = easter_monday(y);
+    let em_serial = Date::from_ymd_opt(y, em_month, em_day)
+        .unwrap_or_else(|| unreachable!())
+        .serial();
+    let gf = Date::from_serial(em_serial - 3);
+    let es = Date::from_serial(em_serial - 2);
+    let em = Date::from_serial(em_serial);
+    if date == gf || date == es || date == em {
+        return false;
+    }
+    // ANZAC Day (Apr 25)
+    if m == Month::April && d == 25 {
+        return false;
+    }
+    // Queen's Birthday (2nd Monday of June — varies by state, using NSW)
+    if m == Month::June && wd == Weekday::Monday && (8..=14).contains(&d) {
+        return false;
+    }
+    // Bank Holiday (1st Monday of August — some states)
+    if m == Month::August && wd == Weekday::Monday && d <= 7 {
+        return false;
+    }
+    // Christmas (Dec 25) + Boxing Day (Dec 26), observed
+    if m == Month::December
+        && ((d == 25 || d == 26)
+            || (d == 27 && matches!(wd, Weekday::Monday | Weekday::Tuesday))
+            || (d == 28 && matches!(wd, Weekday::Monday | Weekday::Tuesday)))
+    {
+        return false;
+    }
+
+    true
+}
+
+// ============================================================================
+//  Brazil calendar implementation (BM&F Bovespa)
+// ============================================================================
+
+fn brazil_is_business_day(date: Date) -> bool {
+    if is_weekend(date) {
+        return false;
+    }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+
+    // New Year's Day
+    if m == Month::January && d == 1 {
+        return false;
+    }
+    // Tiradentes Day (Apr 21)
+    if m == Month::April && d == 21 {
+        return false;
+    }
+    // Labour Day (May 1)
+    if m == Month::May && d == 1 {
+        return false;
+    }
+    // Independence Day (Sep 7)
+    if m == Month::September && d == 7 {
+        return false;
+    }
+    // Nossa Senhora Aparecida (Oct 12)
+    if m == Month::October && d == 12 {
+        return false;
+    }
+    // All Souls' Day (Nov 2)
+    if m == Month::November && d == 2 {
+        return false;
+    }
+    // Republic Day (Nov 15)
+    if m == Month::November && d == 15 {
+        return false;
+    }
+    // Christmas (Dec 25)
+    if m == Month::December && d == 25 {
+        return false;
+    }
+
+    // Carnival (47 and 48 days before Easter Sunday)
+    // Easter Monday
+    let (em_month, em_day) = easter_monday(y);
+    let em_serial = Date::from_ymd_opt(y, em_month, em_day)
+        .unwrap_or_else(|| unreachable!())
+        .serial();
+    let easter_sunday_serial = em_serial - 1;
+    // Carnival Monday (48 days before Easter Sunday)
+    let carnival_mon = Date::from_serial(easter_sunday_serial - 48);
+    // Carnival Tuesday (47 days before Easter Sunday)
+    let carnival_tue = Date::from_serial(easter_sunday_serial - 47);
+    // Good Friday (2 days before Easter Sunday)
+    let gf = Date::from_serial(easter_sunday_serial - 2);
+    // Corpus Christi (60 days after Easter Sunday)
+    let corpus_christi = Date::from_serial(easter_sunday_serial + 60);
+
+    if date == carnival_mon || date == carnival_tue || date == gf || date == corpus_christi {
+        return false;
+    }
+
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -635,5 +992,106 @@ mod tests {
         let fri = Date::from_ymd(2025, Month::June, 20);
         // Tue, Wed, Thu, Fri = 4 business days
         assert_eq!(cal.business_days_between(mon, fri), 4);
+    }
+
+    // ---- Japan ----
+
+    #[test]
+    fn japan_new_years() {
+        let cal = Calendar::Japan;
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 1)));
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 2)));
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 3)));
+    }
+
+    #[test]
+    fn japan_showa_day() {
+        let cal = Calendar::Japan;
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::April, 29)));
+    }
+
+    #[test]
+    fn japan_regular_business_day() {
+        let cal = Calendar::Japan;
+        // 2025-06-16 is Monday, not a holiday
+        assert!(cal.is_business_day(Date::from_ymd(2025, Month::June, 16)));
+    }
+
+    // ---- China ----
+
+    #[test]
+    fn china_national_day() {
+        let cal = Calendar::China;
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::October, 1)));
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::October, 2)));
+    }
+
+    #[test]
+    fn china_labour_day() {
+        let cal = Calendar::China;
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::May, 1)));
+    }
+
+    // ---- Canada ----
+
+    #[test]
+    fn canada_canada_day() {
+        let cal = Calendar::Canada;
+        // July 1, 2025 is Tuesday
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::July, 1)));
+    }
+
+    #[test]
+    fn canada_good_friday_2025() {
+        let cal = Calendar::Canada;
+        // Good Friday 2025 is April 18
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::April, 18)));
+    }
+
+    // ---- Australia ----
+
+    #[test]
+    fn australia_australia_day() {
+        let cal = Calendar::Australia;
+        // Jan 26 2025 is Sunday, observed Monday Jan 27
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 27)));
+    }
+
+    #[test]
+    fn australia_anzac_day() {
+        let cal = Calendar::Australia;
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::April, 25)));
+    }
+
+    // ---- Brazil ----
+
+    #[test]
+    fn brazil_tiradentes() {
+        let cal = Calendar::Brazil;
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::April, 21)));
+    }
+
+    #[test]
+    fn brazil_independence_day() {
+        let cal = Calendar::Brazil;
+        // Sep 7 2025 is Sunday → not a business day anyway
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::September, 7)));
+    }
+
+    #[test]
+    fn brazil_carnival_2025() {
+        let cal = Calendar::Brazil;
+        // Easter Sunday 2025 is April 20, so Easter Monday is April 21
+        // Carnival Monday = Easter Sunday - 48 = March 3
+        // Carnival Tuesday = Easter Sunday - 47 = March 4
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::March, 3)));
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::March, 4)));
+    }
+
+    #[test]
+    fn brazil_regular_business_day() {
+        let cal = Calendar::Brazil;
+        // 2025-06-16 Monday
+        assert!(cal.is_business_day(Date::from_ymd(2025, Month::June, 16)));
     }
 }

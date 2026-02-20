@@ -826,6 +826,7 @@ dependencies = [
  "ql-termstructures",
  "ql-time",
  "serde",
+ "serde_json",
 ]
 
 [[package]]

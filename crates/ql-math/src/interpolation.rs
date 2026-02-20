@@ -33,15 +33,45 @@ pub trait Interpolation {
 // Helpers
 // ---------------------------------------------------------------------------
 
+/// Pre-analysed grid metadata for O(1) lookup on uniform grids.
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+enum GridHint {
+    /// Equally-spaced x-values: index = floor((x - x0) * inv_dx)
+    Uniform { x0: f64, inv_dx: f64, last: usize },
+    /// Non-uniform — fall back to binary / linear search.
+    General,
+}
+
+/// Detect whether `xs` is uniformly spaced (tolerance 1e-10 × dx).
+fn detect_grid(xs: &[f64]) -> GridHint {
+    if xs.len() < 2 {
+        return GridHint::General;
+    }
+    let dx = xs[1] - xs[0];
+    if dx <= 0.0 {
+        return GridHint::General;
+    }
+    let tol = 1e-10 * dx.abs();
+    for i in 2..xs.len() {
+        if (xs[i] - xs[i - 1] - dx).abs() > tol {
+            return GridHint::General;
+        }
+    }
+    GridHint::Uniform {
+        x0: xs[0],
+        inv_dx: 1.0 / dx,
+        last: xs.len() - 2,
+    }
+}
+
 /// Locate the segment index `i` such that `xs[i] <= x < xs[i+1]`.
 /// Returns `Err` if `x` is outside the domain.
-fn locate(xs: &[f64], x: f64) -> QLResult<usize> {
+#[inline(always)]
+fn locate(xs: &[f64], x: f64, hint: &GridHint) -> QLResult<usize> {
     let n = xs.len();
-    if n < 2 {
-        return Err(QLError::InvalidArgument(
-            "interpolation requires at least 2 data points".into(),
-        ));
-    }
+    debug_assert!(n >= 2);
+
+    // Fast bounds check (rarely fails on hot-path)
     if x < xs[0] - 1e-15 || x > xs[n - 1] + 1e-15 {
         return Err(QLError::InvalidArgument(format!(
             "x = {} is outside interpolation domain [{}, {}]",
@@ -50,6 +80,13 @@ fn locate(xs: &[f64], x: f64) -> QLResult<usize> {
             xs[n - 1]
         )));
     }
+
+    // O(1) fast-path for uniform grids
+    if let GridHint::Uniform { x0, inv_dx, last } = *hint {
+        let i = ((x - x0) * inv_dx) as usize;
+        return Ok(i.min(last));
+    }
+
     // Clamp to valid range
     if x <= xs[0] {
         return Ok(0);
@@ -59,18 +96,16 @@ fn locate(xs: &[f64], x: f64) -> QLResult<usize> {
     }
     // For small arrays (typical yield curves ≤ 20 points), linear scan is faster
     if n <= 20 {
-        for (i, xi) in xs.iter().enumerate().take(n).skip(1) {
-            if *xi > x {
-                return Ok(i - 1);
+        for (j, xj) in xs.iter().enumerate().skip(1) {
+            if *xj > x {
+                return Ok(j - 1);
             }
         }
         return Ok(n - 2);
     }
     // Binary search for larger arrays
-    match xs.binary_search_by(|probe| probe.total_cmp(&x)) {
-        Ok(i) => Ok(i.min(n - 2)),
-        Err(i) => Ok((i - 1).min(n - 2)),
-    }
+    let pos = xs.partition_point(|&xi| xi <= x);
+    Ok(if pos == 0 { 0 } else { (pos - 1).min(n - 2) })
 }
 
 fn validate_data(xs: &[f64], ys: &[f64]) -> QLResult<()> {
@@ -105,34 +140,36 @@ pub struct LinearInterpolation {
     ys: Vec<f64>,
     /// Precomputed slopes: `s[i] = (y[i+1]-y[i]) / (x[i+1]-x[i])`
     slopes: Vec<f64>,
+    hint: GridHint,
 }
 
 impl LinearInterpolation {
     /// Build a piecewise-linear interpolation from sorted (x, y) data.
     pub fn new(xs: Vec<f64>, ys: Vec<f64>) -> QLResult<Self> {
         validate_data(&xs, &ys)?;
+        let hint = detect_grid(&xs);
         let slopes: Vec<f64> = xs
             .windows(2)
             .zip(ys.windows(2))
             .map(|(xw, yw)| (yw[1] - yw[0]) / (xw[1] - xw[0]))
             .collect();
-        Ok(Self { xs, ys, slopes })
+        Ok(Self { xs, ys, slopes, hint })
     }
 }
 
 impl Interpolation for LinearInterpolation {
     fn value(&self, x: f64) -> QLResult<f64> {
-        let i = locate(&self.xs, x)?;
+        let i = locate(&self.xs, x, &self.hint)?;
         Ok(self.ys[i] + self.slopes[i] * (x - self.xs[i]))
     }
 
     fn derivative(&self, x: f64) -> QLResult<f64> {
-        let i = locate(&self.xs, x)?;
+        let i = locate(&self.xs, x, &self.hint)?;
         Ok(self.slopes[i])
     }
 
     fn primitive(&self, x: f64) -> QLResult<f64> {
-        let i = locate(&self.xs, x)?;
+        let i = locate(&self.xs, x, &self.hint)?;
         // Sum of trapezoids up to segment i, then partial segment
         let mut sum = 0.0;
         for j in 0..i {
@@ -167,6 +204,7 @@ pub struct LogLinearInterpolation {
     xs: Vec<f64>,
     log_ys: Vec<f64>,
     slopes: Vec<f64>,
+    hint: GridHint,
 }
 
 impl LogLinearInterpolation {
@@ -182,6 +220,7 @@ impl LogLinearInterpolation {
                 ));
             }
         }
+        let hint = detect_grid(&xs);
         let log_ys: Vec<f64> = ys.iter().map(|y| y.ln()).collect();
         let slopes: Vec<f64> = xs
             .windows(2)
@@ -192,25 +231,26 @@ impl LogLinearInterpolation {
             xs,
             log_ys,
             slopes,
+            hint,
         })
     }
 }
 
 impl Interpolation for LogLinearInterpolation {
     fn value(&self, x: f64) -> QLResult<f64> {
-        let i = locate(&self.xs, x)?;
+        let i = locate(&self.xs, x, &self.hint)?;
         let log_y = self.log_ys[i] + self.slopes[i] * (x - self.xs[i]);
         Ok(log_y.exp())
     }
 
     fn derivative(&self, x: f64) -> QLResult<f64> {
-        let i = locate(&self.xs, x)?;
+        let i = locate(&self.xs, x, &self.hint)?;
         let log_y = self.log_ys[i] + self.slopes[i] * (x - self.xs[i]);
         Ok(self.slopes[i] * log_y.exp())
     }
 
     fn primitive(&self, x: f64) -> QLResult<f64> {
-        let i = locate(&self.xs, x)?;
+        let i = locate(&self.xs, x, &self.hint)?;
         let mut sum = 0.0;
         // Integrate each full segment: ∫ exp(a + b*(x-x0)) dx = (1/b)*(exp(...)-exp(a))
         for j in 0..i {
@@ -257,6 +297,7 @@ pub struct CubicSplineInterpolation {
     b: Vec<f64>,
     c: Vec<f64>,
     d: Vec<f64>,
+    hint: GridHint,
 }
 
 impl CubicSplineInterpolation {
@@ -306,31 +347,33 @@ impl CubicSplineInterpolation {
             d_coeffs[i] = (c[i + 1] - c[i]) / (3.0 * h[i]);
         }
 
+        let hint = detect_grid(&xs);
         Ok(Self {
             xs,
             a,
             b: b_coeffs,
             c,
             d: d_coeffs,
+            hint,
         })
     }
 }
 
 impl Interpolation for CubicSplineInterpolation {
     fn value(&self, x: f64) -> QLResult<f64> {
-        let i = locate(&self.xs, x)?;
+        let i = locate(&self.xs, x, &self.hint)?;
         let dx = x - self.xs[i];
         Ok(self.a[i] + self.b[i] * dx + self.c[i] * dx * dx + self.d[i] * dx * dx * dx)
     }
 
     fn derivative(&self, x: f64) -> QLResult<f64> {
-        let i = locate(&self.xs, x)?;
+        let i = locate(&self.xs, x, &self.hint)?;
         let dx = x - self.xs[i];
         Ok(self.b[i] + 2.0 * self.c[i] * dx + 3.0 * self.d[i] * dx * dx)
     }
 
     fn primitive(&self, x: f64) -> QLResult<f64> {
-        let i = locate(&self.xs, x)?;
+        let i = locate(&self.xs, x, &self.hint)?;
         let mut sum = 0.0;
         for j in 0..i {
             let dx = self.xs[j + 1] - self.xs[j];

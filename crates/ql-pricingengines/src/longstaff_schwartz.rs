@@ -72,28 +72,43 @@ pub fn mc_american_longstaff_schwartz(
     seed: u64,
 ) -> MCResult {
     let dt = time_to_expiry / num_steps as f64;
-    let df_step = (-r * dt).exp(); // discount factor per step
+    let df_step = (-r * dt).exp();
     let sqrt_dt = dt.sqrt();
-    let drift = (r - q - 0.5 * vol * vol) * dt;
+    let drift_dt = (r - q - 0.5 * vol * vol) * dt;
+    let vol_sqrt_dt = vol * sqrt_dt;
     let omega = option_type.sign();
+    let ln_spot = spot.ln();
+    let ln_strike = strike.ln();
 
-    // Step 1: Simulate paths forward (flat row-major array)
-    // paths[i * stride + j] = spot at time step j for path i
+    // Step 1: Simulate paths forward as LOG-spots (no exp() in hot loop).
+    // Generate row-major, then transpose to column-major so backward
+    // induction scans sequential memory (huge cache win on 20 MB arrays).
     let stride = num_steps + 1;
-    let paths = simulate_paths(spot, drift, vol, sqrt_dt, num_paths, num_steps, seed);
+    let row_paths =
+        simulate_paths_log(ln_spot, drift_dt, vol_sqrt_dt, num_paths, num_steps, seed);
 
-    // Step 2: Initialize with terminal payoff
-    // cashflow_time[i] = step at which path i exercises (or num_steps for terminal)
-    // cashflow_value[i] = undiscounted payoff at exercise
+    // Transpose to column-major: paths[step * num_paths + path_idx]
+    let paths = transpose_row_to_col(&row_paths, num_paths, stride);
+    drop(row_paths); // free 20 MB
+
+    // Precompute discount-factor table: df_table[k] = df_step^k
+    let mut df_table = Vec::with_capacity(num_steps + 1);
+    df_table.push(1.0);
+    for _ in 1..=num_steps {
+        df_table.push(df_table.last().unwrap() * df_step);
+    }
+
+    // Step 2: Terminal payoff (exp only at terminal nodes — sequential access)
     let mut cashflow_time = vec![num_steps; num_paths];
     let mut cashflow_value = vec![0.0_f64; num_paths];
 
+    let terminal_col = &paths[num_steps * num_paths..];
     for i in 0..num_paths {
-        cashflow_value[i] = (omega * (paths[i * stride + num_steps] - strike)).max(0.0);
+        let s = terminal_col[i].exp();
+        cashflow_value[i] = (omega * (s - strike)).max(0.0);
     }
 
-    // Step 3: Backward induction
-    // Pre-allocate scratch vectors outside the loop to avoid per-step allocation
+    // Step 3: Backward induction (column-major gives sequential reads)
     let mut itm_indices: Vec<usize> = Vec::with_capacity(num_paths);
     let mut itm_x: Vec<f64> = Vec::with_capacity(num_paths);
     let mut itm_y: Vec<f64> = Vec::with_capacity(num_paths);
@@ -101,18 +116,24 @@ pub fn mc_american_longstaff_schwartz(
     let mut basis_buf: Vec<f64> = Vec::with_capacity(num_paths * p);
 
     for step in (1..num_steps).rev() {
-        // Find in-the-money paths at this step
         itm_indices.clear();
         itm_x.clear();
         itm_y.clear();
 
+        let step_col = &paths[step * num_paths..(step + 1) * num_paths];
+
         for i in 0..num_paths {
-            let s = paths[i * stride + step];
-            let exercise_val = omega * (s - strike);
-            if exercise_val > 0.0 {
-                // Discount the future cashflow back to this step
+            let ln_s = step_col[i]; // sequential access!
+            // ITM check in log-space — avoids exp() for OTM paths
+            let is_itm = if omega > 0.0 {
+                ln_s > ln_strike
+            } else {
+                ln_s < ln_strike
+            };
+            if is_itm {
+                let s = ln_s.exp();
                 let steps_ahead = cashflow_time[i] - step;
-                let disc = df_step.powi(steps_ahead as i32);
+                let disc = df_table[steps_ahead];
                 let cont_val = cashflow_value[i] * disc;
 
                 itm_indices.push(i);
@@ -121,35 +142,32 @@ pub fn mc_american_longstaff_schwartz(
             }
         }
 
-        if itm_indices.len() < basis_degree + 1 {
-            // Not enough ITM paths for regression, skip this step
+        if itm_indices.len() < p {
             continue;
         }
 
-        // Regression: fit continuation value = f(S)
         build_basis_matrix_into(&itm_x, basis_degree, basis, &mut basis_buf);
         let coeffs = least_squares_fit(&basis_buf, p, &itm_y);
 
-        // Compare exercise vs fitted continuation
-        for &i in itm_indices.iter() {
-            let s = paths[i * stride + step];
+        // Compare exercise vs fitted continuation (reuse cached spot from itm_x)
+        for (idx, &i) in itm_indices.iter().enumerate() {
+            let s = itm_x[idx];
             let exercise_val = omega * (s - strike);
             let fitted_cont = evaluate_basis(s, &coeffs, basis);
 
-            if exercise_val > fitted_cont && exercise_val > 0.0 {
+            if exercise_val > fitted_cont {
                 cashflow_time[i] = step;
                 cashflow_value[i] = exercise_val;
             }
         }
     }
 
-    // Step 4: Compute NPV as discounted average
+    // Step 4: Compute NPV as discounted average (use table, not powi)
     let mut sum = 0.0;
     let mut sum_sq = 0.0;
 
     for i in 0..num_paths {
-        let steps = cashflow_time[i];
-        let disc = df_step.powi(steps as i32);
+        let disc = df_table[cashflow_time[i]];
         let pv = cashflow_value[i] * disc;
         sum += pv;
         sum_sq += pv * pv;
@@ -171,52 +189,89 @@ pub fn mc_american_longstaff_schwartz(
 // Path simulation
 // ===========================================================================
 
-/// Simulate GBM paths forward.
-/// Returns flat array in row-major order: `paths[path_idx * stride + step]` = spot value,
-/// where `stride = num_steps + 1`.
-fn simulate_paths(
-    spot: f64,
+/// Simulate GBM paths as LOG-spot values in a single pre-allocated array.
+///
+/// Uses antithetic variates: each batch generates path pairs (original +
+/// mirror) sharing the same random draws, halving RNG calls and reducing
+/// variance. Returns flat row-major array where `paths[path_idx * stride + step]`
+/// is `ln(S)` at that step, with `stride = num_steps + 1`.
+fn simulate_paths_log(
+    ln_spot: f64,
     drift_dt: f64,
-    vol: f64,
-    sqrt_dt: f64,
+    vol_sqrt_dt: f64,
     num_paths: usize,
     num_steps: usize,
     seed: u64,
 ) -> Vec<f64> {
     let stride = num_steps + 1;
-    // Use parallel batches for speed
     let batch_size = 5000_usize;
-    let num_batches = num_paths.div_ceil(batch_size);
+    let chunk_elems = batch_size * stride;
+    let mut paths = vec![0.0_f64; num_paths * stride];
 
-    let batches: Vec<Vec<f64>> = (0..num_batches)
-        .into_par_iter()
-        .map(|batch_idx| {
+    // Zero-copy parallel generation with antithetic variates.
+    paths
+        .par_chunks_mut(chunk_elems)
+        .enumerate()
+        .for_each(|(batch_idx, chunk)| {
             let mut rng = SmallRng::seed_from_u64(seed.wrapping_add(batch_idx as u64));
-            let start = batch_idx * batch_size;
-            let end = (start + batch_size).min(num_paths);
-            let count = end - start;
-            let mut buf = vec![0.0_f64; count * stride];
+            let count = chunk.len() / stride;
+            let half = count / 2;
 
-            for p in 0..count {
-                let base = p * stride;
-                buf[base] = spot;
-                let mut s = spot;
+            // Generate original + antithetic pairs
+            for p in 0..half {
+                let base_a = p * stride;
+                let base_b = (half + p) * stride;
+                chunk[base_a] = ln_spot;
+                chunk[base_b] = ln_spot;
+                let mut ln_a = ln_spot;
+                let mut ln_b = ln_spot;
                 for j in 1..stride {
                     let z: f64 = StandardNormal.sample(&mut rng);
-                    s *= (drift_dt + vol * sqrt_dt * z).exp();
-                    buf[base + j] = s;
+                    ln_a += drift_dt + vol_sqrt_dt * z;
+                    ln_b += drift_dt - vol_sqrt_dt * z;
+                    chunk[base_a + j] = ln_a;
+                    chunk[base_b + j] = ln_b;
                 }
             }
-            buf
-        })
-        .collect();
+            // Odd path without an antithetic partner
+            if count & 1 == 1 {
+                let base = (count - 1) * stride;
+                chunk[base] = ln_spot;
+                let mut ln_s = ln_spot;
+                for j in 1..stride {
+                    let z: f64 = StandardNormal.sample(&mut rng);
+                    ln_s += drift_dt + vol_sqrt_dt * z;
+                    chunk[base + j] = ln_s;
+                }
+            }
+        });
 
-    // Flatten batches into single contiguous array
-    let mut paths = Vec::with_capacity(num_paths * stride);
-    for b in batches {
-        paths.extend_from_slice(&b);
-    }
     paths
+}
+
+/// Cache-friendly tiled transpose: row-major → column-major.
+///
+/// Input:  `row[i * ncols + j]`  (path i, step j)
+/// Output: `col[j * nrows + i]`  (step j, path i)
+///
+/// Block tiling keeps both source and destination in L1/L2 cache,
+/// making the 20 MB transposition fast (~3-5 ms).
+fn transpose_row_to_col(row: &[f64], nrows: usize, ncols: usize) -> Vec<f64> {
+    let mut col = vec![0.0_f64; nrows * ncols];
+    const BLOCK: usize = 64;
+    for bi in (0..nrows).step_by(BLOCK) {
+        let bi_end = (bi + BLOCK).min(nrows);
+        for bj in (0..ncols).step_by(BLOCK) {
+            let bj_end = (bj + BLOCK).min(ncols);
+            for i in bi..bi_end {
+                let src_base = i * ncols;
+                for j in bj..bj_end {
+                    col[j * nrows + i] = row[src_base + j];
+                }
+            }
+        }
+    }
+    col
 }
 
 // ===========================================================================

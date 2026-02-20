@@ -19,6 +19,7 @@ use ql_pricingengines::{
     hw_jamshidian_swaption,
     merton_jump_diffusion, bates_price_flat,
     GaussianCopulaLHP, cds_option_black,
+    double_barrier_knockout, chooser_price, cliquet_price,
 };
 use ql_termstructures::{
     DepositRateHelper, FlatForward, NelsonSiegelFitting, PiecewiseYieldCurve,
@@ -812,6 +813,54 @@ fn bench_cds_option(c: &mut Criterion) {
     });
 }
 
+// ── Double-barrier knock-out ─────────────────────────────────────────────────
+
+fn bench_double_barrier_ko(c: &mut Criterion) {
+    c.bench_function("double_barrier_ko_call", |b| {
+        b.iter(|| {
+            double_barrier_knockout(
+                black_box(100.0), black_box(100.0),
+                black_box(0.05), black_box(0.0),
+                black_box(0.20), black_box(1.0),
+                black_box(80.0), black_box(120.0),
+                OptionType::Call, 20,
+            )
+        })
+    });
+}
+
+// ── Chooser option ───────────────────────────────────────────────────────────
+
+fn bench_chooser(c: &mut Criterion) {
+    c.bench_function("chooser_rubinstein", |b| {
+        b.iter(|| {
+            chooser_price(
+                black_box(50.0), black_box(50.0),
+                black_box(0.08), black_box(0.0),
+                black_box(0.25), black_box(0.25),
+                black_box(0.50),
+            )
+        })
+    });
+}
+
+// ── Cliquet option ───────────────────────────────────────────────────────────
+
+fn bench_cliquet(c: &mut Criterion) {
+    let resets = vec![0.25, 0.50, 0.75, 1.00];
+    c.bench_function("cliquet_4_period_call", |b| {
+        b.iter(|| {
+            cliquet_price(
+                black_box(100.0), black_box(0.05), black_box(0.02),
+                black_box(0.20), black_box(&resets),
+                black_box(-0.05), black_box(0.10),
+                black_box(0.0), black_box(1.0),
+                black_box(1_000_000.0), OptionType::Call,
+            )
+        })
+    });
+}
+
 criterion_group!(
     benches,
     bench_bs_pricing,
@@ -854,5 +903,9 @@ criterion_group!(
     bench_lmm_cap,
     bench_gaussian_copula_cdo,
     bench_cds_option,
+    // -- Phase 26: exotic engines --
+    bench_double_barrier_ko,
+    bench_chooser,
+    bench_cliquet,
 );
 criterion_main!(benches);

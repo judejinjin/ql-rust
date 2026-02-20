@@ -10,7 +10,8 @@
 //! | [`index`] | [`Index`] trait, [`IndexManager`] global fixing store, [`TimeSeries`] |
 //! | [`interest_rate`] | [`InterestRate`] with compounding and day-count conventions |
 //! | [`ibor_index`] | [`IborIndex`] — Euribor, USD LIBOR, etc. |
-//! | [`overnight_index`] | [`OvernightIndex`] — SOFR, ESTR, SONIA |
+//! | [`overnight_index`] | [`OvernightIndex`] — SOFR, ESTR, SONIA, TONA |
+//! | [`swap_index`] | [`SwapIndex`] — EUR/USD par swap rate indexes |
 //!
 //! ## Quick Start
 //!
@@ -33,8 +34,10 @@ pub mod ibor_index;
 pub mod index;
 pub mod interest_rate;
 pub mod overnight_index;
+pub mod swap_index;
 
 pub use ibor_index::IborIndex;
 pub use index::{Index, IndexManager, TimeSeries};
 pub use interest_rate::{Compounding, InterestRate};
 pub use overnight_index::OvernightIndex;
+pub use swap_index::SwapIndex;

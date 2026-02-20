@@ -3,7 +3,7 @@
 //! Computes NPV and Greeks for European vanilla options using the
 //! Black-Scholes closed-form solution.
 
-use ql_instruments::VanillaOption;
+use ql_instruments::{OptionType, VanillaOption};
 use ql_math::distributions::NormalDistribution;
 use tracing::info_span;
 
@@ -104,6 +104,50 @@ pub fn price_european(
         vega,
         theta,
         rho,
+    }
+}
+
+/// Lightweight Black-Scholes price (NPV only, no Greeks) for use by
+/// exotic engines that don't need a full `VanillaOption` instrument.
+pub fn black_scholes_price(
+    spot: f64,
+    strike: f64,
+    r: f64,
+    q: f64,
+    vol: f64,
+    t: f64,
+    option_type: OptionType,
+) -> AnalyticEuropeanResults {
+    use ql_math::distributions::NormalDistribution;
+
+    let omega = option_type.sign();
+    if t <= 0.0 {
+        let intrinsic = (omega * (spot - strike)).max(0.0);
+        return AnalyticEuropeanResults {
+            npv: intrinsic,
+            delta: 0.0,
+            gamma: 0.0,
+            vega: 0.0,
+            theta: 0.0,
+            rho: 0.0,
+        };
+    }
+    let sqrt_t = t.sqrt();
+    let d1 = ((spot / strike).ln() + (r - q + 0.5 * vol * vol) * t) / (vol * sqrt_t);
+    let d2 = d1 - vol * sqrt_t;
+    let n = NormalDistribution::standard();
+    let nd1 = n.cdf(omega * d1);
+    let nd2 = n.cdf(omega * d2);
+    let df_q = (-q * t).exp();
+    let df_r = (-r * t).exp();
+    let npv = omega * (spot * df_q * nd1 - strike * df_r * nd2);
+    AnalyticEuropeanResults {
+        npv,
+        delta: 0.0,
+        gamma: 0.0,
+        vega: 0.0,
+        theta: 0.0,
+        rho: 0.0,
     }
 }
 

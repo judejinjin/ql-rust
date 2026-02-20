@@ -5,11 +5,13 @@
 //! pricing.
 
 use ql_indexes::IborIndex;
+use ql_indexes::OvernightIndex;
 use ql_time::{DayCounter, Schedule};
 
 use crate::cashflow::Leg;
 use crate::fixed_rate_coupon::FixedRateCoupon;
 use crate::ibor_coupon::IborCoupon;
+use crate::overnight_coupon::OvernightIndexedCoupon;
 use crate::simple_cashflow::SimpleCashFlow;
 
 /// Build a fixed-rate leg from a schedule.
@@ -106,6 +108,50 @@ pub fn ibor_leg(
 /// Append a notional exchange (final principal repayment) to a leg.
 pub fn add_notional_exchange(leg: &mut Leg, date: ql_time::Date, notional: f64) {
     leg.push(Box::new(SimpleCashFlow::new(date, notional)));
+}
+
+/// Build an overnight-indexed floating leg from a schedule.
+///
+/// Each period generates an `OvernightIndexedCoupon` whose rate is the
+/// compounded overnight rate over the accrual period.
+pub fn overnight_leg(
+    schedule: &Schedule,
+    notionals: &[f64],
+    index: &OvernightIndex,
+    spreads: &[f64],
+    day_counter: DayCounter,
+) -> Leg {
+    let dates = schedule.dates();
+    if dates.len() < 2 || notionals.is_empty() {
+        return Vec::new();
+    }
+
+    let n = dates.len() - 1;
+    let default_spread = if spreads.is_empty() { 0.0 } else { spreads[0] };
+    let mut leg: Leg = Vec::with_capacity(n);
+
+    for i in 0..n {
+        let notional = notionals[i.min(notionals.len() - 1)];
+        let spread = if i < spreads.len() {
+            spreads[i]
+        } else {
+            default_spread
+        };
+        let start = dates[i];
+        let end = dates[i + 1];
+
+        leg.push(Box::new(OvernightIndexedCoupon::new(
+            end,
+            notional,
+            start,
+            end,
+            index.clone(),
+            spread,
+            day_counter,
+        )));
+    }
+
+    leg
 }
 
 #[cfg(test)]

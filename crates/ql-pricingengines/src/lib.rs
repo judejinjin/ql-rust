@@ -16,6 +16,9 @@
 //! - [`lookback_engine`] — analytic lookback options
 //! - [`compound_engine`] — analytic compound options
 //! - [`variance_swap_engine`] — variance/volatility swap pricing
+//! - [`double_barrier_engine`] — Ikeda-Kunitomo double-barrier options
+//! - [`chooser_engine`] — Rubinstein (1991) simple chooser options
+//! - [`cliquet_engine`] — cliquet / ratchet option pricing
 //!
 //! ### Interest Rate Derivatives
 //! - [`discounting`] — swap and bond discounting engines
@@ -47,12 +50,15 @@ pub mod variance_swap_engine;
 pub mod merton_jump_diffusion;
 pub mod multi_asset;
 pub mod hw_analytic;
+pub mod double_barrier_engine;
+pub mod chooser_engine;
+pub mod cliquet_engine;
 
 // Re-exports
 pub use american_engines::{
     barone_adesi_whaley, bjerksund_stensland, qd_plus_american, AmericanApproxResult,
 };
-pub use analytic_european::{price_european, implied_volatility, AnalyticEuropeanResults};
+pub use analytic_european::{price_european, implied_volatility, black_scholes_price, AnalyticEuropeanResults};
 pub use analytic_heston::{heston_price, HestonResult};
 pub use analytic_bates::{bates_price, bates_price_flat, BatesResult};
 pub use discounting::{price_swap, price_bond, SwapResults, BondResults};
@@ -83,3 +89,6 @@ pub mod credit_models;
 pub use credit_models::{
     GaussianCopulaLHP, NtdResult, nth_to_default_mc, cds_option_black,
 };
+pub use double_barrier_engine::{double_barrier_knockout, double_barrier_knockin, DoubleBarrierResult};
+pub use chooser_engine::{chooser_price, ChooserResult};
+pub use cliquet_engine::{cliquet_price, CliquetResult};

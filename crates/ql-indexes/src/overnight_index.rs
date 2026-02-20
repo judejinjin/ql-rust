@@ -115,6 +115,17 @@ impl OvernightIndex {
             DayCounter::Actual365Fixed,
         )
     }
+
+    /// TONA (Tokyo Overnight Average Rate).
+    pub fn tona() -> Self {
+        Self::new(
+            "TONA",
+            0,
+            Currency::jpy(),
+            Calendar::WeekendsOnly, // simplified; full Japan calendar added separately
+            DayCounter::Actual365Fixed,
+        )
+    }
 }
 
 // ===========================================================================
@@ -170,6 +181,14 @@ mod tests {
             .unwrap();
         let f = idx.fixing(date, false).unwrap();
         assert!((f - 0.043).abs() < 1e-15);
+    }
+
+    #[test]
+    fn tona_properties() {
+        let idx = OvernightIndex::tona();
+        assert_eq!(idx.name(), "TONA");
+        assert_eq!(idx.currency.code, "JPY");
+        assert_eq!(idx.fixing_days, 0);
     }
 
     #[test]
