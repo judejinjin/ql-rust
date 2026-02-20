@@ -272,9 +272,9 @@ impl CalibratedModel for Gsr1d {
     fn set_params(&mut self, vals: &[f64]) {
         let n = self.times.len() + 1;
         assert!(vals.len() >= 2 * n);
-        for i in 0..n {
-            self.params[i].set_value(vals[i]);
-            self.a_values[i] = vals[i];
+        for (i, val) in vals.iter().enumerate().take(n) {
+            self.params[i].set_value(*val);
+            self.a_values[i] = *val;
         }
         for i in 0..n {
             self.params[n + i].set_value(vals[n + i]);

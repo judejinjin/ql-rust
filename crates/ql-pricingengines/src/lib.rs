@@ -62,7 +62,8 @@ pub use analytic_european::{price_european, implied_volatility, black_scholes_pr
 pub use analytic_heston::{heston_price, HestonResult};
 pub use analytic_bates::{bates_price, bates_price_flat, BatesResult};
 pub use discounting::{
-    price_swap, price_swap_multicurve, price_ois, price_bond, SwapResults, BondResults,
+    price_swap, price_swap_multicurve, price_ois, price_bond, price_floating_bond,
+    SwapResults, BondResults,
 };
 pub use swaption_engines::{black_swaption, bachelier_swaption, SwaptionResult};
 pub use cap_floor_engines::{black_cap_floor, bachelier_cap_floor, CapFloorResult};
@@ -117,4 +118,13 @@ pub mod stochastic_local_vol;
 pub use stochastic_local_vol::{
     DupireLocalVol, SlvModel, SlvCalibrationResult,
     calibrate_slv, mc_slv, SlvMcResult,
+};
+pub mod gaussian1d_engine;
+pub use gaussian1d_engine::{
+    gaussian1d_swaption, gaussian1d_zcb_option, Gaussian1dResult,
+};
+pub mod lmm_products;
+pub use lmm_products::{
+    LmmProduct, ExerciseType, BermudanSwaption, CmsSpreadOption,
+    CallableRangeAccrual, lmm_product_mc,
 };

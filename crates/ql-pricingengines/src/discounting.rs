@@ -210,6 +210,47 @@ pub fn price_bond(
     }
 }
 
+/// Price a floating-rate bond with separate forecast and discount curves.
+///
+/// Uses `npv_with_forecast()` so that IBOR coupons are projected from
+/// `forecast_curve` and then discounted with `discount_curve`.
+/// For single-curve pricing, pass the same curve for both.
+pub fn price_floating_bond(
+    bond: &ql_instruments::floating_rate_bond::FloatingRateBond,
+    forecast_curve: &dyn YieldTermStructure,
+    discount_curve: &dyn YieldTermStructure,
+    settle: Date,
+) -> BondResults {
+    let npv = ql_cashflows::npv_with_forecast(
+        &bond.cashflows,
+        forecast_curve,
+        discount_curve,
+        settle,
+    );
+
+    let dirty_price = if bond.face_amount.abs() > 1e-15 {
+        npv / bond.face_amount * 100.0
+    } else {
+        0.0
+    };
+
+    let accrued = ql_cashflows::accrued_amount(&bond.cashflows, settle);
+    let accrued_per_100 = if bond.face_amount.abs() > 1e-15 {
+        accrued / bond.face_amount * 100.0
+    } else {
+        0.0
+    };
+
+    let clean_price = dirty_price - accrued_per_100;
+
+    BondResults {
+        npv,
+        clean_price,
+        dirty_price,
+        accrued_interest: accrued_per_100,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

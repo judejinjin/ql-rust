@@ -32,12 +32,14 @@
 
 pub mod ibor_index;
 pub mod index;
+pub mod inflation_index;
 pub mod interest_rate;
 pub mod overnight_index;
 pub mod swap_index;
 
 pub use ibor_index::IborIndex;
 pub use index::{Index, IndexManager, TimeSeries};
+pub use inflation_index::{InflationIndex, CpiInterpolation};
 pub use interest_rate::{Compounding, InterestRate};
 pub use overnight_index::OvernightIndex;
 pub use swap_index::SwapIndex;

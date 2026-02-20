@@ -149,6 +149,7 @@ pub struct SlvModel {
 
 impl SlvModel {
     /// Create a pure Heston model (no leverage function).
+    #[allow(clippy::too_many_arguments)]
     pub fn heston(
         spot: f64, r: f64, q: f64,
         v0: f64, kappa: f64, theta: f64, xi: f64, rho: f64,
@@ -160,6 +161,7 @@ impl SlvModel {
     }
 
     /// Create a full SLV model with a calibrated leverage function.
+    #[allow(clippy::too_many_arguments)]
     pub fn with_leverage(
         spot: f64, r: f64, q: f64,
         v0: f64, kappa: f64, theta: f64, xi: f64, rho: f64,
@@ -254,8 +256,7 @@ pub fn calibrate_slv(
             }
 
             // Kernel regression: E[v | S = s_j] for each grid spot
-            for sj in 0..n_spots {
-                let target_s = local_vol.spots[sj];
+            for (sj, target_s) in local_vol.spots.iter().enumerate() {
                 let bandwidth = target_s * 0.10; // 10% of spot
 
                 let mut sum_v = 0.0;
@@ -276,7 +277,7 @@ pub fn calibrate_slv(
                 // L²(t, S) = σ²_loc / E[v | S]
                 let local_var = local_vol.vols[ti][sj].powi(2);
                 let lev_sq = if cond_var > 1e-12 {
-                    (local_var / cond_var).max(0.01).min(100.0)
+                    (local_var / cond_var).clamp(0.01, 100.0)
                 } else {
                     1.0
                 };

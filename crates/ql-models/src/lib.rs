@@ -46,5 +46,5 @@ pub use vasicek::VasicekModel;
 pub use cir::CIRModel;
 pub use black_karasinski::BlackKarasinskiModel;
 pub use g2_model::G2Model;
-pub use lmm::{LmmConfig, LmmCurveState, LmmResult, lmm_cap_price, lmm_swaption_price};
+pub use lmm::{LmmConfig, LmmCurveState, LmmResult, lmm_cap_price, lmm_swaption_price, evolve_one_step};
 pub use gsr::{Gsr1d, MarkovFunctional};

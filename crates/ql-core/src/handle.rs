@@ -146,14 +146,12 @@ mod tests {
 
     struct DummyObj(f64);
 
-    struct CountingObserver(AtomicU32);
+    struct CountingObserver(Arc<AtomicU32>);
 
     impl CountingObserver {
-        fn new() -> Self {
-            Self(AtomicU32::new(0))
-        }
-        fn count(&self) -> u32 {
-            self.0.load(Ordering::SeqCst)
+        fn new() -> (Arc<AtomicU32>, Self) {
+            let counter = Arc::new(AtomicU32::new(0));
+            (counter.clone(), Self(counter))
         }
     }
 
@@ -209,14 +207,14 @@ mod tests {
         let rh = RelinkableHandle::new(obj1);
         let h = rh.handle();
 
-        let obs: Arc<dyn Observer> = Arc::new(CountingObserver::new());
+        let (counter, counting_obs) = CountingObserver::new();
+        let obs: Arc<dyn Observer> = Arc::new(counting_obs);
         h.register_observer(&obs);
 
         rh.link_to(Arc::new(DummyObj(2.0)));
         rh.link_to(Arc::new(DummyObj(3.0)));
 
-        let counting = unsafe { &*(Arc::as_ptr(&obs) as *const CountingObserver) };
-        assert_eq!(counting.count(), 2);
+        assert_eq!(counter.load(Ordering::SeqCst), 2);
     }
 
     #[test]

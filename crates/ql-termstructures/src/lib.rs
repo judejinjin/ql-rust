@@ -47,6 +47,7 @@ pub mod vol_interpolation;
 pub mod default_term_structure;
 pub mod inflation_term_structure;
 pub mod swaption_vol;
+pub mod andreasen_huge;
 
 // Re-exports
 pub use term_structure::TermStructure;
@@ -86,4 +87,8 @@ pub use swaption_vol::{
     SwaptionVolatilityStructure, SwaptionConstantVol, SwaptionVolMatrix,
     SwaptionVolCube, SabrSwaptionVolCube, SabrParams,
     CapFloorTermVolStructure, ConstantCapFloorTermVol, CapFloorTermVolSurface,
+};
+pub use andreasen_huge::{
+    AndreasenHugeVolSurface, AndreasenHugeConfig, AndreasenHugeCalibrationResult,
+    VolQuote, andreasen_huge_calibrate,
 };

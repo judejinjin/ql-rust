@@ -70,6 +70,7 @@ pub struct QuantoResult {
 /// - `t`: time to expiry (years)
 /// - `fx_rate`: current FX rate (domestic per 1 foreign) — for PV conversion
 /// - `is_call`: true for call, false for put
+#[allow(clippy::too_many_arguments)]
 pub fn quanto_european(
     spot: f64,
     strike: f64,
@@ -125,6 +126,7 @@ pub struct PowerResult {
 /// Price a power option: payoff = max(S^α − K, 0) for call.
 ///
 /// Uses the substitution F = S^α with adjusted vol σ_p = α × σ.
+#[allow(clippy::too_many_arguments)]
 pub fn power_option(
     spot: f64,
     strike: f64,
@@ -188,6 +190,7 @@ pub struct ForwardStartResult {
 /// - `t2`: time to expiry (t2 > t1)
 /// - `alpha`: strike ratio (K = alpha × S(t1))
 /// - `is_call`: true for call
+#[allow(clippy::too_many_arguments)]
 pub fn forward_start_option(
     spot: f64,
     r: f64,
@@ -252,6 +255,7 @@ pub enum DigitalBarrierType {
 /// - `t`: time to expiry
 /// - `barrier_type`: `OneTouch` or `NoTouch`
 /// - `is_upper`: true if barrier is above spot (up), false if below (down)
+#[allow(clippy::too_many_arguments)]
 pub fn digital_barrier(
     spot: f64,
     barrier: f64,

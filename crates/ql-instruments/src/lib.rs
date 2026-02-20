@@ -39,9 +39,11 @@
 //! - [`Exercise`] — exercise style (European, American, Bermudan)
 
 pub mod payoff;
+pub mod instrument;
 pub mod vanilla_option;
 pub mod vanilla_swap;
 pub mod bond;
+pub mod floating_rate_bond;
 pub mod zero_coupon_bond;
 pub mod amortizing_bond;
 pub mod ois_swap;
@@ -62,12 +64,17 @@ pub mod inflation_linked_bond;
 pub mod double_barrier_option;
 pub mod chooser_option;
 pub mod cliquet_option;
+pub mod stock;
+pub mod bond_forward;
+pub mod composite_instrument;
 
 // Re-exports
 pub use payoff::{OptionType, Payoff, Exercise};
+pub use instrument::{Instrument, expired_count, filter_by_type, total_notional};
 pub use vanilla_option::VanillaOption;
 pub use vanilla_swap::{VanillaSwap, SwapType};
 pub use bond::FixedRateBond;
+pub use floating_rate_bond::FloatingRateBond;
 pub use zero_coupon_bond::ZeroCouponBond;
 pub use amortizing_bond::AmortizingBond;
 pub use ois_swap::OISSwap;
@@ -88,3 +95,6 @@ pub use chooser_option::ChooserOption;
 pub use cliquet_option::CliquetOption;
 pub use variance_swap::VarianceSwap;
 pub use inflation_linked_bond::InflationLinkedBond;
+pub use stock::Stock;
+pub use bond_forward::{BondForward, BondForwardType};
+pub use composite_instrument::{CompositeInstrument, CompositeComponent};

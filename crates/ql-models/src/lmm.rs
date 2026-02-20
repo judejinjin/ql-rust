@@ -65,7 +65,7 @@ impl LmmConfig {
     ///
     /// Under the terminal measure:
     ///   μ_i = - Σ_{j=i+1}^{N-1} [τ_j f_j σ_i σ_j ρ_{ij} / (1 + τ_j f_j)]
-    fn drift(&self, i: usize, forwards: &[f64]) -> f64 {
+    pub fn drift(&self, i: usize, forwards: &[f64]) -> f64 {
         let n = self.n_rates;
         let mut mu = 0.0;
         for (j, (&accrual_j, &fwd_j)) in self.accruals.iter().zip(forwards.iter()).enumerate().skip(i + 1) {
@@ -79,7 +79,7 @@ impl LmmConfig {
 
     /// Cholesky decomposition of the correlation matrix.
     /// Returns lower triangular matrix L such that ρ = L L^T.
-    fn cholesky(&self) -> Vec<f64> {
+    pub fn cholesky(&self) -> Vec<f64> {
         let n = self.n_rates;
         let mut l = vec![0.0; n * n];
 
@@ -148,7 +148,7 @@ impl LmmCurveState {
 /// Evolve forward rates using a predictor-corrector (Glasserman) scheme.
 ///
 /// Returns evolved forward rates at the next time step.
-fn evolve_one_step(
+pub fn evolve_one_step(
     config: &LmmConfig,
     forwards: &[f64],
     alive_from: usize,

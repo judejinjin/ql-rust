@@ -117,20 +117,17 @@ mod tests {
     use super::*;
     use std::sync::atomic::{AtomicU32, Ordering};
 
-    /// A test observer that counts how many times it was notified.
+    /// A test observer that counts notifications via a shared atomic counter.
+    /// The counter is stored in an `Arc<AtomicU32>` so it can be read
+    /// without downcasting through `unsafe`.
     struct CountingObserver {
-        count: AtomicU32,
+        count: Arc<AtomicU32>,
     }
 
     impl CountingObserver {
-        fn new() -> Self {
-            Self {
-                count: AtomicU32::new(0),
-            }
-        }
-
-        fn count(&self) -> u32 {
-            self.count.load(Ordering::SeqCst)
+        fn new() -> (Arc<AtomicU32>, Self) {
+            let counter = Arc::new(AtomicU32::new(0));
+            (counter.clone(), Self { count: counter })
         }
     }
 
@@ -143,56 +140,52 @@ mod tests {
     #[test]
     fn register_and_notify() {
         let observable = SimpleObservable::new();
-        let observer: Arc<dyn Observer> = Arc::new(CountingObserver::new());
+        let (counter, obs) = CountingObserver::new();
+        let observer: Arc<dyn Observer> = Arc::new(obs);
 
         observable.register_observer(&observer);
         observable.notify_observers();
         observable.notify_observers();
 
-        // Downcast to check count
-        let counting = observer
-            .as_ref()
-            .as_any_counting()
-            .expect("should be CountingObserver");
-        assert_eq!(counting, 2);
+        assert_eq!(counter.load(Ordering::SeqCst), 2);
     }
 
     #[test]
     fn multiple_observers() {
         let observable = SimpleObservable::new();
-        let obs1: Arc<dyn Observer> = Arc::new(CountingObserver::new());
-        let obs2: Arc<dyn Observer> = Arc::new(CountingObserver::new());
+        let (cnt1, o1) = CountingObserver::new();
+        let (cnt2, o2) = CountingObserver::new();
+        let obs1: Arc<dyn Observer> = Arc::new(o1);
+        let obs2: Arc<dyn Observer> = Arc::new(o2);
 
         observable.register_observer(&obs1);
         observable.register_observer(&obs2);
         observable.notify_observers();
 
         // Both should have received one notification
-        // Access count via raw pointer since we know the concrete type
-        let c1 = unsafe { &*(Arc::as_ptr(&obs1) as *const CountingObserver) };
-        let c2 = unsafe { &*(Arc::as_ptr(&obs2) as *const CountingObserver) };
-        assert_eq!(c1.count(), 1);
-        assert_eq!(c2.count(), 1);
+        assert_eq!(cnt1.load(Ordering::SeqCst), 1);
+        assert_eq!(cnt2.load(Ordering::SeqCst), 1);
     }
 
     #[test]
     fn unregister_observer() {
         let observable = SimpleObservable::new();
-        let observer: Arc<dyn Observer> = Arc::new(CountingObserver::new());
+        let (counter, obs) = CountingObserver::new();
+        let observer: Arc<dyn Observer> = Arc::new(obs);
 
         let id = observable.register_observer(&observer);
         observable.notify_observers();
         observable.unregister_observer(id);
         observable.notify_observers(); // should NOT reach observer
 
-        let c = unsafe { &*(Arc::as_ptr(&observer) as *const CountingObserver) };
-        assert_eq!(c.count(), 1); // only the first notification
+        assert_eq!(counter.load(Ordering::SeqCst), 1); // only the first notification
     }
 
     #[test]
     fn dropped_observer_is_purged() {
         let observable = SimpleObservable::new();
-        let observer: Arc<dyn Observer> = Arc::new(CountingObserver::new());
+        let (_counter, obs) = CountingObserver::new();
+        let observer: Arc<dyn Observer> = Arc::new(obs);
         observable.register_observer(&observer);
 
         // Drop the only strong reference
@@ -206,16 +199,4 @@ mod tests {
         assert_eq!(state.observers.len(), 0);
     }
 
-    // Helper trait to safely downcast in tests
-    trait AsAnyCounting {
-        fn as_any_counting(&self) -> Option<u32>;
-    }
-
-    impl AsAnyCounting for dyn Observer {
-        fn as_any_counting(&self) -> Option<u32> {
-            // We know in tests these are CountingObserver
-            let ptr = self as *const dyn Observer as *const CountingObserver;
-            Some(unsafe { &*ptr }.count())
-        }
-    }
 }

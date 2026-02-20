@@ -23,6 +23,7 @@ pub mod heston_process;
 pub mod hull_white_process;
 pub mod bates_process;
 pub mod cir_process;
+pub mod g2_process;
 
 // Re-exports
 pub use process::{StochasticProcess, StochasticProcess1D};
@@ -31,3 +32,4 @@ pub use heston_process::HestonProcess;
 pub use hull_white_process::{OrnsteinUhlenbeckProcess, HullWhiteProcess};
 pub use bates_process::BatesProcess;
 pub use cir_process::{CoxIngersollRossProcess, SquareRootProcess};
+pub use g2_process::G2Process;

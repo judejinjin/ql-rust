@@ -49,20 +49,22 @@ pub use ql_time::{
 
 // Indexes
 pub use ql_indexes::{
-    Compounding, IborIndex, InterestRate, OvernightIndex, SwapIndex, Index, IndexManager,
+    Compounding, CpiInterpolation, IborIndex, InflationIndex, InterestRate,
+    OvernightIndex, SwapIndex, Index, IndexManager,
 };
 
 // Instruments
 pub use ql_instruments::{
-    AmortizingBond,
+    AmortizingBond, BondForward, BondForwardType,
     BarrierOption, BarrierType, CallableBond, CallabilityScheduleEntry, CallabilityType,
-    CapFloor, CapFloorType, Caplet, ChooserOption, CliquetOption, CompoundOption,
+    CapFloor, CapFloorType, Caplet, ChooserOption, CliquetOption,
+    CompositeInstrument, CompositeComponent, CompoundOption,
     ConvertibleBond, CreditDefaultSwap, CdsProtectionSide, CdsPremiumPeriod,
-    DoubleBarrierOption, DoubleBarrierType, Exercise, FixedRateBond,
-    InflationLinkedBond, LookbackOption, LookbackType,
+    DoubleBarrierOption, DoubleBarrierType, Exercise, FixedRateBond, FloatingRateBond,
+    InflationLinkedBond, Instrument, LookbackOption, LookbackType,
     OISSwap,
     ForwardRateAgreement, BasisSwap, CrossCurrencySwap, XCcyLeg, FloatFloatSwap,
-    OptionType, Payoff, Swaption, SwaptionType, SettlementType, SwapType,
+    OptionType, Payoff, Stock, Swaption, SwaptionType, SettlementType, SwapType,
     VanillaOption, VanillaSwap, VarianceSwap, AsianOption, AveragingType,
     ZeroCouponBond,
 };
@@ -97,6 +99,9 @@ pub use ql_termstructures::{
     SwaptionVolatilityStructure, SwaptionConstantVol, SwaptionVolMatrix,
     SwaptionVolCube, SabrSwaptionVolCube, SabrParams,
     CapFloorTermVolStructure, ConstantCapFloorTermVol, CapFloorTermVolSurface,
+    // Andreasen-Huge vol surface
+    AndreasenHugeVolSurface, AndreasenHugeConfig, AndreasenHugeCalibrationResult,
+    VolQuote, andreasen_huge_calibrate,
 };
 
 // Cash flows
@@ -122,7 +127,8 @@ pub use ql_pricingengines::{
     // Heston
     heston_price, HestonResult,
     // Discounting (swap, bond)
-    price_swap, price_swap_multicurve, price_ois, price_bond, SwapResults, BondResults,
+    price_swap, price_swap_multicurve, price_ois, price_bond, price_floating_bond,
+    SwapResults, BondResults,
     // Swaptions
     black_swaption, bachelier_swaption, SwaptionResult,
     // Caps/floors
@@ -177,6 +183,11 @@ pub use ql_pricingengines::{
     // Stochastic Local Vol
     DupireLocalVol, SlvModel, SlvCalibrationResult,
     calibrate_slv, mc_slv, SlvMcResult,
+    // Gaussian 1-factor engine
+    gaussian1d_swaption, gaussian1d_zcb_option, Gaussian1dResult,
+    // LMM multi-step products
+    LmmProduct, ExerciseType, BermudanSwaption, CmsSpreadOption,
+    CallableRangeAccrual, lmm_product_mc,
 };
 
 // Stochastic processes
@@ -185,6 +196,8 @@ pub use ql_processes::{
     // Short-rate processes (Phase 16)
     OrnsteinUhlenbeckProcess, HullWhiteProcess,
     BatesProcess, CoxIngersollRossProcess, SquareRootProcess,
+    // G2++ two-factor process
+    G2Process,
 };
 
 // Models
@@ -194,7 +207,7 @@ pub use ql_models::{
     HullWhiteModel, BatesModel, VasicekModel, CIRModel,
     BlackKarasinskiModel, G2Model,
     // LMM (Phase 20)
-    LmmConfig, LmmCurveState, LmmResult, lmm_cap_price, lmm_swaption_price,
+    LmmConfig, LmmCurveState, LmmResult, lmm_cap_price, lmm_swaption_price, evolve_one_step,
     // GSR / Markov-Functional
     Gsr1d, MarkovFunctional,
 };

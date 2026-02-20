@@ -90,13 +90,11 @@ mod tests {
     use std::sync::atomic::{AtomicU32, Ordering};
     use std::sync::Arc;
 
-    struct CountingObserver(AtomicU32);
+    struct CountingObserver(Arc<AtomicU32>);
     impl CountingObserver {
-        fn new() -> Self {
-            Self(AtomicU32::new(0))
-        }
-        fn count(&self) -> u32 {
-            self.0.load(Ordering::SeqCst)
+        fn new() -> (Arc<AtomicU32>, Self) {
+            let counter = Arc::new(AtomicU32::new(0));
+            (counter.clone(), Self(counter))
         }
     }
     impl Observer for CountingObserver {
@@ -130,14 +128,14 @@ mod tests {
     #[test]
     fn simple_quote_notifies_observers() {
         let q = SimpleQuote::new(100.0);
-        let obs: Arc<dyn Observer> = Arc::new(CountingObserver::new());
+        let (counter, counting_obs) = CountingObserver::new();
+        let obs: Arc<dyn Observer> = Arc::new(counting_obs);
         q.register_observer(&obs);
 
         q.set_value(101.0);
         q.set_value(102.0);
 
-        let counting = unsafe { &*(Arc::as_ptr(&obs) as *const CountingObserver) };
-        assert_eq!(counting.count(), 2);
+        assert_eq!(counter.load(Ordering::SeqCst), 2);
     }
 
     #[test]

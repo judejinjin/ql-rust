@@ -52,6 +52,7 @@ impl BasisSwap {
     }
 
     /// Build a basis swap from schedules and two IBOR indexes.
+    #[allow(clippy::too_many_arguments)]
     pub fn from_schedules(
         swap_type: SwapType,
         nominal: f64,
