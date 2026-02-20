@@ -105,7 +105,7 @@ impl OvernightIndexedCoupon {
     pub fn rate_from_fixings(&self) -> Option<f64> {
         use ql_indexes::Index;
 
-        let calendar = self.index.fixing_calendar;
+        let calendar = &self.index.fixing_calendar;
         let mut compounded = 1.0;
         let mut d = self.accrual_start;
         let mut count = 0;

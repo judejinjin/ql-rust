@@ -90,8 +90,8 @@ impl TermStructure for FlatHazardRate {
     fn day_counter(&self) -> DayCounter {
         self.day_counter
     }
-    fn calendar(&self) -> Calendar {
-        Calendar::NullCalendar
+    fn calendar(&self) -> &Calendar {
+        &Calendar::NullCalendar
     }
     fn max_date(&self) -> Date {
         Date::from_serial(73050)
@@ -281,8 +281,8 @@ impl TermStructure for PiecewiseDefaultCurve {
     fn day_counter(&self) -> DayCounter {
         self.day_counter
     }
-    fn calendar(&self) -> Calendar {
-        Calendar::NullCalendar
+    fn calendar(&self) -> &Calendar {
+        &Calendar::NullCalendar
     }
     fn max_date(&self) -> Date {
         Date::from_serial(73050)

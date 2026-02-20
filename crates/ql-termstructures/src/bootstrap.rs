@@ -336,8 +336,8 @@ impl TermStructure for PiecewiseYieldCurve {
         self.day_counter
     }
 
-    fn calendar(&self) -> Calendar {
-        self.calendar
+    fn calendar(&self) -> &Calendar {
+        &self.calendar
     }
 
     fn max_date(&self) -> Date {

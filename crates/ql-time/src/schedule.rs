@@ -75,8 +75,8 @@ impl Schedule {
     }
 
     /// The calendar used.
-    pub fn calendar(&self) -> Calendar {
-        self.calendar
+    pub fn calendar(&self) -> &Calendar {
+        &self.calendar
     }
 
     /// The frequency.

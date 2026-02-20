@@ -12,6 +12,7 @@ ql-math = { path = "../ql-math" }
 ql-indexes = { path = "../ql-indexes" }
 ql-termstructures = { path = "../ql-termstructures" }
 ql-cashflows = { path = "../ql-cashflows" }
+ql-currencies = { path = "../ql-currencies" }
 serde = { workspace = true }
 
 [dev-dependencies]

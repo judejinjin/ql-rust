@@ -69,8 +69,8 @@ impl TermStructure for FlatForward {
         self.rate.day_counter
     }
 
-    fn calendar(&self) -> Calendar {
-        self.calendar
+    fn calendar(&self) -> &Calendar {
+        &self.calendar
     }
 
     fn max_date(&self) -> Date {
@@ -157,8 +157,8 @@ impl TermStructure for DiscountCurve {
         self.day_counter
     }
 
-    fn calendar(&self) -> Calendar {
-        self.calendar
+    fn calendar(&self) -> &Calendar {
+        &self.calendar
     }
 
     fn max_date(&self) -> Date {
@@ -245,8 +245,8 @@ impl TermStructure for ZeroCurve {
         self.day_counter
     }
 
-    fn calendar(&self) -> Calendar {
-        self.calendar
+    fn calendar(&self) -> &Calendar {
+        &self.calendar
     }
 
     fn max_date(&self) -> Date {

@@ -46,6 +46,7 @@ pub mod optionlet_stripper;
 pub mod vol_interpolation;
 pub mod default_term_structure;
 pub mod inflation_term_structure;
+pub mod swaption_vol;
 
 // Re-exports
 pub use term_structure::TermStructure;
@@ -80,4 +81,9 @@ pub use inflation_term_structure::{
     ZeroInflationTermStructure, FlatZeroInflationCurve,
     PiecewiseZeroInflationCurve, ZeroCouponInflationSwap,
     YoYInflationTermStructure, FlatYoYInflationCurve, YearOnYearInflationSwap,
+};
+pub use swaption_vol::{
+    SwaptionVolatilityStructure, SwaptionConstantVol, SwaptionVolMatrix,
+    SwaptionVolCube, SabrSwaptionVolCube, SabrParams,
+    CapFloorTermVolStructure, ConstantCapFloorTermVol, CapFloorTermVolSurface,
 };

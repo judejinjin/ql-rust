@@ -25,3 +25,4 @@ tracing = { workspace = true }
 
 [dev-dependencies]
 approx = { workspace = true }
+ql-currencies = { path = "../ql-currencies" }

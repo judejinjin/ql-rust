@@ -64,6 +64,103 @@ pub fn price_swap(
 }
 
 // ===========================================================================
+// Multi-Curve Discounting Swap Engine
+// ===========================================================================
+
+/// Price a vanilla swap with separate forecast and discount curves.
+///
+/// - Fixed leg: discounted using `discount_curve` (rates are contractual).
+/// - Floating leg: IBOR coupons are **forecast** from `forecast_curve`,
+///   then **discounted** using `discount_curve`.
+///
+/// This is the standard post-2008 multi-curve (CSA-aware) pricing approach
+/// where the OIS/SOFR curve is used for discounting and the appropriate
+/// IBOR curve is used for rate projection.
+pub fn price_swap_multicurve(
+    swap: &VanillaSwap,
+    forecast_curve: &dyn YieldTermStructure,
+    discount_curve: &dyn YieldTermStructure,
+    settle: Date,
+) -> SwapResults {
+    use ql_cashflows::npv_with_forecast;
+
+    // Fixed leg: only needs discounting (no forecasting)
+    let fixed_npv = leg_npv(&swap.fixed_leg, discount_curve, settle);
+    // Floating leg: forecast from IBOR curve, discount with OIS curve
+    let floating_npv = npv_with_forecast(
+        &swap.floating_leg,
+        forecast_curve,
+        discount_curve,
+        settle,
+    );
+
+    let sign = match swap.swap_type {
+        SwapType::Payer => -1.0,
+        SwapType::Receiver => 1.0,
+    };
+
+    let npv = sign * fixed_npv - sign * floating_npv;
+
+    let fair_rate = if fixed_npv.abs() > 1e-15 && swap.fixed_rate.abs() > 1e-15 {
+        swap.fixed_rate * floating_npv / fixed_npv
+    } else {
+        0.0
+    };
+
+    SwapResults {
+        npv,
+        fixed_leg_npv: fixed_npv,
+        floating_leg_npv: floating_npv,
+        fair_rate,
+    }
+}
+
+// ===========================================================================
+// OIS Swap Pricing Engine
+// ===========================================================================
+
+/// Price an OIS swap by forecasting overnight coupons from a curve.
+///
+/// Typically both `forecast_curve` and `discount_curve` are the same OIS curve,
+/// but they can differ (e.g. Fed Funds vs SOFR).
+pub fn price_ois(
+    swap: &ql_instruments::ois_swap::OISSwap,
+    forecast_curve: &dyn YieldTermStructure,
+    discount_curve: &dyn YieldTermStructure,
+    settle: Date,
+) -> SwapResults {
+    use ql_cashflows::npv_with_forecast;
+
+    let fixed_npv = leg_npv(&swap.fixed_leg, discount_curve, settle);
+    let floating_npv = npv_with_forecast(
+        &swap.floating_leg,
+        forecast_curve,
+        discount_curve,
+        settle,
+    );
+
+    let sign = match swap.swap_type {
+        ql_instruments::vanilla_swap::SwapType::Payer => -1.0,
+        ql_instruments::vanilla_swap::SwapType::Receiver => 1.0,
+    };
+
+    let npv = sign * fixed_npv - sign * floating_npv;
+
+    let fair_rate = if fixed_npv.abs() > 1e-15 && swap.fixed_rate.abs() > 1e-15 {
+        swap.fixed_rate * floating_npv / fixed_npv
+    } else {
+        0.0
+    };
+
+    SwapResults {
+        npv,
+        fixed_leg_npv: fixed_npv,
+        floating_leg_npv: floating_npv,
+        fair_rate,
+    }
+}
+
+// ===========================================================================
 // DiscountingBondEngine
 // ===========================================================================
 
@@ -235,5 +332,56 @@ mod tests {
         let result = price_bond(&bond, &curve, mid);
         assert!(result.accrued_interest > 0.0, "Should have accrued interest");
         assert!(result.dirty_price > result.clean_price, "Dirty > clean");
+    }
+
+    #[test]
+    fn multicurve_swap_pricing() {
+        use ql_time::{BusinessDayConvention, Period, TimeUnit, Calendar};
+        use ql_currencies::currency::Currency;
+
+        // Multi-curve: forecast from IBOR curve (higher), discount with OIS curve (lower)
+        let ref_date = Date::from_ymd(2025, Month::January, 2);
+        let ibor_curve = FlatForward::new(ref_date, 0.05, DayCounter::Actual360);
+        let ois_curve = FlatForward::new(ref_date, 0.03, DayCounter::Actual360);
+
+        let swap_schedule = Schedule::from_dates(vec![
+            Date::from_ymd(2025, Month::January, 15),
+            Date::from_ymd(2025, Month::July, 15),
+            Date::from_ymd(2026, Month::January, 15),
+            Date::from_ymd(2026, Month::July, 15),
+            Date::from_ymd(2027, Month::January, 15),
+        ]);
+
+        let index = ql_indexes::IborIndex::new(
+            "USD-LIBOR-6M",
+            Period::new(6, TimeUnit::Months),
+            2,
+            Currency::usd(),
+            Calendar::Target,
+            BusinessDayConvention::ModifiedFollowing,
+            false,
+            DayCounter::Actual360,
+        );
+
+        let fixed = fixed_leg(
+            &swap_schedule, &[1_000_000.0], &[0.04], DayCounter::Actual360,
+        );
+        let floating = ibor_leg(
+            &swap_schedule, &[1_000_000.0], &index, &[0.0], DayCounter::Actual360,
+        );
+
+        let swap = VanillaSwap::new(
+            SwapType::Payer, 1_000_000.0, fixed, floating, 0.04, 0.0,
+        );
+
+        let result = price_swap_multicurve(&swap, &ibor_curve, &ois_curve, ref_date);
+        // Floating forecasted at ~5%, fixed at 4%, discounted at 3%:
+        // Payer pays 4% fixed, receives ~5% floating → should be positive NPV
+        assert!(result.npv > 0.0, "Multi-curve payer NPV should be positive, got {}", result.npv);
+        assert!(result.fair_rate > 0.04, "Fair rate should be above 4% since IBOR > OIS");
+        // Compare with single-curve (should differ)
+        let single = price_swap(&swap, &ibor_curve, ref_date);
+        assert!((result.npv - single.npv).abs() > 1.0,
+            "Multi-curve and single-curve should differ: mc={}, sc={}", result.npv, single.npv);
     }
 }

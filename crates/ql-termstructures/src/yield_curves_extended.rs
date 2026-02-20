@@ -77,7 +77,7 @@ impl CompositeZeroYieldStructure {
         Self {
             reference_date: ref_date,
             day_counter: dc,
-            calendar: base.calendar(),
+            calendar: base.calendar().clone(),
             max_date,
             base_rates,
             spread_rates,
@@ -110,8 +110,8 @@ impl TermStructure for CompositeZeroYieldStructure {
     fn day_counter(&self) -> DayCounter {
         self.day_counter
     }
-    fn calendar(&self) -> Calendar {
-        self.calendar
+    fn calendar(&self) -> &Calendar {
+        &self.calendar
     }
     fn max_date(&self) -> Date {
         self.max_date
@@ -188,7 +188,7 @@ impl ImpliedTermStructure {
             base_reference_date: base_ref,
             new_reference_date,
             day_counter: dc,
-            calendar: base.calendar(),
+            calendar: base.calendar().clone(),
             max_date,
             df_at_new_ref,
             base_times,
@@ -209,8 +209,8 @@ impl TermStructure for ImpliedTermStructure {
     fn day_counter(&self) -> DayCounter {
         self.day_counter
     }
-    fn calendar(&self) -> Calendar {
-        self.calendar
+    fn calendar(&self) -> &Calendar {
+        &self.calendar
     }
     fn max_date(&self) -> Date {
         self.max_date
@@ -337,8 +337,8 @@ impl TermStructure for ForwardCurve {
     fn day_counter(&self) -> DayCounter {
         self.day_counter
     }
-    fn calendar(&self) -> Calendar {
-        self.calendar
+    fn calendar(&self) -> &Calendar {
+        &self.calendar
     }
     fn max_date(&self) -> Date {
         self.max_date
@@ -528,8 +528,8 @@ impl TermStructure for UltimateForwardTermStructure {
     fn day_counter(&self) -> DayCounter {
         self.day_counter
     }
-    fn calendar(&self) -> Calendar {
-        self.calendar
+    fn calendar(&self) -> &Calendar {
+        &self.calendar
     }
     fn max_date(&self) -> Date {
         self.max_date
@@ -592,7 +592,7 @@ impl SpreadedTermStructure {
         Self {
             reference_date: ref_date,
             day_counter: dc,
-            calendar: base.calendar(),
+            calendar: base.calendar().clone(),
             max_date,
             base_times,
             base_dfs,
@@ -613,8 +613,8 @@ impl TermStructure for SpreadedTermStructure {
     fn day_counter(&self) -> DayCounter {
         self.day_counter
     }
-    fn calendar(&self) -> Calendar {
-        self.calendar
+    fn calendar(&self) -> &Calendar {
+        &self.calendar
     }
     fn max_date(&self) -> Date {
         self.max_date

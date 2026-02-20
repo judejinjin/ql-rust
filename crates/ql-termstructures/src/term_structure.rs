@@ -19,7 +19,7 @@ pub trait TermStructure: Send + Sync {
     fn day_counter(&self) -> DayCounter;
 
     /// The calendar associated with this term structure.
-    fn calendar(&self) -> Calendar;
+    fn calendar(&self) -> &Calendar;
 
     /// The maximum date for which the term structure is defined.
     fn max_date(&self) -> Date;

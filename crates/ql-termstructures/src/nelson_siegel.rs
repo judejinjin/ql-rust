@@ -511,8 +511,8 @@ impl TermStructure for FittedBondDiscountCurve {
         self.day_counter
     }
 
-    fn calendar(&self) -> Calendar {
-        self.calendar
+    fn calendar(&self) -> &Calendar {
+        &self.calendar
     }
 
     fn max_date(&self) -> Date {

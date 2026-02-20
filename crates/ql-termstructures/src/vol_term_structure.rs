@@ -67,8 +67,8 @@ impl TermStructure for BlackConstantVol {
     fn day_counter(&self) -> DayCounter {
         self.day_counter
     }
-    fn calendar(&self) -> Calendar {
-        Calendar::NullCalendar
+    fn calendar(&self) -> &Calendar {
+        &Calendar::NullCalendar
     }
     fn max_date(&self) -> Date {
         Date::from_serial(73050) // ~2099-12-31
@@ -171,8 +171,8 @@ impl TermStructure for BlackVarianceSurface {
     fn day_counter(&self) -> DayCounter {
         self.day_counter
     }
-    fn calendar(&self) -> Calendar {
-        Calendar::NullCalendar
+    fn calendar(&self) -> &Calendar {
+        &Calendar::NullCalendar
     }
     fn max_date(&self) -> Date {
         Date::from_serial(73050)
@@ -260,8 +260,8 @@ impl TermStructure for LocalVolSurface {
     fn day_counter(&self) -> DayCounter {
         self.day_counter
     }
-    fn calendar(&self) -> Calendar {
-        Calendar::NullCalendar
+    fn calendar(&self) -> &Calendar {
+        &Calendar::NullCalendar
     }
     fn max_date(&self) -> Date {
         Date::from_serial(73050)

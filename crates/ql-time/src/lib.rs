@@ -54,7 +54,7 @@ pub mod period;
 pub mod schedule;
 
 pub use business_day_convention::BusinessDayConvention;
-pub use calendar::Calendar;
+pub use calendar::{Calendar, JointRule};
 pub use date::{Date, Month, Weekday};
 pub use day_counter::DayCounter;
 pub use period::{Frequency, Period, TimeUnit};

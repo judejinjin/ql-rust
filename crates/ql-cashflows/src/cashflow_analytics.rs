@@ -57,6 +57,44 @@ pub fn accrued_amount(leg: &Leg, date: Date) -> f64 {
     total
 }
 
+/// Net present value of a leg with separate forecast and discount curves.
+///
+/// For each cash flow:
+/// - If it is an `IborCoupon`, forecast the rate from `forecast_curve`
+/// - If it is an `OvernightIndexedCoupon`, forecast the rate from `forecast_curve`
+/// - Discount the resulting amount with `discount_curve`
+///
+/// This is the key function for multi-curve / CSA-aware pricing.
+pub fn npv_with_forecast(
+    leg: &Leg,
+    forecast_curve: &dyn YieldTermStructure,
+    discount_curve: &dyn YieldTermStructure,
+    settle: Date,
+) -> f64 {
+    let mut total = 0.0;
+    for cf in leg {
+        if !cf.has_occurred(settle) {
+            let df = discount_curve.discount(cf.date());
+            // Try forecasting IBOR coupons
+            if let Some(ibor) = cf.as_any().downcast_ref::<crate::ibor_coupon::IborCoupon>() {
+                let rate = ibor.forecast_rate(forecast_curve);
+                total += ibor.nominal() * rate * ibor.accrual_period() * df;
+            }
+            // Try forecasting overnight coupons
+            else if let Some(ois) = cf.as_any().downcast_ref::<crate::overnight_coupon::OvernightIndexedCoupon>() {
+                let rate = ois.forecast_rate(forecast_curve);
+                let yf = ois.accrual_period();
+                total += ois.nominal() * rate * yf * df;
+            }
+            // For other cash flows (fixed coupons, notional exchanges), use amount()
+            else {
+                total += cf.amount() * df;
+            }
+        }
+    }
+    total
+}
+
 /// Macaulay duration of a leg.
 ///
 /// Weighted average time to payment, where the weights are the present

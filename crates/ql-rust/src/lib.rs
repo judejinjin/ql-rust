@@ -43,8 +43,8 @@ pub use ql_core::quote::SimpleQuote;
 
 // Time types
 pub use ql_time::{
-    BusinessDayConvention, Calendar, Date, DayCounter, Frequency, Month, Period, Schedule,
-    TimeUnit, Weekday,
+    BusinessDayConvention, Calendar, Date, DayCounter, Frequency, JointRule, Month, Period,
+    Schedule, TimeUnit, Weekday,
 };
 
 // Indexes
@@ -61,6 +61,7 @@ pub use ql_instruments::{
     DoubleBarrierOption, DoubleBarrierType, Exercise, FixedRateBond,
     InflationLinkedBond, LookbackOption, LookbackType,
     OISSwap,
+    ForwardRateAgreement, BasisSwap, CrossCurrencySwap, XCcyLeg, FloatFloatSwap,
     OptionType, Payoff, Swaption, SwaptionType, SettlementType, SwapType,
     VanillaOption, VanillaSwap, VarianceSwap, AsianOption, AveragingType,
     ZeroCouponBond,
@@ -92,6 +93,10 @@ pub use ql_termstructures::{
     strip_optionlet_volatilities, interpolate_optionlet_vol, StrippedOptionletVolatilities,
     // Vol interpolation (Phase 18)
     BlackVarianceCurve, SmileSectionSurface,
+    // Swaption vol structures
+    SwaptionVolatilityStructure, SwaptionConstantVol, SwaptionVolMatrix,
+    SwaptionVolCube, SabrSwaptionVolCube, SabrParams,
+    CapFloorTermVolStructure, ConstantCapFloorTermVol, CapFloorTermVolSurface,
 };
 
 // Cash flows
@@ -117,7 +122,7 @@ pub use ql_pricingengines::{
     // Heston
     heston_price, HestonResult,
     // Discounting (swap, bond)
-    price_swap, price_bond, SwapResults, BondResults,
+    price_swap, price_swap_multicurve, price_ois, price_bond, SwapResults, BondResults,
     // Swaptions
     black_swaption, bachelier_swaption, SwaptionResult,
     // Caps/floors
@@ -156,6 +161,22 @@ pub use ql_pricingengines::{
     chooser_price, ChooserResult,
     cliquet_price, CliquetResult,
     black_scholes_price,
+    // Risk analytics
+    key_rate_durations, KeyRateDuration,
+    scenario_analysis, ScenarioResult, YieldCurveScenario,
+    dv01_central_difference, gamma, bs_vega, VegaBucket,
+    // ISDA CDS engine
+    isda_cds_engine, IsdaCdsResult,
+    cds_upfront, cds_points_upfront, cds_cs01,
+    cds_imm_schedule, make_standard_cds,
+    // Advanced exotics
+    quanto_european, QuantoResult,
+    power_option, PowerResult,
+    forward_start_option, ForwardStartResult,
+    digital_barrier, DigitalBarrierResult, DigitalBarrierType,
+    // Stochastic Local Vol
+    DupireLocalVol, SlvModel, SlvCalibrationResult,
+    calibrate_slv, mc_slv, SlvMcResult,
 };
 
 // Stochastic processes
@@ -174,6 +195,8 @@ pub use ql_models::{
     BlackKarasinskiModel, G2Model,
     // LMM (Phase 20)
     LmmConfig, LmmCurveState, LmmResult, lmm_cap_price, lmm_swaption_price,
+    // GSR / Markov-Functional
+    Gsr1d, MarkovFunctional,
 };
 
 // Numerical methods

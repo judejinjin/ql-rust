@@ -61,7 +61,9 @@ pub use american_engines::{
 pub use analytic_european::{price_european, implied_volatility, black_scholes_price, AnalyticEuropeanResults};
 pub use analytic_heston::{heston_price, HestonResult};
 pub use analytic_bates::{bates_price, bates_price_flat, BatesResult};
-pub use discounting::{price_swap, price_bond, SwapResults, BondResults};
+pub use discounting::{
+    price_swap, price_swap_multicurve, price_ois, price_bond, SwapResults, BondResults,
+};
 pub use swaption_engines::{black_swaption, bachelier_swaption, SwaptionResult};
 pub use cap_floor_engines::{black_cap_floor, bachelier_cap_floor, CapFloorResult};
 pub use cds_engine::{midpoint_cds_engine, CdsResult};
@@ -92,3 +94,27 @@ pub use credit_models::{
 pub use double_barrier_engine::{double_barrier_knockout, double_barrier_knockin, DoubleBarrierResult};
 pub use chooser_engine::{chooser_price, ChooserResult};
 pub use cliquet_engine::{cliquet_price, CliquetResult};
+pub mod risk_analytics;
+pub use risk_analytics::{
+    key_rate_durations, KeyRateDuration,
+    scenario_analysis, ScenarioResult, YieldCurveScenario,
+    dv01_central_difference, gamma, bs_vega, VegaBucket,
+};
+pub mod isda_cds;
+pub use isda_cds::{
+    isda_cds_engine, IsdaCdsResult,
+    cds_upfront, cds_points_upfront, cds_cs01,
+    cds_imm_schedule, make_standard_cds,
+};
+pub mod advanced_exotics;
+pub use advanced_exotics::{
+    quanto_european, QuantoResult,
+    power_option, PowerResult,
+    forward_start_option, ForwardStartResult,
+    digital_barrier, DigitalBarrierResult, DigitalBarrierType,
+};
+pub mod stochastic_local_vol;
+pub use stochastic_local_vol::{
+    DupireLocalVol, SlvModel, SlvCalibrationResult,
+    calibrate_slv, mc_slv, SlvMcResult,
+};
