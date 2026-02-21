@@ -6,7 +6,9 @@
 
 use ql_time::{Date, DayCounter};
 
+use ql_indexes::Index;
 use ql_indexes::IborIndex;
+use ql_indexes::index::IndexManager;
 use ql_termstructures::YieldTermStructure;
 
 use crate::cashflow::CashFlow;
@@ -122,6 +124,37 @@ impl IborCoupon {
         self.cached_rate
             .unwrap_or(self.gearing * self.spread) // Fallback if no rate set and no curve
     }
+
+    /// Resolve the coupon rate using the QuantLib-style priority:
+    ///
+    /// 1. If a cached rate is set, use it.
+    /// 2. If the fixing date is on or before `eval_date`, look up the
+    ///    `IndexManager` for a historical fixing.
+    /// 3. Otherwise, project from the forecast curve.
+    ///
+    /// This is the correct method for pricing floating legs where some
+    /// fixings are already known (historical) and others are in the future.
+    pub fn resolve_rate(
+        &self,
+        eval_date: Date,
+        forecast_curve: &dyn YieldTermStructure,
+    ) -> f64 {
+        // 1. Cached rate wins
+        if let Some(r) = self.cached_rate {
+            return r;
+        }
+        // 2. Historical fixing
+        if self.fixing_date <= eval_date {
+            if let Some(fixing) = IndexManager::instance().get_fixing(
+                self.index.name(),
+                self.fixing_date,
+            ) {
+                return self.gearing * fixing + self.spread;
+            }
+        }
+        // 3. Forecast from curve
+        self.forecast_rate(forecast_curve)
+    }
 }
 
 impl CashFlow for IborCoupon {
@@ -168,6 +201,7 @@ impl Coupon for IborCoupon {
 mod tests {
     use super::*;
     use approx::assert_abs_diff_eq;
+    use ql_indexes::Index;
     use ql_time::Month;
     use ql_termstructures::FlatForward;
 
@@ -223,5 +257,37 @@ mod tests {
         let c = make_ibor_coupon().with_rate(0.04).with_gearing(2.0);
         // gearing doesn't affect cached rate
         assert_abs_diff_eq!(c.rate(), 0.04, epsilon = 1e-15);
+    }
+
+    #[test]
+    fn resolve_rate_uses_historical_fixing() {
+        // Store a historical fixing
+        let idx = IborIndex::euribor_3m();
+        let fixing_date = Date::from_ymd(2025, Month::April, 15);
+        IndexManager::instance().add_fixing(idx.name(), fixing_date, 0.035).unwrap();
+
+        let c = make_ibor_coupon();
+        let ref_date = Date::from_ymd(2025, Month::June, 1); // after fixing
+        let curve = FlatForward::new(ref_date, 0.04, DayCounter::Actual360);
+
+        // resolve_rate should use the stored fixing (0.035), not the curve (0.04)
+        let rate = c.resolve_rate(ref_date, &curve);
+        // Expected: gearing(1.0) * 0.035 + spread(0.001) = 0.036
+        assert_abs_diff_eq!(rate, 0.036, epsilon = 1e-10);
+
+        // Clean up
+        IndexManager::instance().clear_fixings(idx.name());
+    }
+
+    #[test]
+    fn resolve_rate_falls_back_to_curve_for_future() {
+        let c = make_ibor_coupon();
+        // Eval date before fixing date → should forecast from curve
+        let ref_date = Date::from_ymd(2025, Month::January, 2);
+        let curve = FlatForward::new(ref_date, 0.04, DayCounter::Actual360);
+
+        let rate = c.resolve_rate(ref_date, &curve);
+        // Should be close to forecast: ~0.04 + 0.001 = 0.041
+        assert!(rate > 0.03 && rate < 0.06, "rate = {rate}");
     }
 }

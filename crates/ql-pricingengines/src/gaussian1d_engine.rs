@@ -41,6 +41,7 @@ pub struct Gaussian1dResult {
 /// - `notional` — swap notional
 /// - `is_payer` — `true` for payer swaption, `false` for receiver
 /// - `n_quad` — number of Gauss-Hermite quadrature points (16–64 typical)
+#[allow(clippy::too_many_arguments)]
 pub fn gaussian1d_swaption(
     model: &Gsr1d,
     option_expiry: f64,

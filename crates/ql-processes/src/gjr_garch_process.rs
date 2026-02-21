@@ -46,6 +46,7 @@ pub struct GjrGarchProcess {
 
 impl GjrGarchProcess {
     /// Create a new GJR-GARCH(1,1) process.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         s0: f64,
         risk_free_rate: f64,
@@ -136,8 +137,8 @@ impl GjrGarchProcess {
         let mut h = self.h0;
         path.push((s, h));
 
-        for i in 0..num_steps {
-            let (s_new, h_new) = self.evolve(s, h, dt, normals[i]);
+        for &z in &normals[..num_steps] {
+            let (s_new, h_new) = self.evolve(s, h, dt, z);
             s = s_new;
             h = h_new;
             path.push((s, h));

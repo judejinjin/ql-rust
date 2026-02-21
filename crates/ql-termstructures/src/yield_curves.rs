@@ -29,6 +29,19 @@ pub struct FlatForward {
 
 impl FlatForward {
     /// Create a flat forward curve with continuous compounding.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ql_termstructures::{FlatForward, YieldTermStructure};
+    /// use ql_time::{Date, Month, DayCounter};
+    ///
+    /// let today = Date::from_ymd(2025, Month::January, 15);
+    /// let curve = FlatForward::new(today, 0.05, DayCounter::Actual365Fixed);
+    /// // Discount at 1 year ≈ e^{-0.05}
+    /// let df = curve.discount(today + 365);
+    /// assert!((df - (-0.05_f64).exp()).abs() < 1e-4);
+    /// ```
     pub fn new(reference_date: Date, rate: f64, day_counter: DayCounter) -> Self {
         Self {
             reference_date,

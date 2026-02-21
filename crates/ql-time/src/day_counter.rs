@@ -58,6 +58,19 @@ impl DayCounter {
     }
 
     /// Year fraction between `d1` and `d2`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ql_time::{Date, Month, DayCounter};
+    ///
+    /// let dc = DayCounter::Actual360;
+    /// let d1 = Date::from_ymd(2025, Month::January, 1);
+    /// let d2 = Date::from_ymd(2025, Month::July, 1);
+    /// let yf = dc.year_fraction(d1, d2);
+    /// // 181 days / 360 ≈ 0.5028
+    /// assert!((yf - 181.0 / 360.0).abs() < 1e-12);
+    /// ```
     pub fn year_fraction(&self, d1: Date, d2: Date) -> Real {
         match self {
             DayCounter::Actual360 => {

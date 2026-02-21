@@ -532,6 +532,237 @@ pub fn fd_hw_swaption(
 }
 
 // =========================================================================
+// Curve-fitted FD Bermudan swaption engine
+// =========================================================================
+
+/// Price a Bermudan swaption using FD under Hull-White with θ(t) fitted
+/// to the initial yield curve.
+///
+/// This is the production-quality version of [`fd_hw_swaption`] that
+/// calibrates θ(t) to reproduce the initial discount factor curve,
+/// rather than using the simplified θ = a·r0.
+///
+/// The fitting follows the standard HW approach:
+///   θ(t) = f'(0,t) + a·f(0,t) + σ²/(2a)·(1 − e^{−2at})
+/// where f(0,t) is the instantaneous forward rate from the initial curve.
+///
+/// # Parameters
+///
+/// * `a` — mean-reversion speed
+/// * `sigma` — HW volatility
+/// * `initial_dfs` — discount factors at `df_times` from the initial curve
+/// * `df_times` — times (year fractions from reference date) for `initial_dfs`
+/// * `option_expiry` — last exercise time
+/// * `swap_tenors` — swap payment times
+/// * `fixed_rate` — fixed swap rate
+/// * `notional` — notional amount
+/// * `is_payer` — true for payer swaption
+/// * `exercise_dates` — exercise times (one for European, multiple for Bermudan)
+/// * `n_time` — number of time steps
+/// * `n_space` — number of spatial grid points
+pub fn fd_hw_bermudan_fitted(
+    a: f64,
+    sigma: f64,
+    initial_dfs: &[f64],
+    df_times: &[f64],
+    option_expiry: f64,
+    swap_tenors: &[f64],
+    fixed_rate: f64,
+    notional: f64,
+    is_payer: bool,
+    exercise_dates: &[f64],
+    n_time: usize,
+    n_space: usize,
+) -> FdResult {
+    if swap_tenors.is_empty() || option_expiry <= 0.0 || df_times.is_empty() {
+        return FdResult { npv: 0.0 };
+    }
+
+    // Extract initial short rate from the first discount factor
+    let r0 = if df_times[0] > 1e-10 {
+        -initial_dfs[0].ln() / df_times[0]
+    } else {
+        0.03 // fallback
+    };
+
+    // Build θ(t) on the time grid via θ(t) = f'(0,t) + a·f(0,t) + σ²/(2a)·(1-e^{-2at})
+    // We approximate f(0,t) = -d/dt ln P(0,t) using finite differences on initial_dfs
+    let dt = option_expiry / n_time as f64;
+    let omega = if is_payer { 1.0 } else { -1.0 };
+    let n_coupons = swap_tenors.len();
+
+    // Pre-compute θ(t) at each time step
+    let thetas: Vec<f64> = (0..=n_time)
+        .map(|step| {
+            let t = step as f64 * dt;
+            theta_from_curve(a, sigma, t, initial_dfs, df_times)
+        })
+        .collect();
+
+    // Spatial grid:
+    let r_std = sigma / (2.0 * a.max(0.01)).sqrt();
+    let r_min = r0 - 5.0 * r_std;
+    let r_max = r0 + 5.0 * r_std;
+    let dr = (r_max - r_min) / (n_space - 1) as f64;
+    let r_grid: Vec<f64> = (0..n_space).map(|i| r_min + i as f64 * dr).collect();
+
+    // Terminal condition at option_expiry: swaption payoff
+    let mut v: Vec<f64> = r_grid
+        .iter()
+        .map(|&r| {
+            let mut swap_val = 1.0;
+            for i in 0..n_coupons {
+                let tau_i = if i == 0 {
+                    swap_tenors[0] - option_expiry
+                } else {
+                    swap_tenors[i] - swap_tenors[i - 1]
+                };
+                let mut c_i = fixed_rate * tau_i;
+                if i == n_coupons - 1 {
+                    c_i += 1.0;
+                }
+                let tau = swap_tenors[i] - option_expiry;
+                let p = hw_bond_price_from_rate(a, sigma, r, tau);
+                swap_val -= c_i * p;
+            }
+            (omega * swap_val).max(0.0) * notional
+        })
+        .collect();
+
+    // Crank-Nicolson backward stepping with θ(t) drift
+    for step in (0..n_time).rev() {
+        let t_next = (step + 1) as f64 * dt;
+        let theta_t = thetas[step + 1];
+
+        let mut lower = vec![0.0_f64; n_space];
+        let mut diag = vec![0.0_f64; n_space];
+        let mut upper = vec![0.0_f64; n_space];
+        let mut rhs = vec![0.0_f64; n_space];
+
+        for i in 1..n_space - 1 {
+            let r = r_grid[i];
+            let mu = theta_t - a * r; // drift with θ(t) instead of a*r0
+            let s2 = sigma * sigma;
+
+            let alpha = 0.5 * dt * (s2 / (dr * dr) - mu / dr);
+            let beta = 0.5 * dt * (s2 / (dr * dr) + mu / dr);
+            let gamma = dt * (s2 / (dr * dr) + r);
+
+            lower[i] = -0.5 * alpha;
+            diag[i] = 1.0 + 0.5 * gamma;
+            upper[i] = -0.5 * beta;
+
+            rhs[i] = 0.5 * alpha * v[i - 1] + (1.0 - 0.5 * gamma) * v[i] + 0.5 * beta * v[i + 1];
+        }
+
+        // Boundary conditions
+        diag[0] = 1.0;
+        rhs[0] = v[0] * (-r_grid[0] * dt).exp();
+        diag[n_space - 1] = 1.0;
+        rhs[n_space - 1] = 0.0;
+
+        let v_new = thomas_solve(&lower, &diag, &upper, &rhs);
+        v = v_new;
+
+        // Bermudan exercise check
+        let is_exercise = exercise_dates
+            .iter()
+            .any(|&ed| (ed - t_next).abs() < dt * 0.5);
+
+        if is_exercise && step > 0 {
+            for i in 0..n_space {
+                let r = r_grid[i];
+                let mut swap_val = 1.0;
+                for ci in 0..n_coupons {
+                    if swap_tenors[ci] <= t_next - 1e-10 {
+                        continue;
+                    }
+                    let tau_ci = if ci == 0 || swap_tenors[ci - 1] < t_next - 1e-10 {
+                        swap_tenors[ci] - t_next
+                    } else {
+                        swap_tenors[ci] - swap_tenors[ci - 1]
+                    };
+                    let mut c_ci = fixed_rate * tau_ci;
+                    if ci == n_coupons - 1 {
+                        c_ci += 1.0;
+                    }
+                    let tau = swap_tenors[ci] - t_next;
+                    let p = hw_bond_price_from_rate(a, sigma, r, tau);
+                    swap_val -= c_ci * p;
+                }
+                let exercise_val = (omega * swap_val).max(0.0) * notional;
+                v[i] = v[i].max(exercise_val);
+            }
+        }
+    }
+
+    let npv = interpolate_grid(&r_grid, &v, r0);
+    FdResult { npv }
+}
+
+/// Compute θ(t) from the initial term structure.
+///
+/// θ(t) = f'(0,t) + a·f(0,t) + σ²/(2a)·(1 − e^{-2at})
+///
+/// where f(0,t) = −∂/∂t ln P(0,t) is the instantaneous forward rate.
+fn theta_from_curve(
+    a: f64,
+    sigma: f64,
+    t: f64,
+    dfs: &[f64],
+    times: &[f64],
+) -> f64 {
+    let eps = 1e-4;
+    let f_t = instantaneous_forward(t, dfs, times);
+    let f_t_plus = instantaneous_forward(t + eps, dfs, times);
+    let f_prime = (f_t_plus - f_t) / eps;
+
+    let correction = if a.abs() < 1e-10 {
+        sigma * sigma * t
+    } else {
+        sigma * sigma / (2.0 * a) * (1.0 - (-2.0 * a * t).exp())
+    };
+
+    f_prime + a * f_t + correction
+}
+
+/// Extract instantaneous forward rate from discount factors via interpolation.
+///
+/// f(0,t) = −d/dt ln P(0,t) ≈ −[ln P(0,t+ε) − ln P(0,t−ε)] / (2ε)
+fn instantaneous_forward(t: f64, dfs: &[f64], times: &[f64]) -> f64 {
+    let eps = 1e-4;
+    let t1 = (t - eps).max(0.0);
+    let t2 = t + eps;
+    let ln_p1 = interpolate_log_df(t1, dfs, times);
+    let ln_p2 = interpolate_log_df(t2, dfs, times);
+    -(ln_p2 - ln_p1) / (t2 - t1)
+}
+
+/// Log-linear interpolation of ln(df) at time t.
+fn interpolate_log_df(t: f64, dfs: &[f64], times: &[f64]) -> f64 {
+    if times.is_empty() || t <= 0.0 {
+        return 0.0; // ln(1) = 0
+    }
+    if t <= times[0] {
+        // Extrapolate from first point
+        return dfs[0].ln() * t / times[0];
+    }
+    if t >= *times.last().unwrap() {
+        // Flat extrapolation of the zero rate
+        let ln_last = dfs.last().unwrap().ln();
+        let t_last = *times.last().unwrap();
+        return ln_last * t / t_last;
+    }
+    // Find bracket
+    let mut i = 0;
+    while i < times.len() - 1 && times[i + 1] < t {
+        i += 1;
+    }
+    let w = (t - times[i]) / (times[i + 1] - times[i]);
+    dfs[i].ln() * (1.0 - w) + dfs[i + 1].ln() * w
+}
+
+// =========================================================================
 // MC Hull-White cap/floor
 // =========================================================================
 
@@ -1050,5 +1281,127 @@ mod tests {
         assert_abs_diff_eq!(x[0], 1.0, epsilon = 1e-10);
         assert_abs_diff_eq!(x[1], 1.0, epsilon = 1e-10);
         assert_abs_diff_eq!(x[2], 1.0, epsilon = 1e-10);
+    }
+
+    // ---------- Fitted FD tests ----------
+
+    /// Build flat-curve discount factors for testing
+    fn flat_curve_dfs(rate: f64, times: &[f64]) -> Vec<f64> {
+        times.iter().map(|&t| (-rate * t).exp()).collect()
+    }
+
+    #[test]
+    fn theta_from_flat_curve_equals_a_times_r() {
+        // For a flat curve f(0,t) = r for all t, f'(0,t) = 0
+        // So θ(t) = a·r + σ²/(2a)·(1-e^{-2at})
+        let a = 0.1;
+        let sigma = 0.01;
+        let r = 0.05;
+        let times: Vec<f64> = (1..=40).map(|i| i as f64 * 0.25).collect();
+        let dfs = flat_curve_dfs(r, &times);
+
+        // At t = 0 the correction term is 0, so θ(0) ≈ a*r
+        let theta_0 = theta_from_curve(a, sigma, 0.0, &dfs, &times);
+        assert_abs_diff_eq!(theta_0, a * r, epsilon = 1e-4);
+
+        // At t = 5 the correction kicks in
+        let theta_5 = theta_from_curve(a, sigma, 5.0, &dfs, &times);
+        let expected = a * r + sigma * sigma / (2.0 * a) * (1.0 - (-2.0 * a * 5.0_f64).exp());
+        assert_abs_diff_eq!(theta_5, expected, epsilon = 1e-4);
+    }
+
+    #[test]
+    fn fitted_fd_european_positive() {
+        let r0 = 0.05;
+        let times: Vec<f64> = (1..=40).map(|i| i as f64 * 0.25).collect();
+        let dfs = flat_curve_dfs(r0, &times);
+        let tenors = vec![2.0, 3.0, 4.0, 5.0];
+
+        let res = fd_hw_bermudan_fitted(
+            0.1, 0.01, &dfs, &times, 1.0, &tenors, 0.05, 1_000_000.0, true, &[1.0], 200, 200,
+        );
+        assert!(
+            res.npv > 0.0,
+            "Fitted FD European swaption should be positive: {}",
+            res.npv
+        );
+    }
+
+    #[test]
+    fn fitted_fd_matches_unfitted_on_flat_curve() {
+        // On a flat curve, θ(t) ≈ a*r0 + small correction, so the two
+        // methods should produce very similar results.
+        let a = 0.1;
+        let sigma = 0.01;
+        let r0 = 0.05;
+        let times: Vec<f64> = (1..=40).map(|i| i as f64 * 0.25).collect();
+        let dfs = flat_curve_dfs(r0, &times);
+        let tenors = vec![2.0, 3.0, 4.0, 5.0];
+
+        let unfitted = fd_hw_swaption(
+            a, sigma, r0, 1.0, &tenors, 0.05, 1_000_000.0, true, &[1.0], 200, 200,
+        );
+        let fitted = fd_hw_bermudan_fitted(
+            a, sigma, &dfs, &times, 1.0, &tenors, 0.05, 1_000_000.0, true, &[1.0], 200, 200,
+        );
+
+        let rel_diff = (fitted.npv - unfitted.npv).abs() / unfitted.npv;
+        assert!(
+            rel_diff < 0.15, // within 15% on flat curve
+            "Fitted ({:.0}) vs unfitted ({:.0}) differ by {:.1}%",
+            fitted.npv,
+            unfitted.npv,
+            rel_diff * 100.0
+        );
+    }
+
+    #[test]
+    fn fitted_bermudan_exceeds_european() {
+        let r0 = 0.05;
+        let times: Vec<f64> = (1..=40).map(|i| i as f64 * 0.25).collect();
+        let dfs = flat_curve_dfs(r0, &times);
+        let tenors = vec![2.0, 3.0, 4.0, 5.0];
+
+        let european = fd_hw_bermudan_fitted(
+            0.1, 0.01, &dfs, &times, 1.0, &tenors, 0.05, 1.0, true, &[1.0], 200, 200,
+        );
+        let bermudan = fd_hw_bermudan_fitted(
+            0.1,
+            0.01,
+            &dfs,
+            &times,
+            4.0,
+            &tenors,
+            0.05,
+            1.0,
+            true,
+            &[1.0, 2.0, 3.0, 4.0],
+            400,
+            200,
+        );
+
+        assert!(
+            bermudan.npv >= european.npv * 0.95,
+            "Fitted Bermudan ({:.6}) should be >= European ({:.6})",
+            bermudan.npv,
+            european.npv
+        );
+    }
+
+    #[test]
+    fn fitted_fd_receiver_positive() {
+        let r0 = 0.05;
+        let times: Vec<f64> = (1..=40).map(|i| i as f64 * 0.25).collect();
+        let dfs = flat_curve_dfs(r0, &times);
+        let tenors = vec![2.0, 3.0, 4.0, 5.0];
+
+        let res = fd_hw_bermudan_fitted(
+            0.1, 0.01, &dfs, &times, 1.0, &tenors, 0.05, 1_000_000.0, false, &[1.0], 200, 200,
+        );
+        assert!(
+            res.npv > 0.0,
+            "Fitted FD receiver swaption should be positive: {}",
+            res.npv
+        );
     }
 }

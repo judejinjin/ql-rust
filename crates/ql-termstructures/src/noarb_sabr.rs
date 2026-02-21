@@ -289,8 +289,8 @@ fn isotonic_regression_weighted(values: &[f64], weights: &[f64]) -> Vec<f64> {
     let mut output = vec![0.0; n];
     for (sum, wt, start, end) in &blocks {
         let avg = sum / wt.max(1e-30);
-        for j in *start..=*end {
-            output[j] = avg;
+        for item in &mut output[*start..=*end] {
+            *item = avg;
         }
     }
 

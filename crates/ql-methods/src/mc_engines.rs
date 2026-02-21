@@ -46,6 +46,18 @@ pub struct MCResult {
 /// Price a European option via Monte Carlo under GBM.
 ///
 /// Uses exact log-normal sampling (single step) for efficiency.
+///
+/// # Examples
+///
+/// ```
+/// use ql_instruments::OptionType;
+/// use ql_methods::mc_engines::mc_european;
+///
+/// let res = mc_european(100.0, 100.0, 0.05, 0.0, 0.20, 1.0,
+///                        OptionType::Call, 100_000, true, 42);
+/// // Should be close to BS ~$10.45
+/// assert!((res.npv - 10.45).abs() < 0.5);
+/// ```
 #[allow(clippy::too_many_arguments)]
 pub fn mc_european(
     spot: f64,

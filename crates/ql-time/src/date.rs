@@ -97,6 +97,20 @@ impl fmt::Display for Weekday {
 ///
 /// This epoch matches QuantLib's convention (serial number 1 = 1 January 1900).
 /// All arithmetic (add days, subtract dates) is O(1).
+///
+/// # Examples
+///
+/// ```
+/// use ql_time::{Date, Month};
+///
+/// let d1 = Date::from_ymd(2025, Month::January, 1);
+/// let d2 = d1 + 31; // add 31 days
+/// assert_eq!(d2, Date::from_ymd(2025, Month::February, 1));
+///
+/// // Serial round-trip
+/// let serial = d1.serial();
+/// assert_eq!(Date::from_serial(serial), d1);
+/// ```
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Date(i32);
 
@@ -117,6 +131,17 @@ impl Date {
     ///
     /// # Panics
     /// Panics if the date is invalid (e.g., February 30).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ql_time::{Date, Month};
+    ///
+    /// let d = Date::from_ymd(2025, Month::March, 15);
+    /// assert_eq!(d.year(), 2025);
+    /// assert_eq!(d.month(), Month::March);
+    /// assert_eq!(d.day_of_month(), 15);
+    /// ```
     pub fn from_ymd(year: i32, month: Month, day: u32) -> Self {
         let m = month as u32;
         assert!(
@@ -128,6 +153,15 @@ impl Date {
     }
 
     /// Try to create a date from year, month number (1-12), day.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ql_time::Date;
+    ///
+    /// assert!(Date::from_ymd_opt(2025, 2, 28).is_some());
+    /// assert!(Date::from_ymd_opt(2025, 13, 1).is_none()); // invalid month
+    /// ```
     pub fn from_ymd_opt(year: i32, month: u32, day: u32) -> Option<Self> {
         if !(1..=12).contains(&month) || !(1..=31).contains(&day) {
             return None;

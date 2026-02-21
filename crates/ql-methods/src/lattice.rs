@@ -25,6 +25,17 @@ pub struct LatticeResult {
 ///   p = (exp((r-q)Δt) - d) / (u - d)
 ///
 /// and backwards induction with optional early exercise.
+///
+/// # Examples
+///
+/// ```
+/// use ql_methods::lattice::binomial_crr;
+///
+/// let res = binomial_crr(100.0, 100.0, 0.05, 0.0, 0.20, 1.0,
+///                         true, false, 500);
+/// // European call converges to BS ~$10.45
+/// assert!((res.npv - 10.45).abs() < 0.2);
+/// ```
 #[allow(clippy::too_many_arguments)]
 pub fn binomial_crr(
     spot: f64,

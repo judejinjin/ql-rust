@@ -16,7 +16,18 @@ members = [
     "crates/ql-persistence",
     "crates/ql-rust",
     "crates/ql-cli",
+    "crates/ql-python",
 ]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/jude-codebase/ql-rust"
+homepage = "https://github.com/jude-codebase/ql-rust"
+keywords = ["quantlib", "finance", "derivatives", "pricing", "quant"]
+categories = ["finance", "mathematics", "science"]
 
 [workspace.dependencies]
 thiserror = "2"

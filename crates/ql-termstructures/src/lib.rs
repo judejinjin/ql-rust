@@ -37,6 +37,7 @@ pub mod yield_curves;
 pub mod yield_curves_extended;
 pub mod bootstrap;
 pub mod bootstrap_extended;
+pub mod bootstrap_multicurve;
 pub mod nelson_siegel;
 pub mod vol_term_structure;
 pub mod sabr;

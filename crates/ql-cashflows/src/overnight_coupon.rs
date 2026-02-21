@@ -6,7 +6,9 @@
 
 use ql_time::{Date, DayCounter};
 
+use ql_indexes::Index;
 use ql_indexes::OvernightIndex;
+use ql_indexes::index::IndexManager;
 use ql_termstructures::YieldTermStructure;
 
 use crate::cashflow::CashFlow;
@@ -140,6 +142,67 @@ impl OvernightIndexedCoupon {
     fn effective_rate(&self) -> f64 {
         self.cached_rate.unwrap_or(self.spread)
     }
+
+    /// Resolve the overnight compounded rate with mixed historical + projected.
+    ///
+    /// For each business day in the accrual period:
+    /// - If the day is before `eval_date`, use the historical fixing from `IndexManager`.
+    /// - If the day is on or after `eval_date`, project from `forecast_curve`
+    ///   using `df(d)/df(d+1) - 1`.
+    ///
+    /// Falls back to pure forecast if no fixings are available.
+    pub fn resolve_rate(
+        &self,
+        eval_date: Date,
+        forecast_curve: &dyn YieldTermStructure,
+    ) -> f64 {
+        if let Some(r) = self.cached_rate {
+            return r;
+        }
+
+        let calendar = &self.index.fixing_calendar;
+        let mut compounded = 1.0;
+        let mut d = self.accrual_start;
+        let mut count = 0;
+
+        while d < self.accrual_end {
+            if calendar.is_business_day(d) {
+                let next_biz = calendar.advance_business_days(d, 1);
+                let dt = self.day_counter.year_fraction(d, next_biz);
+
+                let daily_rate = if d < eval_date {
+                    // Historical: look up IndexManager, fall back to curve
+                    IndexManager::instance()
+                        .get_fixing(self.index.name(), d)
+                        .unwrap_or_else(|| {
+                            let df_d = forecast_curve.discount(d);
+                            let df_next = forecast_curve.discount(next_biz);
+                            if dt.abs() < 1e-15 { 0.0 } else { (df_d / df_next - 1.0) / dt }
+                        })
+                } else {
+                    // Future: project from curve
+                    let df_d = forecast_curve.discount(d);
+                    let df_next = forecast_curve.discount(next_biz);
+                    if dt.abs() < 1e-15 { 0.0 } else { (df_d / df_next - 1.0) / dt }
+                };
+
+                compounded *= 1.0 + daily_rate * dt;
+                count += 1;
+            }
+            d += 1;
+        }
+
+        if count == 0 {
+            return self.spread;
+        }
+
+        let yf = self.day_counter
+            .year_fraction(self.accrual_start, self.accrual_end);
+        if yf.abs() < 1e-15 {
+            return self.spread;
+        }
+        (compounded - 1.0) / yf + self.spread
+    }
 }
 
 impl CashFlow for OvernightIndexedCoupon {
@@ -186,6 +249,7 @@ impl Coupon for OvernightIndexedCoupon {
 mod tests {
     use super::*;
     use approx::assert_abs_diff_eq;
+    use ql_indexes::Index;
     use ql_time::Month;
     use ql_termstructures::FlatForward;
 
@@ -252,5 +316,42 @@ mod tests {
         assert_abs_diff_eq!(c.spread(), 0.0, epsilon = 1e-15);
         assert_eq!(c.accrual_start(), Date::from_ymd(2025, Month::January, 2));
         assert_eq!(c.accrual_end(), Date::from_ymd(2025, Month::April, 2));
+    }
+
+    #[test]
+    fn overnight_resolve_rate_pure_forecast() {
+        let c = make_coupon();
+        let ref_date = Date::from_ymd(2024, Month::December, 1); // before accrual start
+        let curve = FlatForward::new(ref_date, 0.04, DayCounter::Actual360);
+
+        let rate = c.resolve_rate(ref_date, &curve);
+        // All days are future → should be close to flat 4%
+        assert_abs_diff_eq!(rate, 0.04, epsilon = 0.005);
+    }
+
+    #[test]
+    fn overnight_resolve_rate_hybrid() {
+        // Store some historical fixings for early days, then project the rest
+        let idx = OvernightIndex::sofr();
+        let start = Date::from_ymd(2025, Month::January, 2);
+        // Add fixings for first 5 business days
+        let mut d = start;
+        let cal = &idx.fixing_calendar;
+        for _ in 0..5 {
+            while !cal.is_business_day(d) { d += 1; }
+            IndexManager::instance().add_fixing(idx.name(), d, 0.04).unwrap();
+            d += 1;
+        }
+
+        let c = make_coupon();
+        // Eval date in the middle of accrual: some days historical, rest projected
+        let eval = Date::from_ymd(2025, Month::January, 10);
+        let curve = FlatForward::new(eval, 0.04, DayCounter::Actual360);
+
+        let rate = c.resolve_rate(eval, &curve);
+        // Should be close to 4% since both fixings and curve are at 4%
+        assert_abs_diff_eq!(rate, 0.04, epsilon = 0.005);
+
+        IndexManager::instance().clear_fixings(idx.name());
     }
 }

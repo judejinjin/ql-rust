@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "Financial index traits and implementations (IBOR, overnight, swap, inflation)"
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/jude-codebase/ql-rust"
 
 [dependencies]
 ql-core = { workspace = true }

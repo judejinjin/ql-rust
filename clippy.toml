@@ -1,0 +1,5 @@
+# Workspace-wide Clippy configuration
+# https://doc.rust-lang.org/clippy/configuration.html
+
+# Allow functions up to 10 arguments (quant finance functions often need many params)
+too-many-arguments-threshold = 10

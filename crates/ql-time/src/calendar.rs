@@ -101,6 +101,20 @@ impl Calendar {
     }
 
     /// Whether the given date is a business day.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ql_time::{Calendar, Date, Month};
+    ///
+    /// let cal = Calendar::Target;
+    /// // A regular Monday
+    /// assert!(cal.is_business_day(Date::from_ymd(2025, Month::March, 17)));
+    /// // A Sunday
+    /// assert!(!cal.is_business_day(Date::from_ymd(2025, Month::March, 16)));
+    /// // Christmas
+    /// assert!(!cal.is_business_day(Date::from_ymd(2025, Month::December, 25)));
+    /// ```
     pub fn is_business_day(&self, date: Date) -> bool {
         match self {
             Calendar::NullCalendar => true,
@@ -200,6 +214,22 @@ impl Calendar {
     }
 
     /// Advance a date by a period, then adjust according to the convention.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ql_time::{Calendar, Date, Month, Period, BusinessDayConvention};
+    ///
+    /// let cal = Calendar::Target;
+    /// let start = Date::from_ymd(2025, Month::January, 15);
+    /// let advanced = cal.advance(
+    ///     start,
+    ///     Period::months(3),
+    ///     BusinessDayConvention::ModifiedFollowing,
+    ///     false,
+    /// );
+    /// assert_eq!(advanced, Date::from_ymd(2025, Month::April, 15));
+    /// ```
     pub fn advance(
         &self,
         date: Date,
@@ -273,6 +303,18 @@ impl Calendar {
     }
 
     /// Count business days between two dates (exclusive of d1, inclusive of d2).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ql_time::{Calendar, Date, Month};
+    ///
+    /// let cal = Calendar::Target;
+    /// let d1 = Date::from_ymd(2025, Month::March, 14); // Friday
+    /// let d2 = Date::from_ymd(2025, Month::March, 21); // Friday
+    /// // Mon-Fri of next week = 5 business days
+    /// assert_eq!(cal.business_days_between(d1, d2), 5);
+    /// ```
     pub fn business_days_between(&self, from: Date, to: Date) -> i32 {
         if from == to {
             return 0;
@@ -388,6 +430,18 @@ fn us_is_business_day(date: Date, market: USMarket) -> bool {
     // Presidents' Day / Washington's Birthday (3rd Monday of February)
     if m == Month::February && wd == Weekday::Monday && (15..=21).contains(&d) {
         return false;
+    }
+
+    // Good Friday — NYSE only
+    if market == USMarket::NYSE {
+        let (em_month, em_day) = easter_monday(y);
+        let em_serial = Date::from_ymd_opt(y, em_month, em_day)
+            .unwrap_or_else(|| unreachable!())
+            .serial();
+        let gf = Date::from_serial(em_serial - 3);
+        if date == gf {
+            return false;
+        }
     }
 
     // Memorial Day (last Monday of May)
@@ -573,6 +627,8 @@ fn japan_is_business_day(date: Date) -> bool {
     let y = date.year();
     let wd = date.weekday();
 
+    // ---- Fixed & rule-based holidays ----
+
     // New Year's holidays (Jan 1-3)
     if m == Month::January && d <= 3 {
         return false;
@@ -585,19 +641,15 @@ fn japan_is_business_day(date: Date) -> bool {
     if m == Month::February && d == 11 {
         return false;
     }
-    // Emperor's Birthday (Feb 23, since 2020; Dec 23 before)
+    // Emperor's Birthday (Feb 23, since 2020; Dec 23 before 2019)
     if y >= 2020 && m == Month::February && d == 23 {
         return false;
     }
     if y < 2019 && m == Month::December && d == 23 {
         return false;
     }
-    // Vernal Equinox (approx Mar 20-21)
-    let vernal = {
-        let base = (y as f64 * 0.242_194_f64) as i32;
-        let adj = (y - 1980) / 4;
-        20 + (base - adj).unsigned_abs() % 2
-    };
+    // Vernal Equinox (~Mar 20-21)
+    let vernal = japan_vernal_equinox(y);
     if m == Month::March && d == vernal {
         return false;
     }
@@ -629,12 +681,8 @@ fn japan_is_business_day(date: Date) -> bool {
     if m == Month::September && wd == Weekday::Monday && (15..=21).contains(&d) {
         return false;
     }
-    // Autumnal Equinox (approx Sep 22-23)
-    let autumnal = {
-        let base = (y as f64 * 0.242_194_f64) as i32;
-        let adj = (y - 1980) / 4;
-        23 - (base - adj).unsigned_abs() % 2
-    };
+    // Autumnal Equinox (~Sep 22-23)
+    let autumnal = japan_autumnal_equinox(y);
     if m == Month::September && d == autumnal {
         return false;
     }
@@ -651,7 +699,80 @@ fn japan_is_business_day(date: Date) -> bool {
         return false;
     }
 
+    // ---- Substitute Holiday (振替休日) ----
+    // When a national holiday falls on Sunday, the next Monday is observed.
+    // Also: Golden Week may push a substitute to Tuesday (May 6).
+    if wd == Weekday::Monday {
+        let prev_sun = date - 1; // the preceding Sunday
+        if !japan_is_national_holiday(prev_sun) {
+            // no substitute
+        } else {
+            return false; // Monday is substitute for Sunday holiday
+        }
+    }
+    // Golden Week special: if May 3 (Tue-Sat) or May 4 (Wed-Sat) creates
+    // a gap with Children's Day, May 6 (Tue) can be a substitute.
+    if m == Month::May && d == 6 && matches!(wd, Weekday::Tuesday | Weekday::Wednesday) {
+        return false;
+    }
+
     true
+}
+
+/// Check if a specific date is a Japanese national holiday (for substitute rule).
+fn japan_is_national_holiday(date: Date) -> bool {
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+
+    // New Year
+    if m == Month::January && d <= 3 { return true; }
+    // Coming of Age (not Sunday-dependent as it's always Monday)
+    // National Foundation Day
+    if m == Month::February && d == 11 { return true; }
+    // Emperor's Birthday
+    if y >= 2020 && m == Month::February && d == 23 { return true; }
+    if y < 2019 && m == Month::December && d == 23 { return true; }
+    // Vernal Equinox
+    if m == Month::March && d == japan_vernal_equinox(y) { return true; }
+    // Showa Day
+    if m == Month::April && d == 29 { return true; }
+    // Constitution
+    if m == Month::May && d == 3 { return true; }
+    // Greenery
+    if m == Month::May && d == 4 { return true; }
+    // Children's
+    if m == Month::May && d == 5 { return true; }
+    // Mountain Day
+    if y >= 2016 && m == Month::August && d == 11 { return true; }
+    // Autumnal Equinox
+    if m == Month::September && d == japan_autumnal_equinox(y) { return true; }
+    // Culture Day
+    if m == Month::November && d == 3 { return true; }
+    // Labour Thanksgiving
+    if m == Month::November && d == 23 { return true; }
+    false
+}
+
+/// Vernal equinox day for Japan (1980-2099 range).
+fn japan_vernal_equinox(y: i32) -> u32 {
+    // Standard formula from Japan National Astronomical Observatory
+    let yf = y as f64;
+    if y <= 1999 {
+        (20.8431 + 0.242_194 * (yf - 1980.0) - ((yf - 1980.0) / 4.0).floor()) as u32
+    } else {
+        (20.8431 + 0.242_194 * (yf - 1980.0) - ((yf - 1980.0) / 4.0).floor()) as u32
+    }
+}
+
+/// Autumnal equinox day for Japan (1980-2099 range).
+fn japan_autumnal_equinox(y: i32) -> u32 {
+    let yf = y as f64;
+    if y <= 1999 {
+        (23.2488 + 0.242_194 * (yf - 1980.0) - ((yf - 1980.0) / 4.0).floor()) as u32
+    } else {
+        (23.2488 + 0.242_194 * (yf - 1980.0) - ((yf - 1980.0) / 4.0).floor()) as u32
+    }
 }
 
 // ============================================================================
@@ -959,7 +1080,7 @@ fn france_is_business_day(date: Date) -> bool {
     let ascension = Date::from_serial(em_serial - 1 + 39);
     if date == ascension { return false; }
     // Whit Monday (49 days after Easter Sunday)
-    let whit_monday = Date::from_serial(em_serial - 1 + 49);
+    let whit_monday = Date::from_serial(em_serial - 1 + 50);
     if date == whit_monday { return false; }
     // Bastille Day (Jul 14)
     if m == Month::July && d == 14 { return false; }
@@ -1035,7 +1156,7 @@ fn switzerland_is_business_day(date: Date) -> bool {
     let ascension = Date::from_serial(em_serial - 1 + 39);
     if date == ascension { return false; }
     // Whit Monday
-    let whit_monday = Date::from_serial(em_serial - 1 + 49);
+    let whit_monday = Date::from_serial(em_serial - 1 + 50);
     if date == whit_monday { return false; }
     // Labour Day (May 1)
     if m == Month::May && d == 1 { return false; }
@@ -1203,6 +1324,7 @@ fn south_africa_is_business_day(date: Date) -> bool {
     let d = date.day_of_month();
     let m = date.month();
     let y = date.year();
+    let wd = date.weekday();
 
     // New Year
     if m == Month::January && d == 1 { return false; }
@@ -1228,7 +1350,40 @@ fn south_africa_is_business_day(date: Date) -> bool {
     if m == Month::December && d == 16 { return false; }
     // Christmas + Day of Goodwill
     if m == Month::December && (d == 25 || d == 26) { return false; }
+
+    // Observed holiday rule: when a public holiday falls on Sunday,
+    // the following Monday is observed (Public Holidays Act).
+    if wd == Weekday::Monday {
+        let sunday = date - 1;
+        if south_africa_is_fixed_holiday(sunday) {
+            return false;
+        }
+    }
+
     true
+}
+
+/// Check if the given date is one of South Africa's fixed public holidays.
+fn south_africa_is_fixed_holiday(date: Date) -> bool {
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+    if m == Month::January && d == 1 { return true; }
+    if m == Month::March && d == 21 { return true; }
+    if m == Month::April && d == 27 { return true; }
+    if m == Month::May && d == 1 { return true; }
+    if m == Month::June && d == 16 { return true; }
+    if m == Month::August && d == 9 { return true; }
+    if m == Month::September && d == 24 { return true; }
+    if m == Month::December && d == 16 { return true; }
+    if m == Month::December && (d == 25 || d == 26) { return true; }
+    // Easter-based holidays (Good Friday / Family Day)
+    let (em_month, em_day) = easter_monday(y);
+    let em_serial = Date::from_ymd_opt(y, em_month, em_day).unwrap_or_else(|| unreachable!()).serial();
+    let gf = Date::from_serial(em_serial - 3);
+    let em = Date::from_serial(em_serial);
+    if date == gf || date == em { return true; }
+    false
 }
 
 // ============================================================================
@@ -1293,7 +1448,7 @@ fn denmark_is_business_day(date: Date) -> bool {
     let ascension = Date::from_serial(em_serial - 1 + 39);
     if date == ascension { return false; }
     // Whit Monday
-    let whit_monday = Date::from_serial(em_serial - 1 + 49);
+    let whit_monday = Date::from_serial(em_serial - 1 + 50);
     if date == whit_monday { return false; }
     // Constitution Day (Jun 5)
     if m == Month::June && d == 5 { return false; }
@@ -1325,7 +1480,7 @@ fn norway_is_business_day(date: Date) -> bool {
     let ascension = Date::from_serial(em_serial - 1 + 39);
     if date == ascension { return false; }
     // Whit Monday
-    let whit_monday = Date::from_serial(em_serial - 1 + 49);
+    let whit_monday = Date::from_serial(em_serial - 1 + 50);
     if date == whit_monday { return false; }
     // Labour Day (May 1)
     if m == Month::May && d == 1 { return false; }

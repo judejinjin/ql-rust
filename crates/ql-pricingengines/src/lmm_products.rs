@@ -475,9 +475,7 @@ fn backward_lsm(
 
         if itm_indices.len() < p_cols + 1 {
             // Not enough paths for regression — just add coupon
-            for p in 0..n_paths {
-                cont_pv0[p] = total_cont[p];
-            }
+            cont_pv0[..n_paths].copy_from_slice(&total_cont[..n_paths]);
             continue;
         }
 

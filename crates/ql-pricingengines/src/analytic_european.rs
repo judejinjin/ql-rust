@@ -32,6 +32,20 @@ pub struct AnalyticEuropeanResults {
 /// - `dividend_yield`: continuously compounded dividend yield
 /// - `volatility`: annualized volatility (σ)
 /// - `time_to_expiry`: time to expiry in years
+///
+/// # Examples
+///
+/// ```
+/// use ql_instruments::VanillaOption;
+/// use ql_pricingengines::analytic_european::price_european;
+/// use ql_time::{Date, Month};
+///
+/// let call = VanillaOption::european_call(100.0, Date::from_ymd(2026, Month::January, 15));
+/// let res = price_european(&call, 100.0, 0.05, 0.0, 0.20, 1.0);
+/// // ATM call with 20% vol, 1y expiry ≈ $10.45
+/// assert!((res.npv - 10.45).abs() < 0.1);
+/// assert!(res.delta > 0.0); // call delta positive
+/// ```
 pub fn price_european(
     option: &VanillaOption,
     spot: f64,
@@ -154,6 +168,19 @@ pub fn black_scholes_price(
 /// Compute implied volatility for a European option using Brent solver.
 ///
 /// Finds the volatility σ such that BS_price(σ) = target_price.
+///
+/// # Examples
+///
+/// ```
+/// use ql_instruments::VanillaOption;
+/// use ql_pricingengines::analytic_european::{price_european, implied_volatility};
+/// use ql_time::{Date, Month};
+///
+/// let call = VanillaOption::european_call(100.0, Date::from_ymd(2026, Month::January, 15));
+/// let price = price_european(&call, 100.0, 0.05, 0.0, 0.20, 1.0).npv;
+/// let iv = implied_volatility(&call, price, 100.0, 0.05, 0.0, 1.0).unwrap();
+/// assert!((iv - 0.20).abs() < 1e-6); // round-trips to 20%
+/// ```
 pub fn implied_volatility(
     option: &VanillaOption,
     target_price: f64,

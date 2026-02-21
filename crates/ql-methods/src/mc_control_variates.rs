@@ -107,6 +107,7 @@ fn cv_aggregate(batches: &[CvBatchStats], df: f64, expected_g: f64) -> MCResult 
 ///
 /// The geometric average of $n$ equally-spaced GBM samples is itself
 /// log-normally distributed.  Use this as the control-variate analytic value.
+#[allow(clippy::too_many_arguments)]
 pub fn geometric_asian_cf(
     spot: f64,
     strike: f64,
@@ -258,28 +259,6 @@ pub fn mc_asian_cv(
 // MC European with BS control variate
 // ============================================================================
 
-/// Black-Scholes closed-form European option price (used as control variate).
-fn bs_price(spot: f64, strike: f64, r: f64, q: f64, vol: f64, t: f64, opt: OptionType) -> f64 {
-    let df = (-r * t).exp();
-    let forward = spot * ((r - q) * t).exp();
-    let total_vol = vol * t.sqrt();
-
-    if total_vol < 1e-15 {
-        return df * (opt.sign() * (forward - strike)).max(0.0);
-    }
-
-    let d1 = ((forward / strike).ln() + 0.5 * total_vol * total_vol) / total_vol;
-    let d2 = d1 - total_vol;
-
-    let nd1 = normal_cdf(d1);
-    let nd2 = normal_cdf(d2);
-
-    match opt {
-        OptionType::Call => df * (forward * nd1 - strike * nd2),
-        OptionType::Put => df * (strike * (1.0 - nd2) - forward * (1.0 - nd1)),
-    }
-}
-
 /// Price a European option with the Black-Scholes closed-form as control variate.
 ///
 /// Both the MC payoff and the BS payoff (using the same terminal spot) are
@@ -344,6 +323,24 @@ pub fn mc_european_cv(
 mod tests {
     use super::*;
     use approx::assert_abs_diff_eq;
+
+    /// Black-Scholes closed-form European option price (used for CV test validation).
+    fn bs_price(spot: f64, strike: f64, r: f64, q: f64, vol: f64, t: f64, opt: OptionType) -> f64 {
+        let df = (-r * t).exp();
+        let forward = spot * ((r - q) * t).exp();
+        let total_vol = vol * t.sqrt();
+        if total_vol < 1e-15 {
+            return df * (opt.sign() * (forward - strike)).max(0.0);
+        }
+        let d1 = ((forward / strike).ln() + 0.5 * total_vol * total_vol) / total_vol;
+        let d2 = d1 - total_vol;
+        let nd1 = normal_cdf(d1);
+        let nd2 = normal_cdf(d2);
+        match opt {
+            OptionType::Call => df * (forward * nd1 - strike * nd2),
+            OptionType::Put => df * (strike * (1.0 - nd2) - forward * (1.0 - nd1)),
+        }
+    }
 
     #[test]
     fn geometric_asian_cf_call_positive() {

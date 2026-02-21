@@ -1,0 +1,27 @@
+[package]
+name = "ql-python"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Python bindings (PyO3) for the ql-rust quantitative finance library"
+keywords = ["quantlib", "finance", "python", "pyo3", "bindings"]
+categories = ["finance", "api-bindings"]
+
+[lib]
+name = "ql_python"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.24", features = ["extension-module"] }
+ql-core = { path = "../ql-core" }
+ql-time = { path = "../ql-time" }
+ql-math = { path = "../ql-math" }
+ql-termstructures = { path = "../ql-termstructures" }
+ql-instruments = { path = "../ql-instruments" }
+ql-cashflows = { path = "../ql-cashflows" }
+ql-indexes = { path = "../ql-indexes" }
+ql-pricingengines = { path = "../ql-pricingengines" }
+ql-methods = { path = "../ql-methods" }

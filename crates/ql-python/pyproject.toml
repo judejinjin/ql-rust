@@ -1,0 +1,20 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "ql-python"
+description = "Python bindings for the ql-rust quantitative finance library"
+requires-python = ">=3.8"
+license = {text = "MIT OR Apache-2.0"}
+keywords = ["quantlib", "finance", "derivatives", "pricing", "quant"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Rust",
+    "Topic :: Office/Business :: Financial",
+    "Development Status :: 3 - Alpha",
+]
+
+[tool.maturin]
+manifest-path = "Cargo.toml"
+features = ["pyo3/extension-module"]

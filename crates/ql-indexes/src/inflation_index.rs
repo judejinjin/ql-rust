@@ -148,17 +148,17 @@ impl InflationIndex {
                 let ref_date = first_of_month(date);
                 IndexManager::instance()
                     .get_fixing(&self.name, ref_date)
-                    .ok_or_else(|| QLError::NotFound)
+                    .ok_or(QLError::NotFound)
             }
             CpiInterpolation::Linear => {
                 let d1 = first_of_month(date);
                 let d2 = first_of_next_month(date);
                 let v1 = IndexManager::instance()
                     .get_fixing(&self.name, d1)
-                    .ok_or_else(|| QLError::NotFound)?;
+                    .ok_or(QLError::NotFound)?;
                 let v2 = IndexManager::instance()
                     .get_fixing(&self.name, d2)
-                    .ok_or_else(|| QLError::NotFound)?;
+                    .ok_or(QLError::NotFound)?;
                 let day = date.day_of_month() as f64;
                 let days_in_month = days_in_month_of(date) as f64;
                 let w = (day - 1.0) / days_in_month;

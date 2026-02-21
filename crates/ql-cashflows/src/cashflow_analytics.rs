@@ -75,14 +75,14 @@ pub fn npv_with_forecast(
     for cf in leg {
         if !cf.has_occurred(settle) {
             let df = discount_curve.discount(cf.date());
-            // Try forecasting IBOR coupons
+            // Try forecasting IBOR coupons (using resolve_rate with historical fixings)
             if let Some(ibor) = cf.as_any().downcast_ref::<crate::ibor_coupon::IborCoupon>() {
-                let rate = ibor.forecast_rate(forecast_curve);
+                let rate = ibor.resolve_rate(settle, forecast_curve);
                 total += ibor.nominal() * rate * ibor.accrual_period() * df;
             }
-            // Try forecasting overnight coupons
+            // Try forecasting overnight coupons (using resolve_rate with hybrid compounding)
             else if let Some(ois) = cf.as_any().downcast_ref::<crate::overnight_coupon::OvernightIndexedCoupon>() {
-                let rate = ois.forecast_rate(forecast_curve);
+                let rate = ois.resolve_rate(settle, forecast_curve);
                 let yf = ois.accrual_period();
                 total += ois.nominal() * rate * yf * df;
             }

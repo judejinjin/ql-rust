@@ -38,6 +38,8 @@ pub mod analytic_european;
 pub mod analytic_heston;
 pub mod analytic_bates;
 pub mod discounting;
+pub mod engine_adapters;
+pub mod sensitivity;
 pub mod swaption_engines;
 pub mod cap_floor_engines;
 pub mod inflation_cap_floor_engine;
@@ -91,7 +93,7 @@ pub use hw_analytic::{
 pub mod tree_swaption;
 pub use tree_swaption::{
     tree_bond_price, tree_swaption, tree_bermudan_swaption, tree_cap_floor,
-    fd_hw_swaption, mc_hw_cap_floor,
+    fd_hw_swaption, fd_hw_bermudan_fitted, mc_hw_cap_floor,
     TreeResult, FdResult, McHwResult,
 };
 pub mod credit_models;
@@ -133,4 +135,12 @@ pub mod lmm_products;
 pub use lmm_products::{
     LmmProduct, ExerciseType, BermudanSwaption, CmsSpreadOption,
     CallableRangeAccrual, lmm_product_mc,
+};
+pub use engine_adapters::{
+    AnalyticEuropeanEngine, DiscountingSwapEngine, DiscountingBondEngine,
+    MCEuropeanEngine, BinomialCRREngine,
+};
+pub use sensitivity::{
+    Sensitivity, RiskLadder, RiskFactor, EquityMarketParams,
+    equity_risk_ladder, sensitivity_from_npvs, sensitivity_central, curve_sensitivities,
 };

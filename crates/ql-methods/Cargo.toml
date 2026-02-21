@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "Numerical pricing methods: Monte Carlo, finite differences, lattices"
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/jude-codebase/ql-rust"
 
 [features]
 default = ["parallel"]

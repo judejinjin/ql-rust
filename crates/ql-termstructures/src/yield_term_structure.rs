@@ -14,6 +14,20 @@ use crate::term_structure::TermStructure;
 /// Implementors override `discount_impl(t)` and get default implementations
 /// for `zero_rate` and `forward_rate`. Alternatively they can override
 /// whichever representation is most natural and derive the others.
+///
+/// # Examples
+///
+/// ```
+/// use ql_termstructures::{FlatForward, YieldTermStructure};
+/// use ql_time::{Date, Month, DayCounter};
+///
+/// let today = Date::from_ymd(2025, Month::January, 15);
+/// let curve = FlatForward::new(today, 0.03, DayCounter::Actual365Fixed);
+///
+/// // discount_t gives df at a given year fraction
+/// let df_1y = curve.discount_t(1.0);
+/// assert!((df_1y - (-0.03_f64).exp()).abs() < 1e-10);
+/// ```
 pub trait YieldTermStructure: TermStructure {
     /// Discount factor at time `t` (year fraction from reference date).
     fn discount_impl(&self, t: f64) -> f64;

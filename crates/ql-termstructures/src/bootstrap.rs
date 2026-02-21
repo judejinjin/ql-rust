@@ -325,6 +325,29 @@ impl PiecewiseYieldCurve {
     pub fn size(&self) -> usize {
         self.times.len()
     }
+
+    /// Construct directly from pre-computed nodes (used by multi-curve bootstrap).
+    pub fn from_nodes(
+        reference_date: Date,
+        day_counter: DayCounter,
+        times: Vec<f64>,
+        dfs: Vec<f64>,
+        max_date: Date,
+    ) -> QLResult<Self> {
+        if times.len() != dfs.len() || times.is_empty() {
+            return Err(QLError::InvalidArgument(
+                "times and dfs must be non-empty and same length".into(),
+            ));
+        }
+        Ok(Self {
+            reference_date,
+            day_counter,
+            calendar: Calendar::NullCalendar,
+            times,
+            dfs,
+            max_date,
+        })
+    }
 }
 
 impl TermStructure for PiecewiseYieldCurve {
@@ -362,7 +385,7 @@ impl YieldTermStructure for PiecewiseYieldCurve {
 ///
 /// If `t` is before the first node, extrapolate flat at the first df.
 /// If `t` is after the last node, extrapolate log-linearly from the last segment.
-fn interpolate_log_linear(times: &[f64], dfs: &[f64], t: f64) -> f64 {
+pub(crate) fn interpolate_log_linear(times: &[f64], dfs: &[f64], t: f64) -> f64 {
     if times.is_empty() || dfs.is_empty() {
         return 1.0;
     }

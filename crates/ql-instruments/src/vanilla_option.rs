@@ -9,6 +9,16 @@ use crate::payoff::{Exercise, OptionType, Payoff};
 use ql_time::Date;
 
 /// A vanilla option (European, American, or Bermudan).
+///
+/// # Examples
+///
+/// ```
+/// use ql_instruments::VanillaOption;
+/// use ql_time::{Date, Month};
+///
+/// let call = VanillaOption::european_call(100.0, Date::from_ymd(2026, Month::January, 15));
+/// assert_eq!(call.strike(), 100.0);
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VanillaOption {
     /// The payoff specification.
