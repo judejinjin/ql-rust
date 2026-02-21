@@ -9,6 +9,7 @@ use ql_instruments::variance_swap::VarianceSwap;
 
 /// Result from the variance swap engine.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[must_use]
 pub struct VarianceSwapResult {
     /// Net present value.
     pub npv: f64,
@@ -62,6 +63,7 @@ pub fn price_variance_swap(
 /// Compute the vega notional from variance notional.
 ///
 /// Vega notional = 2 × variance_notional × vol_strike
+#[must_use]
 pub fn vega_notional(vs: &VarianceSwap) -> f64 {
     2.0 * vs.variance_notional * vs.vol_strike()
 }

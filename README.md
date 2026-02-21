@@ -3,7 +3,7 @@
 A modern Rust reimplementation of the [QuantLib](https://www.quantlib.org/) quantitative finance library.
 
 [![Build](https://img.shields.io/badge/build-passing-brightgreen)]()
-[![Tests](https://img.shields.io/badge/tests-963_passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-1350_passing-brightgreen)]()
 [![Rust](https://img.shields.io/badge/rust-2021_edition-orange)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
 
@@ -14,7 +14,7 @@ A modern Rust reimplementation of the [QuantLib](https://www.quantlib.org/) quan
 - **Zero-cost abstractions** — Rust's type system and ownership model prevent common errors at compile time
 - **High performance** — BS pricing + Greeks in ~200 ns, curve bootstrap in ~1 ms
 - **Thread safety** — All core types are `Send + Sync`; Monte Carlo engine uses Rayon for parallel path generation
-- **Modular architecture** — 15 focused crates; depend on only what you need
+- **Modular architecture** — 16 focused crates; depend on only what you need
 - **Embedded persistence** — Trade booking, lifecycle events, and versioning via redb (no external DB required)
 
 ## Quick Start
@@ -121,6 +121,8 @@ println!("CRR European call: {:.4}", crr.npv);
 │  ql-cli          │  Command-line interface (price, curve,    │
 │                  │  trade, list, risk)                       │
 ├──────────────────┼───────────────────────────────────────────┤
+│  ql-python       │  Python bindings via PyO3 (maturin)      │
+├──────────────────┼───────────────────────────────────────────┤
 │  ql-persistence  │  Trade store, lifecycle events, redb      │
 ├──────────────────┼───────────────────────────────────────────┤
 │  ql-methods      │  Monte Carlo, FD (1D + 2D Heston),       │
@@ -175,6 +177,7 @@ println!("CRR European call: {:.4}", crr.npv);
 | **ql-methods** | Numerical pricing methods | `mc_european`, `fd_black_scholes`, `fd_heston_solve` |
 | **ql-persistence** | Trade storage & lifecycle | `Trade`, `EmbeddedStore`, `ObjectStore` |
 | **ql-cli** | Command-line interface | Binary: `ql-cli` |
+| **ql-python** | Python bindings (PyO3) | `Date`, `FlatForward`, `price_european_bs`, `mc_european_py` |
 | **ql-rust** | Façade re-exporting all crates | — |
 
 ## Supported Instruments
@@ -228,10 +231,40 @@ ql-cli trade --type option --counterparty "ACME" --book equity \
 ql-cli list --book equity
 ```
 
+## Serialization
+
+All ~190 domain types across 13 crates implement serde `Serialize` + `Deserialize`,
+enabling JSON (and any serde backend) round-trips for instruments, term structures,
+pricing results, schedules, processes, and models.
+
+```rust
+use ql_rust::*;
+
+// Serialize a vanilla option to JSON
+let option = VanillaOption::european_call(100.0, Date::from_ymd(2026, Month::June, 15));
+let json = serde_json::to_string_pretty(&option)?;
+
+// Deserialize back
+let restored: VanillaOption = serde_json::from_str(&json)?;
+assert_eq!(restored.strike(), option.strike());
+
+// Works for pricing results too
+let greeks = price_european(&option, 100.0, 0.05, 0.0, 0.20, 1.0);
+let json = serde_json::to_string(&greeks)?;  // {"npv":10.45,"delta":0.637,...}
+
+// And term structures
+let curve = FlatForward::new(Date::from_ymd(2025, Month::January, 15), 0.05, DayCounter::Actual365Fixed);
+let json = serde_json::to_string(&curve)?;
+```
+
+See [`examples/serde_round_trip.rs`](crates/ql-rust/examples/serde_round_trip.rs) for a
+complete runnable demo covering VanillaOption, BarrierOption, FlatForward,
+NelsonSiegelFitting, Schedule, AnalyticEuropeanResults, CreditDefaultSwap, and Date.
+
 ## Testing
 
 ```bash
-# Run all 963 tests
+# Run all 1350 tests
 cargo test --workspace
 
 # Run integration tests only
@@ -248,10 +281,12 @@ cargo bench -p ql-rust
 
 | Category | Count | Description |
 |----------|-------|-------------|
-| Unit tests | 845 | Per-crate functionality |
-| Integration tests | 42 | Cross-crate pipelines (options, swaps, yield curve, American, multi-asset, short-rate, cashflows) |
+| Unit tests | 1110 | Per-crate functionality |
+| Integration tests | 50 | Cross-crate pipelines (options, swaps, yield curve, American, multi-asset, short-rate, cashflows, E2E workflows) |
 | Property-based tests | 11 | Mathematical invariants via proptest (put-call parity, bounds, monotonicity) |
-| Golden cross-validation | 65 | Calendar, yield curve, BS, American, spread, Nelson-Siegel, short-rate, FD, credit, LMM, CMS, advanced curves |
+| Doc-tests | 19 | Verified examples on public APIs |
+| Calendar validation | 124 | Holiday verification (TARGET, NYSE, UK) against known dates |
+| Golden cross-validation | 36 | BS, American, Nelson-Siegel, short-rate, FD, credit, LMM, CMS, advanced curves |
 
 ### Benchmarks
 
@@ -325,9 +360,10 @@ ql-rust/
     ├── ql-methods/         # MC, FD, lattice
     ├── ql-persistence/     # Trade store (redb)
     ├── ql-rust/            # Facade crate + integration tests + benchmarks
-    └── ql-cli/             # CLI binary
+    ├── ql-cli/             # CLI binary
+    └── ql-python/          # Python bindings (PyO3 + maturin)
 ```
 
 ## License
 
-MIT
+MIT OR Apache-2.0

@@ -21,6 +21,7 @@
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
 use rand_distr::{Distribution, StandardNormal};
+#[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
 use ql_instruments::OptionType;
@@ -209,8 +210,12 @@ fn simulate_paths_log(
     let mut paths = vec![0.0_f64; num_paths * stride];
 
     // Zero-copy parallel generation with antithetic variates.
-    paths
-        .par_chunks_mut(chunk_elems)
+    #[cfg(feature = "parallel")]
+    let chunks_iter = paths.par_chunks_mut(chunk_elems);
+    #[cfg(not(feature = "parallel"))]
+    let chunks_iter = paths.chunks_mut(chunk_elems);
+
+    chunks_iter
         .enumerate()
         .for_each(|(batch_idx, chunk)| {
             let mut rng = SmallRng::seed_from_u64(seed.wrapping_add(batch_idx as u64));

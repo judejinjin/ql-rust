@@ -20,9 +20,13 @@ ql-methods = { path = "../ql-methods" }
 nalgebra = { workspace = true }
 rand = { workspace = true }
 rand_distr = { workspace = true }
-rayon = { workspace = true }
+rayon = { workspace = true, optional = true }
 serde = { workspace = true }
 tracing = { workspace = true }
+
+[features]
+default = ["parallel"]
+parallel = ["rayon"]
 
 [dev-dependencies]
 approx = { workspace = true }

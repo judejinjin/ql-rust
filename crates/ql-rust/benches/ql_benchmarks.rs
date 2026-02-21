@@ -861,6 +861,175 @@ fn bench_cliquet(c: &mut Criterion) {
     });
 }
 
+// ── CDS pricing via midpoint engine ──────────────────────────────────────────
+
+fn bench_cds_pricing(c: &mut Criterion) {
+    use std::sync::Arc;
+    use ql_instruments::credit_default_swap::{CreditDefaultSwap, CdsPremiumPeriod, CdsProtectionSide};
+    use ql_termstructures::default_term_structure::{DefaultProbabilityTermStructure, FlatHazardRate};
+
+    let ref_date = Date::from_ymd(2025, Month::March, 20);
+    let dc = DayCounter::Actual365Fixed;
+    let spread = 0.01;
+
+    let schedule: Vec<CdsPremiumPeriod> = (1..=20)
+        .map(|i| {
+            let q = (i - 1) % 4;
+            let m = [Month::March, Month::June, Month::September, Month::December][q];
+            let y0 = 2025 + (i - 1) / 4;
+            let eq = i % 4;
+            let em = [Month::March, Month::June, Month::September, Month::December][eq];
+            let y1 = 2025 + i / 4;
+            CdsPremiumPeriod {
+                accrual_start: Date::from_ymd(y0 as i32, m, 20),
+                accrual_end: Date::from_ymd(y1 as i32, em, 20),
+                payment_date: Date::from_ymd(y1 as i32, em, 20),
+                accrual_fraction: 0.25,
+            }
+        })
+        .collect();
+
+    let cds = CreditDefaultSwap::new(CdsProtectionSide::Buyer, 10_000_000.0, spread,
+        Date::from_ymd(2030, Month::March, 20), 0.4, schedule);
+    let default_curve = Arc::new(FlatHazardRate::from_spread(ref_date, spread, 0.4, dc));
+    let yield_curve = Arc::new(FlatForward::new(ref_date, 0.03, dc));
+
+    c.bench_function("cds_midpoint_5y", |b| {
+        b.iter(|| {
+            ql_pricingengines::midpoint_cds_engine(
+                black_box(&cds),
+                &(default_curve.clone() as Arc<dyn DefaultProbabilityTermStructure>),
+                &(yield_curve.clone() as Arc<dyn YieldTermStructure>),
+                0.0,
+            )
+        })
+    });
+}
+
+// ── Risk analytics: key-rate durations & scenario analysis ───────────────────
+
+fn bench_risk_analytics(c: &mut Criterion) {
+    use ql_pricingengines::{
+        key_rate_durations, scenario_analysis, YieldCurveScenario, equity_risk_ladder,
+        EquityMarketParams,
+    };
+
+    let ref_date = Date::from_ymd(2025, Month::January, 15);
+    let dc = DayCounter::Actual360;
+    let curve = FlatForward::new(ref_date, 0.04, dc);
+
+    // Build a 30-semi leg for KRD / scenario benchmarks
+    let sched = Schedule::from_dates(
+        (0..=60).map(|i| {
+            let y = 2025 + i / 2;
+            let m = if i % 2 == 0 { Month::January } else { Month::July };
+            Date::from_ymd(y, m, 15)
+        }).collect(),
+    );
+    let leg = fixed_leg(&sched, &[1_000_000.0], &[0.05], dc);
+
+    let tenors: Vec<f64> = vec![0.5, 1.0, 2.0, 3.0, 5.0, 7.0, 10.0, 15.0, 20.0, 30.0];
+    c.bench_function("key_rate_durations_10_tenors", |b| {
+        b.iter(|| key_rate_durations(black_box(&leg), black_box(&curve), ref_date, &tenors, 1.0))
+    });
+
+    let scenarios = vec![
+        ("Up 100bp".into(), YieldCurveScenario::ParallelShift(0.01)),
+        ("Down 100bp".into(), YieldCurveScenario::ParallelShift(-0.01)),
+        ("Steepen".into(), YieldCurveScenario::SteepenerFlattener { short_shift: -0.005, long_shift: 0.01 }),
+        ("Flatten".into(), YieldCurveScenario::SteepenerFlattener { short_shift: 0.005, long_shift: -0.005 }),
+        ("Custom".into(), YieldCurveScenario::Custom {
+            tenors: vec![1.0, 5.0, 10.0, 30.0],
+            shifts: vec![0.002, 0.005, 0.008, 0.012],
+        }),
+    ];
+    c.bench_function("scenario_analysis_5", |b| {
+        b.iter(|| scenario_analysis(black_box(&leg), black_box(&curve), ref_date, &scenarios))
+    });
+
+    // Equity risk ladder (bump-and-reprice Greeks)
+    let call = VanillaOption::european_call(105.0, Date::from_ymd(2026, Month::January, 15));
+    let params = EquityMarketParams {
+        spot: 100.0,
+        risk_free_rate: 0.05,
+        dividend_yield: 0.02,
+        volatility: 0.20,
+        time_to_expiry: 1.0,
+    };
+    c.bench_function("equity_risk_ladder", |b| {
+        b.iter(|| equity_risk_ladder(black_box(&call), black_box(&params)))
+    });
+}
+
+// ── Svensson curve fitting ───────────────────────────────────────────────────
+
+fn bench_svensson_fit(c: &mut Criterion) {
+    use ql_termstructures::SvenssonFitting;
+
+    let maturities = [0.25, 0.5, 1.0, 2.0, 3.0, 5.0, 7.0, 10.0, 15.0, 20.0, 30.0];
+    let rates = [0.040, 0.041, 0.042, 0.043, 0.044, 0.045, 0.046, 0.047, 0.048, 0.048, 0.049];
+
+    c.bench_function("svensson_fit_11_points", |b| {
+        b.iter(|| SvenssonFitting::fit(black_box(&maturities), black_box(&rates)).unwrap())
+    });
+}
+
+// ── Lookback option pricing ──────────────────────────────────────────────────
+
+fn bench_lookback(c: &mut Criterion) {
+    use ql_instruments::lookback_option::{LookbackOption, LookbackType};
+
+    let opt = LookbackOption {
+        lookback_type: LookbackType::FloatingStrike,
+        option_type: OptionType::Call,
+        min_so_far: 90.0,
+        max_so_far: 110.0,
+        strike: 0.0,
+        time_to_expiry: 1.0,
+    };
+
+    c.bench_function("lookback_floating_call", |b| {
+        b.iter(|| {
+            ql_pricingengines::analytic_lookback(
+                black_box(&opt), black_box(100.0), black_box(0.05),
+                black_box(0.0), black_box(0.25),
+            )
+        })
+    });
+}
+
+// ── Variance swap pricing ────────────────────────────────────────────────────
+
+fn bench_variance_swap(c: &mut Criterion) {
+    use ql_instruments::variance_swap::VarianceSwap;
+
+    let vs = VarianceSwap::from_vol_strike(1_000_000.0, 0.20, 1.0);
+    c.bench_function("variance_swap_1y", |b| {
+        b.iter(|| {
+            ql_pricingengines::price_variance_swap(
+                black_box(&vs), black_box(0.22), black_box(0.05),
+            )
+        })
+    });
+}
+
+// ── Serde round-trip benchmark ───────────────────────────────────────────────
+
+fn bench_serde_round_trip(c: &mut Criterion) {
+    let today = Date::from_ymd(2025, Month::January, 15);
+    let call = VanillaOption::european_call(105.0, today + 365);
+
+    let json = serde_json::to_string(&call).unwrap();
+
+    c.bench_function("serde_vanilla_option_serialize", |b| {
+        b.iter(|| serde_json::to_string(black_box(&call)).unwrap())
+    });
+
+    c.bench_function("serde_vanilla_option_deserialize", |b| {
+        b.iter(|| serde_json::from_str::<VanillaOption>(black_box(&json)).unwrap())
+    });
+}
+
 criterion_group!(
     benches,
     bench_bs_pricing,
@@ -907,5 +1076,12 @@ criterion_group!(
     bench_double_barrier_ko,
     bench_chooser,
     bench_cliquet,
+    // -- Phase 31: new hot-path benchmarks --
+    bench_cds_pricing,
+    bench_risk_analytics,
+    bench_svensson_fit,
+    bench_lookback,
+    bench_variance_swap,
+    bench_serde_round_trip,
 );
 criterion_main!(benches);

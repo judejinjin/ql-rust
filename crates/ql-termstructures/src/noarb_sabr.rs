@@ -274,8 +274,9 @@ fn isotonic_regression_weighted(values: &[f64], weights: &[f64]) -> Vec<f64> {
             let avg_top = blocks[len - 1].0 / blocks[len - 1].1.max(1e-30);
             let avg_prev = blocks[len - 2].0 / blocks[len - 2].1.max(1e-30);
             if avg_prev > avg_top + 1e-15 {
-                let top = blocks.pop().unwrap();
-                let prev = blocks.last_mut().unwrap();
+                // SAFETY: blocks.len() >= 2 from the while condition
+                let top = blocks.pop().expect("blocks has >= 2 elements");
+                let prev = blocks.last_mut().expect("blocks has >= 1 element after pop");
                 prev.0 += top.0;
                 prev.1 += top.1;
                 prev.3 = top.3;

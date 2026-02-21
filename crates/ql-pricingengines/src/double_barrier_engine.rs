@@ -19,6 +19,7 @@ use crate::analytic_european;
 
 /// Result of a double-barrier pricing.
 #[derive(Debug, Clone)]
+#[must_use]
 pub struct DoubleBarrierResult {
     /// Net present value.
     pub npv: f64,

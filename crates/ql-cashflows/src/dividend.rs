@@ -57,7 +57,7 @@ pub struct DividendSchedule {
 impl DividendSchedule {
     /// Create from a vector of dividends (will be sorted by time).
     pub fn new(mut dividends: Vec<Dividend>) -> Self {
-        dividends.sort_by(|a, b| a.time().partial_cmp(&b.time()).unwrap());
+        dividends.sort_by(|a, b| a.time().partial_cmp(&b.time()).unwrap_or(std::cmp::Ordering::Equal));
         DividendSchedule { dividends }
     }
 

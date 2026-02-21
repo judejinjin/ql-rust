@@ -21,6 +21,7 @@ use crate::analytic_european;
 
 /// Result from a cliquet option pricing.
 #[derive(Debug, Clone)]
+#[must_use]
 pub struct CliquetResult {
     /// Net present value.
     pub npv: f64,

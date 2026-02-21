@@ -24,7 +24,7 @@ serde_json = { workspace = true }
 
 [features]
 default = ["parallel", "redb"]
-parallel = ["ql-methods/parallel"]
+parallel = ["ql-methods/parallel", "ql-pricingengines/parallel"]
 redb = ["ql-persistence/redb"]
 
 [dev-dependencies]

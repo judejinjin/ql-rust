@@ -181,7 +181,10 @@ impl SwaptionVolCube {
         // Linear interpolation on strike offsets
         let xs: Vec<f64> = strikes_and_spreads.iter().map(|&(k, _)| k).collect();
         let ys: Vec<f64> = strikes_and_spreads.iter().map(|&(_, v)| v).collect();
-        let interp = LinearInterpolation::new(xs, ys).expect("smile data should be valid");
+        let interp = match LinearInterpolation::new(xs, ys) {
+            Ok(i) => i,
+            Err(_) => return 0.0,
+        };
         let clamped = strike_offset.clamp(interp.x_min(), interp.x_max());
         interp.value(clamped).unwrap_or(0.0)
     }

@@ -107,7 +107,7 @@ impl NelsonSiegelFitting {
             simplex.sort_by(|a, b| {
                 Self::cost(a, maturities, market_rates)
                     .partial_cmp(&Self::cost(b, maturities, market_rates))
-                    .unwrap()
+                    .unwrap_or(std::cmp::Ordering::Equal)
             });
 
             let cost_best = Self::cost(&simplex[0], maturities, market_rates);
@@ -193,7 +193,7 @@ impl NelsonSiegelFitting {
         simplex.sort_by(|a, b| {
             Self::cost(a, maturities, market_rates)
                 .partial_cmp(&Self::cost(b, maturities, market_rates))
-                .unwrap()
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
 
         best = simplex[0];
@@ -314,7 +314,7 @@ impl SvenssonFitting {
             simplex.sort_by(|a, b| {
                 Self::cost(a, maturities, market_rates)
                     .partial_cmp(&Self::cost(b, maturities, market_rates))
-                    .unwrap()
+                    .unwrap_or(std::cmp::Ordering::Equal)
             });
 
             let cost_best = Self::cost(&simplex[0], maturities, market_rates);
@@ -387,7 +387,7 @@ impl SvenssonFitting {
         simplex.sort_by(|a, b| {
             Self::cost(a, maturities, market_rates)
                 .partial_cmp(&Self::cost(b, maturities, market_rates))
-                .unwrap()
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
 
         let best = simplex[0];

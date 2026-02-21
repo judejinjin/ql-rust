@@ -169,7 +169,7 @@ pub fn svi_calibrate(
         .min_by(|(_, s1), (_, s2)| {
             ((*s1 - forward).abs())
                 .partial_cmp(&((*s2 - forward).abs()))
-                .unwrap()
+                .unwrap_or(std::cmp::Ordering::Equal)
         })
         .map(|(v, _)| v * v * expiry)
         .unwrap_or(0.04);

@@ -757,11 +757,12 @@ fn japan_is_national_holiday(date: Date) -> bool {
 /// Vernal equinox day for Japan (1980-2099 range).
 fn japan_vernal_equinox(y: i32) -> u32 {
     // Standard formula from Japan National Astronomical Observatory
+    // Coefficients differ by era per the published almanac tables.
     let yf = y as f64;
     if y <= 1999 {
         (20.8431 + 0.242_194 * (yf - 1980.0) - ((yf - 1980.0) / 4.0).floor()) as u32
     } else {
-        (20.8431 + 0.242_194 * (yf - 1980.0) - ((yf - 1980.0) / 4.0).floor()) as u32
+        (20.9031 + 0.242_194 * (yf - 1980.0) - ((yf - 1980.0) / 4.0).floor()) as u32
     }
 }
 
@@ -771,7 +772,7 @@ fn japan_autumnal_equinox(y: i32) -> u32 {
     if y <= 1999 {
         (23.2488 + 0.242_194 * (yf - 1980.0) - ((yf - 1980.0) / 4.0).floor()) as u32
     } else {
-        (23.2488 + 0.242_194 * (yf - 1980.0) - ((yf - 1980.0) / 4.0).floor()) as u32
+        (23.2088 + 0.242_194 * (yf - 1980.0) - ((yf - 1980.0) / 4.0).floor()) as u32
     }
 }
 

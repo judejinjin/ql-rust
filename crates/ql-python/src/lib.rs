@@ -39,6 +39,9 @@ fn ql_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Term structures
     m.add_class::<termstructures::PyFlatForward>()?;
+    m.add_class::<termstructures::PyNelsonSiegelCurve>()?;
+    m.add_class::<termstructures::PySvenssonCurve>()?;
+    m.add_class::<termstructures::PyPiecewiseYieldCurve>()?;
 
     // Instruments
     m.add_class::<instruments::PyVanillaOption>()?;
@@ -49,12 +52,28 @@ fn ql_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<types::PyLatticeResult>()?;
     m.add_class::<types::PySwapResults>()?;
     m.add_class::<types::PyBondResults>()?;
+    m.add_class::<types::PyAmericanResult>()?;
+    m.add_class::<types::PyFDResult>()?;
+    m.add_class::<types::PyHestonResult>()?;
 
-    // Pricing functions
+    // Pricing functions — analytic
     m.add_function(wrap_pyfunction!(pricing::price_european_bs, m)?)?;
     m.add_function(wrap_pyfunction!(pricing::implied_vol, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::barone_adesi_whaley_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::bjerksund_stensland_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::heston_price_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::kirk_spread_call_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::kirk_spread_put_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::sabr_vol_py, m)?)?;
+
+    // Pricing functions — numerical
     m.add_function(wrap_pyfunction!(pricing::mc_european_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::mc_barrier_py, m)?)?;
     m.add_function(wrap_pyfunction!(pricing::binomial_crr_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::fd_black_scholes_py, m)?)?;
+
+    // Term structure bootstrapping
+    m.add_function(wrap_pyfunction!(termstructures::bootstrap_yield_curve, m)?)?;
 
     // Calendar utilities
     m.add_function(wrap_pyfunction!(time::is_business_day, m)?)?;

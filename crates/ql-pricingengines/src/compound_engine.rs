@@ -11,6 +11,7 @@ use ql_math::solvers1d::Solver1D;
 
 /// Result from the compound option engine.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[must_use]
 pub struct CompoundOptionResult {
     /// Net present value.
     pub npv: f64,

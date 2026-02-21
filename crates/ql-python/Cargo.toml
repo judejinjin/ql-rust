@@ -23,5 +23,6 @@ ql-termstructures = { path = "../ql-termstructures" }
 ql-instruments = { path = "../ql-instruments" }
 ql-cashflows = { path = "../ql-cashflows" }
 ql-indexes = { path = "../ql-indexes" }
+ql-models = { path = "../ql-models" }
 ql-pricingengines = { path = "../ql-pricingengines" }
 ql-methods = { path = "../ql-methods" }

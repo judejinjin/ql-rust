@@ -163,7 +163,7 @@ pub fn andreasen_huge_calibrate(
 ) -> AndreasenHugeCalibrationResult {
     // 1. Build sorted unique time grid from quotes.
     let mut times: Vec<f64> = quotes.iter().map(|q| q.expiry).collect();
-    times.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    times.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     times.dedup_by(|a, b| (*a - *b).abs() < 1e-12);
 
     let n_t = times.len();
@@ -203,7 +203,7 @@ pub fn andreasen_huge_calibrate(
             .filter(|q| (q.expiry - t).abs() < 1e-12)
             .map(|q| (q.strike, q.implied_vol))
             .collect();
-        layer_quotes.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+        layer_quotes.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
 
         // Interpolate implied vols onto the strike grid.
         let iv_grid: Vec<f64> = strike_grid

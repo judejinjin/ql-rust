@@ -565,30 +565,76 @@ pub fn modified_craig_sneyd_step(
 fn x_direction_apply(ops: &Heston2dOps, values: &[f64]) -> Vec<f64> {
     let nx = ops.nx;
     let nv = ops.nv;
-    let mut result = vec![0.0; nx * nv];
-    for j in 0..nv {
-        let row: Vec<f64> = (0..nx).map(|i| values[i * nv + j]).collect();
-        let lx = ops.x_ops[j].apply(&row);
-        for i in 0..nx {
-            result[i * nv + j] = lx[i];
+
+    #[cfg(feature = "parallel")]
+    {
+        use rayon::prelude::*;
+        let slices: Vec<Vec<f64>> = (0..nv)
+            .into_par_iter()
+            .map(|j| {
+                let row: Vec<f64> = (0..nx).map(|i| values[i * nv + j]).collect();
+                ops.x_ops[j].apply(&row)
+            })
+            .collect();
+        let mut result = vec![0.0; nx * nv];
+        for j in 0..nv {
+            for i in 0..nx {
+                result[i * nv + j] = slices[j][i];
+            }
         }
+        result
     }
-    result
+
+    #[cfg(not(feature = "parallel"))]
+    {
+        let mut result = vec![0.0; nx * nv];
+        for j in 0..nv {
+            let row: Vec<f64> = (0..nx).map(|i| values[i * nv + j]).collect();
+            let lx = ops.x_ops[j].apply(&row);
+            for i in 0..nx {
+                result[i * nv + j] = lx[i];
+            }
+        }
+        result
+    }
 }
 
 /// Apply L_v to all x-slices.
 fn v_direction_apply(ops: &Heston2dOps, values: &[f64]) -> Vec<f64> {
     let nx = ops.nx;
     let nv = ops.nv;
-    let mut result = vec![0.0; nx * nv];
-    for i in 0..nx {
-        let col: Vec<f64> = (0..nv).map(|j| values[i * nv + j]).collect();
-        let lv = ops.v_ops[i].apply(&col);
-        for j in 0..nv {
-            result[i * nv + j] = lv[j];
+
+    #[cfg(feature = "parallel")]
+    {
+        use rayon::prelude::*;
+        let slices: Vec<Vec<f64>> = (0..nx)
+            .into_par_iter()
+            .map(|i| {
+                let col: Vec<f64> = (0..nv).map(|j| values[i * nv + j]).collect();
+                ops.v_ops[i].apply(&col)
+            })
+            .collect();
+        let mut result = vec![0.0; nx * nv];
+        for i in 0..nx {
+            for j in 0..nv {
+                result[i * nv + j] = slices[i][j];
+            }
         }
+        result
     }
-    result
+
+    #[cfg(not(feature = "parallel"))]
+    {
+        let mut result = vec![0.0; nx * nv];
+        for i in 0..nx {
+            let col: Vec<f64> = (0..nv).map(|j| values[i * nv + j]).collect();
+            let lv = ops.v_ops[i].apply(&col);
+            for j in 0..nv {
+                result[i * nv + j] = lv[j];
+            }
+        }
+        result
+    }
 }
 
 /// Full operator: L_x + L_v + L_cross.
@@ -613,30 +659,76 @@ fn full_operator_apply(
 fn implicit_x_sweep(ops: &Heston2dOps, rhs: &[f64], theta: f64, dt: f64) -> Vec<f64> {
     let nx = ops.nx;
     let nv = ops.nv;
-    let mut result = vec![0.0; nx * nv];
-    for j in 0..nv {
-        let rhs_row: Vec<f64> = (0..nx).map(|i| rhs[i * nv + j]).collect();
-        let solved = ops.x_ops[j].solve_implicit(&rhs_row, theta, dt);
-        for i in 0..nx {
-            result[i * nv + j] = solved[i];
+
+    #[cfg(feature = "parallel")]
+    {
+        use rayon::prelude::*;
+        let slices: Vec<Vec<f64>> = (0..nv)
+            .into_par_iter()
+            .map(|j| {
+                let rhs_row: Vec<f64> = (0..nx).map(|i| rhs[i * nv + j]).collect();
+                ops.x_ops[j].solve_implicit(&rhs_row, theta, dt)
+            })
+            .collect();
+        let mut result = vec![0.0; nx * nv];
+        for j in 0..nv {
+            for i in 0..nx {
+                result[i * nv + j] = slices[j][i];
+            }
         }
+        result
     }
-    result
+
+    #[cfg(not(feature = "parallel"))]
+    {
+        let mut result = vec![0.0; nx * nv];
+        for j in 0..nv {
+            let rhs_row: Vec<f64> = (0..nx).map(|i| rhs[i * nv + j]).collect();
+            let solved = ops.x_ops[j].solve_implicit(&rhs_row, theta, dt);
+            for i in 0..nx {
+                result[i * nv + j] = solved[i];
+            }
+        }
+        result
+    }
 }
 
 /// Implicit v-sweep: solve (I - theta*dt*L_v) for each x-level.
 fn implicit_v_sweep(ops: &Heston2dOps, rhs: &[f64], theta: f64, dt: f64) -> Vec<f64> {
     let nx = ops.nx;
     let nv = ops.nv;
-    let mut result = vec![0.0; nx * nv];
-    for i in 0..nx {
-        let rhs_col: Vec<f64> = (0..nv).map(|j| rhs[i * nv + j]).collect();
-        let solved = ops.v_ops[i].solve_implicit(&rhs_col, theta, dt);
-        for j in 0..nv {
-            result[i * nv + j] = solved[j];
+
+    #[cfg(feature = "parallel")]
+    {
+        use rayon::prelude::*;
+        let slices: Vec<Vec<f64>> = (0..nx)
+            .into_par_iter()
+            .map(|i| {
+                let rhs_col: Vec<f64> = (0..nv).map(|j| rhs[i * nv + j]).collect();
+                ops.v_ops[i].solve_implicit(&rhs_col, theta, dt)
+            })
+            .collect();
+        let mut result = vec![0.0; nx * nv];
+        for i in 0..nx {
+            for j in 0..nv {
+                result[i * nv + j] = slices[i][j];
+            }
         }
+        result
     }
-    result
+
+    #[cfg(not(feature = "parallel"))]
+    {
+        let mut result = vec![0.0; nx * nv];
+        for i in 0..nx {
+            let rhs_col: Vec<f64> = (0..nv).map(|j| rhs[i * nv + j]).collect();
+            let solved = ops.v_ops[i].solve_implicit(&rhs_col, theta, dt);
+            for j in 0..nv {
+                result[i * nv + j] = solved[j];
+            }
+        }
+        result
+    }
 }
 
 // ─────────────────────────────────────────────────────────────

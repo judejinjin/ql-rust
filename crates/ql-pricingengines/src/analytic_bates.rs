@@ -219,6 +219,7 @@ fn bates_cf(
 
 /// Results from the Bates analytic engine.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[must_use]
 pub struct BatesResult {
     /// Net present value of the option.
     pub npv: f64,
@@ -297,6 +298,7 @@ pub fn bates_price(
 /// Price a European option under the Bates model using flat parameters
 /// (no model object needed).
 #[allow(clippy::too_many_arguments)]
+#[must_use]
 pub fn bates_price_flat(
     spot: f64,
     strike: f64,

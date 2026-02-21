@@ -14,6 +14,7 @@ use ql_math::distributions::NormalDistribution;
 
 /// Results from an American option approximation engine.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[must_use]
 pub struct AmericanApproxResult {
     /// Net present value.
     pub npv: f64,

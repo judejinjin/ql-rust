@@ -123,3 +123,71 @@ impl PyBondResults {
         )
     }
 }
+
+/// American option approximation results.
+#[pyclass(name = "AmericanResult")]
+#[derive(Clone)]
+pub struct PyAmericanResult {
+    #[pyo3(get)]
+    pub npv: f64,
+    #[pyo3(get)]
+    pub early_exercise_premium: f64,
+    #[pyo3(get)]
+    pub critical_price: f64,
+}
+
+#[pymethods]
+impl PyAmericanResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "AmericanResult(npv={:.6}, early_ex_premium={:.6}, critical_price={:.6})",
+            self.npv, self.early_exercise_premium, self.critical_price
+        )
+    }
+}
+
+/// Finite difference result.
+#[pyclass(name = "FDResult")]
+#[derive(Clone)]
+pub struct PyFDResult {
+    #[pyo3(get)]
+    pub npv: f64,
+    #[pyo3(get)]
+    pub delta: f64,
+    #[pyo3(get)]
+    pub gamma: f64,
+    #[pyo3(get)]
+    pub theta: f64,
+}
+
+#[pymethods]
+impl PyFDResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "FDResult(npv={:.6}, delta={:.6}, gamma={:.6}, theta={:.6})",
+            self.npv, self.delta, self.gamma, self.theta
+        )
+    }
+}
+
+/// Heston analytic pricing result.
+#[pyclass(name = "HestonResult")]
+#[derive(Clone)]
+pub struct PyHestonResult {
+    #[pyo3(get)]
+    pub npv: f64,
+    #[pyo3(get)]
+    pub p1: f64,
+    #[pyo3(get)]
+    pub p2: f64,
+}
+
+#[pymethods]
+impl PyHestonResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "HestonResult(npv={:.6}, p1={:.6}, p2={:.6})",
+            self.npv, self.p1, self.p2
+        )
+    }
+}

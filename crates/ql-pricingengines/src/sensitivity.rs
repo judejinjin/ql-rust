@@ -18,9 +18,8 @@
 //! ```
 //!
 //! The [`Sensitivity`] struct represents a single risk measure (delta, vega,
-//! etc.) identified by a label. [`compute_sensitivities`] produces a full
+//! etc.) identified by a label. [`equity_risk_ladder`] produces a full
 //! risk ladder by bumping each input in turn.
-
 
 // ═══════════════════════════════════════════════════════════════
 // Sensitivity result types
@@ -28,6 +27,7 @@
 
 /// A single sensitivity measure.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[must_use]
 pub struct Sensitivity {
     /// Label for this risk factor (e.g. "spot", "vol", "rate.1Y").
     pub label: String,
@@ -133,7 +133,7 @@ pub fn equity_risk_ladder(
     );
     let base_npv = base.npv;
 
-    let risk_factors = vec![
+    let risk_factors: &[(&str, f64, f64)] = &[
         ("spot", params.spot, 1.0),           // bump spot by $1
         ("volatility", params.volatility, 0.01), // bump vol by 1 point
         ("rate", params.risk_free_rate, 0.0001),  // bump rate by 1bp

@@ -170,7 +170,7 @@ fn gauss_hermite(n: usize) -> (Vec<f64>, Vec<f64>) {
             (node, weight)
         })
         .collect();
-    pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+    pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
 
     let nodes = pairs.iter().map(|p| p.0).collect();
     let weights = pairs.iter().map(|p| p.1).collect();

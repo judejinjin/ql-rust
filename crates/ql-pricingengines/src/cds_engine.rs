@@ -10,6 +10,7 @@ use ql_termstructures::yield_term_structure::YieldTermStructure;
 
 /// Result from CDS pricing.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[must_use]
 pub struct CdsResult {
     /// Net present value from the protection buyer's perspective.
     pub npv: f64,

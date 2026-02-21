@@ -4,6 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "ql-python"
+version = "0.1.0"
 description = "Python bindings for the ql-rust quantitative finance library"
 requires-python = ">=3.8"
 license = {text = "MIT OR Apache-2.0"}

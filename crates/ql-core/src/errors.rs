@@ -47,6 +47,22 @@ pub enum QLError {
     #[error("invalid argument: {0}")]
     InvalidArgument(String),
 
+    /// A numeric input was zero when a non-zero value was required (e.g. time, maturity).
+    #[error("zero {quantity} not allowed")]
+    ZeroInput {
+        /// What was zero (e.g., "time_to_expiry", "maturity").
+        quantity: &'static str,
+    },
+
+    /// A computed or supplied value is NaN or infinite.
+    #[error("non-finite value in {context}: {value}")]
+    NonFinite {
+        /// Where the non-finite value was detected (e.g., "Black-Scholes d1").
+        context: &'static str,
+        /// The offending value.
+        value: f64,
+    },
+
     /// Object not found in persistence store.
     #[error("object not found")]
     NotFound,
@@ -82,6 +98,12 @@ mod tests {
 
         let e = QLError::RootNotFound(100);
         assert_eq!(e.to_string(), "root not found after 100 iterations");
+
+        let e = QLError::ZeroInput { quantity: "time_to_expiry" };
+        assert_eq!(e.to_string(), "zero time_to_expiry not allowed");
+
+        let e = QLError::NonFinite { context: "d1", value: f64::NAN };
+        assert!(e.to_string().contains("non-finite value in d1"));
     }
 
     #[test]

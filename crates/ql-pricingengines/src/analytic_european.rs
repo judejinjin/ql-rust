@@ -9,6 +9,7 @@ use tracing::info_span;
 
 /// Results from the analytic European engine.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[must_use]
 pub struct AnalyticEuropeanResults {
     /// Net present value.
     pub npv: f64,

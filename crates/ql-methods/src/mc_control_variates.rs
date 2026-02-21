@@ -3,7 +3,7 @@
 //! Provides variance-reduction via control variates for existing MC engines.
 //! The classical estimator is:
 //!
-//! $$\hat{C}_{CV} = \frac{1}{N}\sum_{i}\bigl[f_i - \beta^*(g_i - \mathbb{E}[g])\bigr]$$
+//! $$\hat{C}_{CV} = \frac{1}{N}\sum_{i}\bigl\[f_i - \beta^*(g_i - \mathbb{E}\[g\])\bigr\]$$
 //!
 //! where $\beta^* = \mathrm{Cov}(f,g)/\mathrm{Var}(g)$ is estimated from the
 //! same simulation sample.

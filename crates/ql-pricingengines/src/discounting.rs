@@ -15,6 +15,7 @@ use ql_time::Date;
 
 /// Results from the discounting swap engine.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[must_use]
 pub struct SwapResults {
     /// Net present value (positive = in-the-money for the payer).
     pub npv: f64,
@@ -166,6 +167,7 @@ pub fn price_ois(
 
 /// Results from the discounting bond engine.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[must_use]
 pub struct BondResults {
     /// Net present value (dirty price × face / 100).
     pub npv: f64,

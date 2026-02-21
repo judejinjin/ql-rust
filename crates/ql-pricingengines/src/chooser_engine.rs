@@ -16,6 +16,7 @@ use ql_math::distributions::cumulative_normal;
 
 /// Result from a chooser option pricing.
 #[derive(Debug, Clone)]
+#[must_use]
 pub struct ChooserResult {
     /// Net present value of the chooser option.
     pub npv: f64,

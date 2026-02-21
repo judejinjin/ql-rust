@@ -16,12 +16,16 @@ use ql_cashflows::Leg;
 use ql_termstructures::{YieldTermStructure, SpreadedTermStructure};
 use ql_time::Date;
 
+#[cfg(feature = "parallel")]
+use rayon::prelude::*;
+
 // ===========================================================================
 // Key-Rate Duration
 // ===========================================================================
 
 /// One key-rate duration bucket.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[must_use]
 pub struct KeyRateDuration {
     /// Tenor in years.
     pub tenor: f64,
@@ -48,8 +52,12 @@ pub fn key_rate_durations(
     let base_npv = ql_cashflows::npv(leg, curve, settle);
     let bump = bump_bp * 0.0001; // Convert bp to decimal
 
-    tenors
-        .iter()
+    #[cfg(feature = "parallel")]
+    let iter = tenors.par_iter();
+    #[cfg(not(feature = "parallel"))]
+    let iter = tenors.iter();
+
+    iter
         .map(|&tenor| {
             // Create a spread that only affects the region near this tenor
             // Use a triangular bump: 100% at the tenor, 0% at adjacent tenors
@@ -67,6 +75,7 @@ pub fn key_rate_durations(
 
 /// Result of a scenario analysis.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[must_use]
 pub struct ScenarioResult {
     /// Name of the scenario.
     pub name: String,
@@ -106,8 +115,12 @@ pub fn scenario_analysis(
 ) -> Vec<ScenarioResult> {
     let base_npv = ql_cashflows::npv(leg, curve, settle);
 
-    scenarios
-        .iter()
+    #[cfg(feature = "parallel")]
+    let iter = scenarios.par_iter();
+    #[cfg(not(feature = "parallel"))]
+    let iter = scenarios.iter();
+
+    iter
         .map(|(name, scenario)| {
             let shift = match scenario {
                 YieldCurveScenario::ParallelShift(s) => *s,
@@ -147,6 +160,7 @@ pub fn scenario_analysis(
 ///
 /// This gives a more accurate measure than the linear approximation
 /// in `cashflow_analytics_extended::dv01`.
+#[must_use]
 pub fn dv01_central_difference(
     leg: &Leg,
     curve: &dyn YieldTermStructure,
@@ -163,6 +177,7 @@ pub fn dv01_central_difference(
 /// Compute gamma (convexity in $-terms) via central difference.
 ///
 /// gamma = [NPV(y+1bp) + NPV(y-1bp) - 2*NPV(y)] / (1bp)^2
+#[must_use]
 pub fn gamma(
     leg: &Leg,
     curve: &dyn YieldTermStructure,
@@ -183,6 +198,7 @@ pub fn gamma(
 
 /// Vega bucket: sensitivity to a 1 vol-point shift at a specific expiry.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[must_use]
 pub struct VegaBucket {
     /// Expiry tenor in years.
     pub expiry: f64,
@@ -195,6 +211,7 @@ pub struct VegaBucket {
 /// This is a standalone analytic vega, not a bump-and-revalue calculation.
 /// For swaption/cap vega buckets, use the appropriate engine with
 /// bumped vol surfaces.
+#[must_use]
 pub fn bs_vega(
     spot: f64,
     strike: f64,

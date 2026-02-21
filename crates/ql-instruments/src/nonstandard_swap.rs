@@ -2,7 +2,7 @@
 //!
 //! Supports per-period notionals, per-period fixed rates, per-period
 //! spreads, amortizing schedules, and step-up/step-down structures
-//! that cannot be represented by a [`VanillaSwap`].
+//! that cannot be represented by a `VanillaSwap`.
 //!
 //! ## Examples
 //!
@@ -93,7 +93,7 @@ impl NonstandardSwap {
     /// * `spreads` — floating spread(s) (last extended)
     ///
     /// Returns a swap without pre-built legs (legs will be empty).
-    /// Use [`build_legs`] or pass to a pricing function that constructs legs.
+    /// Use `build_legs` or pass to a pricing function that constructs legs.
     pub fn amortizing(
         swap_type: SwapType,
         initial_notional: f64,

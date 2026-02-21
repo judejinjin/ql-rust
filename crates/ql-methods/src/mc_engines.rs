@@ -439,7 +439,7 @@ pub fn mc_bates(
 
             // Create Poisson distribution (handle lambda_dt = 0 case)
             let poisson = if lambda_dt > 0.0 {
-                Some(Poisson::new(lambda_dt).unwrap())
+                Poisson::new(lambda_dt).ok()
             } else {
                 None
             };

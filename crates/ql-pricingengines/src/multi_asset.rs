@@ -12,6 +12,7 @@ use ql_math::distributions::NormalDistribution;
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
 use rand_distr::{Distribution, StandardNormal};
+#[cfg(feature = "parallel")]
 use rayon::prelude::*;
 
 // ===========================================================================
@@ -95,8 +96,12 @@ pub fn mc_basket(
     let batch_size = 5000_usize;
     let num_batches = num_paths.div_ceil(batch_size);
 
-    let results: Vec<(f64, f64, usize)> = (0..num_batches)
-        .into_par_iter()
+    #[cfg(feature = "parallel")]
+    let iter = (0..num_batches).into_par_iter();
+    #[cfg(not(feature = "parallel"))]
+    let iter = 0..num_batches;
+
+    let results: Vec<(f64, f64, usize)> = iter
         .map(|batch_idx| {
             let mut rng = SmallRng::seed_from_u64(seed.wrapping_add(batch_idx as u64));
             let start = batch_idx * batch_size;
@@ -256,6 +261,7 @@ pub fn stulz_max_call(
 /// - Kirk, E. (1995), "Correlation in the Energy Markets", *Managing
 ///   Energy Price Risk*.
 #[allow(clippy::too_many_arguments)]
+#[must_use]
 pub fn kirk_spread_call(
     s1: f64,
     s2: f64,

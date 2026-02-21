@@ -9,6 +9,7 @@ use ql_math::distributions::NormalDistribution;
 
 /// Result from the lookback engine.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[must_use]
 pub struct LookbackResult {
     /// Net present value.
     pub npv: f64,
