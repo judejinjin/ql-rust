@@ -70,6 +70,10 @@ pub mod stock;
 pub mod bond_forward;
 pub mod composite_instrument;
 pub mod asset_swap;
+pub mod complex_chooser_option;
+pub mod bma_swap;
+pub mod cpi_swap;
+pub mod quanto_option;
 
 // Re-exports
 pub use payoff::{OptionType, Payoff, Exercise};
@@ -112,4 +116,14 @@ pub use composite_instrument::{CompositeInstrument, CompositeComponent};
 pub use asset_swap::{
     AssetSwap, AssetSwapConvention, AssetSwapResult, price_asset_swap,
     EquityTRS, EquityTRSResult, price_equity_trs, equity_trs_fair_spread,
+};
+pub use complex_chooser_option::ComplexChooserOption;
+pub use bma_swap::{BmaSwap, BmaSwapResult, BmaDayCount, LiborDayCount};
+pub use cpi_swap::{
+    CpiSwap, CpiSwapType, InflationLegType, InflationCashFlow, FundingCashFlow,
+    zero_coupon_cpi_swap, yoy_cpi_swap,
+};
+pub use quanto_option::{
+    QuantoVanillaOption, QuantoForwardVanillaOption, QuantoResult,
+    price_quanto_vanilla, price_quanto_forward,
 };

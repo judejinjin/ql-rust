@@ -35,6 +35,7 @@ pub mod finite_differences;
 pub mod lattice;
 pub mod fdm_meshers;
 pub mod fdm_operators;
+pub mod fdm_schemes;
 
 // Re-exports
 pub use monte_carlo::{Path, PathGenerator, MultiPath, MultiPathGenerator};
@@ -54,4 +55,9 @@ pub use fdm_operators::{
     apply_american_condition, apply_cross_derivative,
     hundsdorfer_verwer_step, modified_craig_sneyd_step,
     fd_1d_bs_solve, fd_heston_solve, fd_heston_solve_adi,
+};
+pub use fdm_schemes::{
+    FdmScheme1d, FdmScheme2d, BarrierDirection,
+    BarrierCondition, AmericanExerciseCondition, AveragingCondition, RunningExtremeCondition,
+    Fd1dSolver, Fd1dStepResult, heston_adi_solve,
 };

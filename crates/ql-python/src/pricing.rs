@@ -8,15 +8,29 @@ use ql_pricingengines::analytic_european::{price_european, implied_volatility};
 use ql_pricingengines::american_engines::{barone_adesi_whaley, bjerksund_stensland};
 use ql_pricingengines::analytic_heston::heston_price;
 use ql_pricingengines::multi_asset::{kirk_spread_call, kirk_spread_put};
+use ql_pricingengines::variance_gamma_engine::vg_cos_price;
+use ql_pricingengines::cos_heston::cos_heston_price;
+use ql_pricingengines::analytic_binary_barrier::{
+    analytic_binary_barrier, BinaryBarrierType, BinaryPayoff, BinaryDirection,
+};
+use ql_pricingengines::analytic_vanilla_extra::{analytic_cev_price};
+use ql_pricingengines::fd_heston_barrier::{fd_heston_barrier, FdBarrierType, FdHestonGridParams};
+use ql_pricingengines::heston_hull_white_engine::heston_hull_white_price;
+use ql_pricingengines::portfolio_credit::{bilateral_cva, cdo_spread_ladder};
+use ql_instruments::quanto_option::{QuantoVanillaOption, price_quanto_vanilla};
 use ql_methods::mc_engines::{mc_european, mc_barrier};
 use ql_methods::finite_differences::fd_black_scholes;
 use ql_methods::lattice::binomial_crr;
 use ql_models::HestonModel;
+use ql_models::VarianceGammaModel;
 use ql_termstructures::sabr::sabr_volatility;
 
 use crate::types::{
     PyAnalyticResults, PyMCResult, PyLatticeResult,
     PyAmericanResult, PyFDResult, PyHestonResult,
+    PyVgResult, PyQuantoResult, PyCvaResult,
+    PyCosHestonResult, PyBinaryBarrierResult, PyCevResult,
+    PyFdHestonBarrierResult, PyHhwResult, PyCdoTranche,
 };
 
 // ---------------------------------------------------------------------------
@@ -414,4 +428,407 @@ pub fn sabr_vol_py(
     nu: f64,
 ) -> f64 {
     sabr_volatility(strike, forward, expiry, alpha, beta, rho, nu)
+}
+
+// ---------------------------------------------------------------------------
+// Variance Gamma pricing
+// ---------------------------------------------------------------------------
+
+/// Price a European option under the Variance Gamma model using the COS method.
+///
+/// Parameters:
+///   sigma  — VG diffusion parameter (σ > 0)
+///   nu     — variance rate (ν > 0)
+///   theta  — drift of gamma subordinator (θ)
+///   spot   — current underlying price
+///   strike — option strike
+///   tau    — time to expiry in years
+///   r      — risk-free rate
+///   q      — dividend yield
+///   is_call — True for call, False for put
+///
+/// Returns a ``VGResult`` with npv, delta, vega.
+#[pyfunction]
+#[pyo3(signature = (sigma, nu, theta, spot, strike, tau, r, q=0.0, is_call=true, n_terms=128, l=10.0))]
+pub fn vg_price_py(
+    sigma: f64,
+    nu: f64,
+    theta: f64,
+    spot: f64,
+    strike: f64,
+    tau: f64,
+    r: f64,
+    q: f64,
+    is_call: bool,
+    n_terms: usize,
+    l: f64,
+) -> PyResult<PyVgResult> {
+    let model = VarianceGammaModel::new(sigma, nu, theta);
+    let opt_type = if is_call { OptionType::Call } else { OptionType::Put };
+    let res = vg_cos_price(&model, spot, strike, tau, r, q, opt_type, n_terms, l)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    Ok(PyVgResult { npv: res.price, delta: res.delta, vega: res.vega })
+}
+
+// ---------------------------------------------------------------------------
+// Quanto vanilla option pricing
+// ---------------------------------------------------------------------------
+
+/// Price a quanto vanilla option (fixed FX conversion).
+///
+/// The quanto adjustment modifies the effective dividend yield:
+///   q_eff = r_foreign + rho_sfx * sigma_S * sigma_FX
+///
+/// Parameters:
+///   spot         — underlying price in domestic currency
+///   strike       — option strike
+///   tau          — time to expiry
+///   r_domestic   — domestic risk-free rate
+///   r_foreign    — foreign risk-free rate (used as dividend yield)
+///   sigma        — underlying volatility
+///   sigma_fx     — FX volatility
+///   rho_sfx      — correlation between underlying and FX
+///   fixed_fx     — fixed FX rate (conversion multiplier)
+///   is_call      — True for call
+///
+/// Returns a ``QuantoResult``.
+#[pyfunction]
+#[pyo3(signature = (spot, strike, tau, r_domestic, r_foreign, sigma, sigma_fx, rho_sfx, fixed_fx=1.0, is_call=true))]
+pub fn price_quanto_vanilla_py(
+    spot: f64,
+    strike: f64,
+    tau: f64,
+    r_domestic: f64,
+    r_foreign: f64,
+    sigma: f64,
+    sigma_fx: f64,
+    rho_sfx: f64,
+    fixed_fx: f64,
+    is_call: bool,
+) -> PyQuantoResult {
+    let opt = QuantoVanillaOption {
+        option_type: if is_call { OptionType::Call } else { OptionType::Put },
+        spot,
+        strike,
+        tau,
+        r_domestic,
+        r_foreign,
+        sigma,
+        sigma_fx,
+        rho_sfx,
+        fixed_fx,
+    };
+    let res = price_quanto_vanilla(&opt);
+    PyQuantoResult {
+        npv: res.price,
+        delta: res.delta,
+        vega: res.vega,
+        qvega: res.qvega,
+        rho: res.rho,
+        qlambda: res.qlambda,
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Bilateral CVA / DVA
+// ---------------------------------------------------------------------------
+
+/// Compute bilateral CVA and DVA for an OTC derivative position.
+///
+/// Parameters:
+///   times               — list of time grid points in years
+///   expected_exposure   — expected exposure EE(t) at each time
+///   negative_exposure   — NEE(t) = −E[min(V,0)] at each time
+///   hazard_c            — counterparty hazard rate
+///   hazard_b            — own hazard rate
+///   recovery_c          — counterparty recovery rate
+///   recovery_b          — own recovery rate
+///   discount_factors    — risk-free discount factors at each time
+///
+/// Returns a ``CVAResult`` with cva, dva, bcva.
+#[pyfunction]
+pub fn bilateral_cva_py(
+    times: Vec<f64>,
+    expected_exposure: Vec<f64>,
+    negative_exposure: Vec<f64>,
+    hazard_c: f64,
+    hazard_b: f64,
+    recovery_c: f64,
+    recovery_b: f64,
+    discount_factors: Vec<f64>,
+) -> PyResult<PyCvaResult> {
+    if times.len() != expected_exposure.len()
+        || times.len() != negative_exposure.len()
+        || times.len() != discount_factors.len()
+    {
+        return Err(PyValueError::new_err("All input arrays must have the same length"));
+    }
+    let res = bilateral_cva(
+        &times, &expected_exposure, &negative_exposure,
+        hazard_c, hazard_b, recovery_c, recovery_b, &discount_factors,
+    );
+    Ok(PyCvaResult { cva: res.cva, dva: res.dva, bcva: res.bcva })
+}
+
+// ---------------------------------------------------------------------------
+// COS Heston pricing
+// ---------------------------------------------------------------------------
+
+/// Price a European option under the Heston model using the COS (Fourier-cosine) method.
+///
+/// Parameters:
+///   spot, strike, tau, r, q — standard market inputs
+///   v0 — initial variance
+///   kappa — mean-reversion speed
+///   theta — long-run variance
+///   sigma — vol-of-vol
+///   rho — spot-variance correlation
+///   is_call — True for call, False for put
+///   n_terms — number of cosine series terms (0 = default 128)
+///   l — truncation parameter (0 = default 12)
+///
+/// Returns a ``CosHestonResult``.
+#[pyfunction]
+pub fn cos_heston_price_py(
+    spot: f64,
+    strike: f64,
+    tau: f64,
+    r: f64,
+    q: f64,
+    v0: f64,
+    kappa: f64,
+    theta: f64,
+    sigma: f64,
+    rho: f64,
+    is_call: bool,
+    n_terms: usize,
+    l: f64,
+) -> PyResult<PyCosHestonResult> {
+    let model = HestonModel::new(spot, r, q, v0, kappa, theta, sigma, rho);
+    let opt_type = if is_call { OptionType::Call } else { OptionType::Put };
+    cos_heston_price(&model, spot, strike, tau, r, q, opt_type, n_terms, l)
+        .map(|res| PyCosHestonResult {
+            price: res.price,
+            n_terms: res.n_terms,
+            a: res.ab.0,
+            b: res.ab.1,
+        })
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
+// ---------------------------------------------------------------------------
+// Binary barrier option
+// ---------------------------------------------------------------------------
+
+/// Price a European binary barrier option under Black-Scholes.
+///
+/// Parameters:
+///   spot, strike, barrier, r, q, sigma, tau — market inputs
+///   barrier_type — ``"DownAndIn"``, ``"DownAndOut"``, ``"UpAndIn"``, ``"UpAndOut"``
+///   payoff_type  — ``"Cash"`` (pays K on exercise) or ``"Asset"`` (pays S)
+///   direction    — ``"Call"`` or ``"Put"``
+///
+/// Returns a ``BinaryBarrierResult``.
+#[pyfunction]
+pub fn analytic_binary_barrier_py(
+    spot: f64,
+    strike: f64,
+    barrier: f64,
+    r: f64,
+    q: f64,
+    sigma: f64,
+    tau: f64,
+    barrier_type: &str,
+    payoff_type: &str,
+    direction: &str,
+) -> PyResult<PyBinaryBarrierResult> {
+    let bt = match barrier_type {
+        "DownAndIn"  => BinaryBarrierType::DownAndIn,
+        "DownAndOut" => BinaryBarrierType::DownAndOut,
+        "UpAndIn"    => BinaryBarrierType::UpAndIn,
+        "UpAndOut"   => BinaryBarrierType::UpAndOut,
+        other => return Err(PyValueError::new_err(format!("Unknown barrier_type: {other}"))),
+    };
+    let pt = match payoff_type {
+        "Cash" | "CashOrNothing" => BinaryPayoff::CashOrNothing,
+        "Asset" | "AssetOrNothing" => BinaryPayoff::AssetOrNothing,
+        other => return Err(PyValueError::new_err(format!("Unknown payoff_type: {other}"))),
+    };
+    let dir = match direction {
+        "Call" => BinaryDirection::Call,
+        "Put"  => BinaryDirection::Put,
+        other => return Err(PyValueError::new_err(format!("Unknown direction: {other}"))),
+    };
+    let res = analytic_binary_barrier(spot, strike, barrier, r, q, sigma, tau, bt, pt, dir);
+    Ok(PyBinaryBarrierResult { price: res.price, delta: res.delta })
+}
+
+// ---------------------------------------------------------------------------
+// CEV model pricing
+// ---------------------------------------------------------------------------
+
+/// Price a European option under the Constant Elasticity of Variance (CEV) model.
+///
+/// Parameters:
+///   spot, strike, tau, r, q — standard inputs
+///   sigma — CEV coefficient σ
+///   beta  — elasticity (β ≠ 1; use BS for β = 1)
+///   is_call — True for call, False for put
+///
+/// Returns a ``CevResult``.
+#[pyfunction]
+pub fn analytic_cev_price_py(
+    spot: f64,
+    strike: f64,
+    tau: f64,
+    r: f64,
+    q: f64,
+    sigma: f64,
+    beta: f64,
+    is_call: bool,
+) -> PyResult<PyCevResult> {
+    let opt_type = if is_call { OptionType::Call } else { OptionType::Put };
+    analytic_cev_price(spot, strike, tau, r, q, sigma, beta, opt_type)
+        .map(|res| PyCevResult { price: res.price })
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
+// ---------------------------------------------------------------------------
+// FD Heston barrier
+// ---------------------------------------------------------------------------
+
+/// Price a European barrier option under the Heston model using a 2D PDE solver.
+///
+/// Parameters:
+///   spot, strike, barrier, tau, r, q — market inputs
+///   v0, kappa, theta, sigma_v, rho — Heston parameters
+///   barrier_type — ``"DownAndOut"``, ``"UpAndOut"``, ``"DownAndIn"``, ``"UpAndIn"``
+///   is_call — True for call, False for put
+///   ns, nv, nt — grid dimensions (0 = defaults: 100/50/100)
+///
+/// Returns a ``FdHestonBarrierResult``.
+#[pyfunction]
+#[allow(clippy::too_many_arguments)]
+pub fn fd_heston_barrier_py(
+    spot: f64,
+    strike: f64,
+    barrier: f64,
+    tau: f64,
+    r: f64,
+    q: f64,
+    v0: f64,
+    kappa: f64,
+    theta: f64,
+    sigma_v: f64,
+    rho: f64,
+    barrier_type: &str,
+    is_call: bool,
+    ns: usize,
+    nv: usize,
+    nt: usize,
+) -> PyResult<PyFdHestonBarrierResult> {
+    let bt = match barrier_type {
+        "DownAndOut" => FdBarrierType::DownAndOut,
+        "UpAndOut"   => FdBarrierType::UpAndOut,
+        "DownAndIn"  => FdBarrierType::DownAndIn,
+        "UpAndIn"    => FdBarrierType::UpAndIn,
+        other => return Err(PyValueError::new_err(format!("Unknown barrier_type: {other}"))),
+    };
+    let model = HestonModel::new(spot, r, q, v0, kappa, theta, sigma_v, rho);
+    let grid = FdHestonGridParams {
+        ns: if ns == 0 { 100 } else { ns },
+        nv: if nv == 0 { 50 } else { nv },
+        nt: if nt == 0 { 100 } else { nt },
+        ..FdHestonGridParams::default()
+    };
+    let res = fd_heston_barrier(&model, strike, tau, is_call, barrier, bt, &grid);
+    Ok(PyFdHestonBarrierResult {
+        price: res.price,
+        delta: res.delta,
+        gamma: res.gamma,
+        vega:  res.vega,
+        ns: res.ns, nv: res.nv, nt: res.nt,
+    })
+}
+
+// ---------------------------------------------------------------------------
+// Heston + Hull-White hybrid
+// ---------------------------------------------------------------------------
+
+/// Price a European option under the Heston + Hull-White hybrid model (A1HW approximation).
+///
+/// Parameters:
+///   spot, strike, tau, r0, q — market inputs
+///   hw_a, hw_sigma_r — Hull-White mean-reversion and rate vol
+///   v0, kappa, theta, sigma_v, rho_sv — Heston parameters
+///   equity_rate_rho — equity–rate correlation
+///   is_call — True for call, False for put
+///
+/// Returns a ``HestonHullWhiteResult``.
+#[pyfunction]
+#[allow(clippy::too_many_arguments)]
+pub fn heston_hull_white_price_py(
+    spot: f64,
+    strike: f64,
+    tau: f64,
+    r0: f64,
+    q: f64,
+    hw_a: f64,
+    hw_sigma_r: f64,
+    v0: f64,
+    kappa: f64,
+    theta: f64,
+    sigma_v: f64,
+    rho_sv: f64,
+    equity_rate_rho: f64,
+    is_call: bool,
+) -> PyHhwResult {
+    let opt_type = if is_call { OptionType::Call } else { OptionType::Put };
+    let res = heston_hull_white_price(
+        spot, strike, tau, r0, hw_a, hw_sigma_r,
+        v0, kappa, theta, sigma_v, rho_sv,
+        equity_rate_rho, q, opt_type,
+    );
+    PyHhwResult { price: res.price, v0_eff: res.v0_eff, xi: res.xi }
+}
+
+// ---------------------------------------------------------------------------
+// CDO spread ladder
+// ---------------------------------------------------------------------------
+
+/// Compute CDO tranche fair spreads across a waterfall using the Gaussian copula LHP model.
+///
+/// Parameters:
+///   attachments    — list of attachment points (e.g. [0.0, 0.03, 0.06, 0.09])
+///   detachments    — list of detachment points (e.g. [0.03, 0.06, 0.09, 0.12])
+///   default_prob   — portfolio-average 5Y default probability
+///   correlation    — Gaussian copula factor correlation ρ
+///   recovery       — recovery rate (e.g. 0.4)
+///   n_names        — number of names in portfolio
+///   maturity       — tranche maturity in years
+///   flat_rate      — flat risk-free rate for discounting
+///
+/// Returns a list of ``CdoTrancheSpread`` objects.
+#[pyfunction]
+pub fn cdo_spread_ladder_py(
+    attachments: Vec<f64>,
+    detachments: Vec<f64>,
+    default_prob: f64,
+    correlation: f64,
+    recovery: f64,
+    n_names: usize,
+    maturity: f64,
+    flat_rate: f64,
+) -> PyResult<Vec<PyCdoTranche>> {
+    if attachments.len() != detachments.len() {
+        return Err(PyValueError::new_err("attachments and detachments must have the same length"));
+    }
+    let tranches: Vec<(f64, f64)> = attachments.iter().zip(detachments.iter()).map(|(&a, &d)| (a, d)).collect();
+    let res = cdo_spread_ladder(&tranches, default_prob, correlation, recovery, n_names, maturity, flat_rate);
+    Ok(res.into_iter().map(|t| PyCdoTranche {
+        attachment: t.attachment,
+        detachment: t.detachment,
+        expected_loss: t.expected_loss,
+        fair_spread: t.fair_spread,
+    }).collect())
 }

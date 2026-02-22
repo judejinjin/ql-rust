@@ -39,6 +39,7 @@ pub mod bootstrap;
 pub mod bootstrap_extended;
 pub mod bootstrap_multicurve;
 pub mod nelson_siegel;
+pub mod fitted_bond_curve_extended;
 pub mod vol_term_structure;
 pub mod sabr;
 pub mod svi;
@@ -50,6 +51,10 @@ pub mod inflation_term_structure;
 pub mod swaption_vol;
 pub mod andreasen_huge;
 pub mod noarb_sabr;
+pub mod kahale_smile_section;
+pub mod spreaded_smile_section;
+pub mod abcd_vol_term_structure;
+pub mod gaussian1d_smile_section;
 
 // Re-exports
 pub use term_structure::TermStructure;
@@ -67,6 +72,9 @@ pub use bootstrap_extended::{
 };
 pub use nelson_siegel::{
     NelsonSiegelFitting, SvenssonFitting, FittedBondDiscountCurve, FittingMethod,
+};
+pub use fitted_bond_curve_extended::{
+    PolynomialDiscountCurve, ExponentialSplineCurve,
 };
 pub use vol_term_structure::{
     BlackVolTermStructure, LocalVolTermStructure,
@@ -95,3 +103,10 @@ pub use andreasen_huge::{
     AndreasenHugeVolSurface, AndreasenHugeConfig, AndreasenHugeCalibrationResult,
     VolQuote, andreasen_huge_calibrate,
 };
+pub use kahale_smile_section::KahaleSmileSection;
+pub use spreaded_smile_section::{
+    SpreadType, FlatVolQuote, TabulatedSmileQuote,
+    SpreadedFlatSmileSection, SpreadedSmileSection,
+};
+pub use abcd_vol_term_structure::{AbcdParameters, AbcdVolTermStructure, integrate_abcd_sq};
+pub use gaussian1d_smile_section::{HullWhiteParams, Gaussian1dSmileSection};

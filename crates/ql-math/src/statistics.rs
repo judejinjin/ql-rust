@@ -516,3 +516,202 @@ mod tests {
         assert_abs_diff_eq!(k, -1.2, epsilon = 0.1);
     }
 }
+
+// ===========================================================================
+// Sequence Statistics (multi-dimensional path statistics)
+// ===========================================================================
+
+/// Multi-dimensional running statistics for Monte-Carlo path analysis.
+///
+/// Equivalent to QuantLib's `SequenceStatistics<IncrementalStatistics>`.
+/// Maintains one [`IncrementalStatistics`] per dimension, plus cross-moment
+/// (covariance/correlation) estimates via an incremental algorithm.
+#[derive(Clone, Debug)]
+pub struct SequenceStatistics {
+    dim: usize,
+    /// Per-dimension accumulators.
+    stats: Vec<IncrementalStatistics>,
+    /// Upper-triangular cross-sum: cov_accum[i][j] (i ≤ j) stores
+    /// sum of (x_i − μ_i)(x_j − μ_j) so far.
+    cross: Vec<Vec<f64>>,
+    n: usize,
+}
+
+impl SequenceStatistics {
+    /// Create a new `SequenceStatistics` for `dim`-dimensional samples.
+    pub fn new(dim: usize) -> Self {
+        Self {
+            dim,
+            stats: vec![IncrementalStatistics::new(); dim],
+            cross: vec![vec![0.0; dim]; dim],
+            n: 0,
+        }
+    }
+
+    /// Add a single `dim`-dimensional sample.
+    ///
+    /// # Panics
+    /// Panics if `sample.len() != self.dim`.
+    pub fn add(&mut self, sample: &[f64]) {
+        assert_eq!(sample.len(), self.dim, "sample dimension mismatch");
+        self.n += 1;
+        let n = self.n as f64;
+        // Compute delta from old mean (before this sample is incorporated)
+        let old_means: Vec<f64> = self.stats.iter().map(|s| s.mean()).collect();
+        // Update per-dimension stats
+        for i in 0..self.dim {
+            self.stats[i].add(sample[i]);
+        }
+        let new_means: Vec<f64> = self.stats.iter().map(|s| s.mean()).collect();
+        // Welford online cross-covariance update:
+        //   C[i][j] += (x_i - old_mean_i) * (x_j - new_mean_j)
+        // This gives the unscaled sum used for covariance: cov = C / (n-1)
+        if self.n >= 2 {
+            for i in 0..self.dim {
+                for j in i..self.dim {
+                    let delta_i = sample[i] - old_means[i];
+                    let delta_j = sample[j] - new_means[j];
+                    self.cross[i][j] += delta_i * delta_j;
+                }
+            }
+        }
+        let _ = n;
+    }
+
+    /// Number of samples added.
+    pub fn count(&self) -> usize {
+        self.n
+    }
+
+    /// Mean vector.
+    pub fn mean(&self) -> Vec<f64> {
+        self.stats.iter().map(|s| s.mean()).collect()
+    }
+
+    /// Variance vector (sample variance, n−1 denominator).
+    pub fn variance(&self) -> Vec<f64> {
+        self.stats.iter().map(|s| s.variance()).collect()
+    }
+
+    /// Standard deviation vector.
+    pub fn std_dev(&self) -> Vec<f64> {
+        self.stats.iter().map(|s| s.standard_deviation()).collect()
+    }
+
+    /// Sample covariance between dimensions `i` and `j`.
+    ///
+    /// Returns `None` if fewer than 2 samples.
+    pub fn covariance(&self, i: usize, j: usize) -> Option<f64> {
+        if self.n < 2 {
+            return None;
+        }
+        let (ii, jj) = if i <= j { (i, j) } else { (j, i) };
+        Some(self.cross[ii][jj] / (self.n - 1) as f64)
+    }
+
+    /// Pearson correlation between dimensions `i` and `j`.
+    ///
+    /// Returns `None` if fewer than 2 samples or either dimension has
+    /// zero variance.
+    pub fn correlation(&self, i: usize, j: usize) -> Option<f64> {
+        let cov = self.covariance(i, j)?;
+        let si = self.stats[i].standard_deviation();
+        let sj = self.stats[j].standard_deviation();
+        if si < 1e-14 || sj < 1e-14 {
+            return None;
+        }
+        Some(cov / (si * sj))
+    }
+
+    /// Full covariance matrix (dim × dim).
+    ///
+    /// Returns `None` if fewer than 2 samples.
+    pub fn covariance_matrix(&self) -> Option<Vec<Vec<f64>>> {
+        if self.n < 2 {
+            return None;
+        }
+        let mut mat = vec![vec![0.0f64; self.dim]; self.dim];
+        for i in 0..self.dim {
+            for j in 0..self.dim {
+                mat[i][j] = self.covariance(i, j).unwrap_or(0.0);
+            }
+        }
+        Some(mat)
+    }
+
+    /// Full correlation matrix (dim × dim).
+    ///
+    /// Returns `None` if fewer than 2 samples.
+    pub fn correlation_matrix(&self) -> Option<Vec<Vec<f64>>> {
+        if self.n < 2 {
+            return None;
+        }
+        let mut mat = vec![vec![0.0f64; self.dim]; self.dim];
+        for i in 0..self.dim {
+            for j in 0..self.dim {
+                mat[i][j] = self.correlation(i, j).unwrap_or(if i == j { 1.0 } else { 0.0 });
+            }
+        }
+        Some(mat)
+    }
+
+    /// Minimum value per dimension.
+    pub fn min(&self) -> Vec<f64> {
+        self.stats.iter().map(|s| s.min()).collect()
+    }
+
+    /// Maximum value per dimension.
+    pub fn max(&self) -> Vec<f64> {
+        self.stats.iter().map(|s| s.max()).collect()
+    }
+}
+
+#[cfg(test)]
+mod seqstats_tests {
+    use super::*;
+    use approx::assert_abs_diff_eq;
+
+    #[test]
+    fn seq_stats_mean_and_variance() {
+        let mut ss = SequenceStatistics::new(2);
+        let data = vec![
+            vec![1.0, 4.0],
+            vec![2.0, 5.0],
+            vec![3.0, 6.0],
+        ];
+        for d in &data {
+            ss.add(d);
+        }
+        let mean = ss.mean();
+        assert_abs_diff_eq!(mean[0], 2.0, epsilon = 1e-10);
+        assert_abs_diff_eq!(mean[1], 5.0, epsilon = 1e-10);
+        let var = ss.variance();
+        assert_abs_diff_eq!(var[0], 1.0, epsilon = 1e-10);
+        assert_abs_diff_eq!(var[1], 1.0, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn seq_stats_perfect_correlation() {
+        let mut ss = SequenceStatistics::new(2);
+        for i in 0..100 {
+            let x = i as f64;
+            ss.add(&[x, 2.0 * x]);
+        }
+        let r = ss.correlation(0, 1).unwrap();
+        assert_abs_diff_eq!(r, 1.0, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn seq_stats_no_samples() {
+        let ss = SequenceStatistics::new(3);
+        assert_eq!(ss.count(), 0);
+        assert!(ss.covariance(0, 1).is_none());
+    }
+
+    #[test]
+    #[should_panic]
+    fn seq_stats_dimension_mismatch() {
+        let mut ss = SequenceStatistics::new(2);
+        ss.add(&[1.0, 2.0, 3.0]); // wrong dim
+    }
+}

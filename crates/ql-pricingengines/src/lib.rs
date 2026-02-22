@@ -56,6 +56,12 @@ pub mod hw_analytic;
 pub mod double_barrier_engine;
 pub mod chooser_engine;
 pub mod cliquet_engine;
+pub mod cos_heston;
+pub mod heston_hull_white_engine;
+pub mod analytic_vanilla_extra;
+pub mod analytic_binary_barrier;
+pub mod fd_heston_barrier;
+pub mod variance_gamma_engine;
 
 // Re-exports
 pub use american_engines::{
@@ -99,6 +105,12 @@ pub use tree_swaption::{
 pub mod credit_models;
 pub use credit_models::{
     GaussianCopulaLHP, NtdResult, nth_to_default_mc, cds_option_black,
+};
+pub mod portfolio_credit;
+pub use portfolio_credit::{
+    StudentTCopulaLHP, ContagionResult, infectious_default_mc,
+    CvaResult, bilateral_cva,
+    CdoTrancheSpread, cdo_spread_ladder,
 };
 pub use double_barrier_engine::{double_barrier_knockout, double_barrier_knockin, DoubleBarrierResult};
 pub use chooser_engine::{chooser_price, ChooserResult};
@@ -144,3 +156,18 @@ pub use sensitivity::{
     Sensitivity, RiskLadder, RiskFactor, EquityMarketParams,
     equity_risk_ladder, sensitivity_from_npvs, sensitivity_central, curve_sensitivities,
 };
+pub use cos_heston::{cos_heston_price, CosHestonResult};
+pub use heston_hull_white_engine::{heston_hull_white_price, HestonHullWhiteResult};
+pub use analytic_vanilla_extra::{
+    heston_expansion_price, HestonExpansionResult,
+    analytic_cev_price, CevResult,
+    analytic_ptd_heston_price, PtdHestonSlice, PtdHestonResult,
+};
+pub use analytic_binary_barrier::{
+    analytic_binary_barrier, BinaryBarrierResult, BinaryBarrierType, BinaryPayoff, BinaryDirection,
+};
+pub use fd_heston_barrier::{
+    fd_heston_barrier, FdHestonBarrierResult, FdBarrierType, FdHestonGridParams,
+    fd_heston_double_barrier, FdHestonDoubleBarrierResult,
+};
+pub use variance_gamma_engine::{vg_cos_price, VgResult};

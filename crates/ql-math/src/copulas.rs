@@ -257,3 +257,176 @@ mod tests {
         assert_abs_diff_eq!(theta, 2.0, epsilon = 1e-10);
     }
 }
+
+// ===========================================================================
+// Additional copulas: Independent, Min (W), Max (M), FGM, Plackett,
+// Galambos, Marshall-Olkin
+// ===========================================================================
+
+/// Independence copula: C(u, v) = u · v.
+pub fn independent_copula(u: f64, v: f64) -> f64 {
+    u.clamp(0.0, 1.0) * v.clamp(0.0, 1.0)
+}
+
+/// Fréchet upper bound (comonotonicity copula): C(u, v) = min(u, v).
+pub fn max_copula(u: f64, v: f64) -> f64 {
+    u.min(v).clamp(0.0, 1.0)
+}
+
+/// Fréchet lower bound (countermonotonicity copula): C(u, v) = max(u + v − 1, 0).
+pub fn min_copula(u: f64, v: f64) -> f64 {
+    (u + v - 1.0).max(0.0)
+}
+
+/// Farlie-Gumbel-Morgenstern (FGM) copula.
+///
+/// C(u, v; θ) = u·v (1 + θ·(1−u)·(1−v)),  θ ∈ [−1, 1].
+///
+/// The FGM copula captures weak dependence; for stronger dependence
+/// prefer Clayton/Gumbel.
+pub fn fgm_copula(u: f64, v: f64, theta: f64) -> f64 {
+    let u = u.clamp(0.0, 1.0);
+    let v = v.clamp(0.0, 1.0);
+    u * v * (1.0 + theta * (1.0 - u) * (1.0 - v))
+}
+
+/// Kendall's τ implied by FGM copula parameter θ.
+///
+/// τ = 2θ/9.
+pub fn fgm_tau_from_theta(theta: f64) -> f64 {
+    2.0 * theta / 9.0
+}
+
+/// Plackett copula CDF (solved numerically via closed form).
+///
+/// C(u, v; θ) where θ > 0 is the cross-product ratio (odds ratio).
+/// θ = 1 gives the independence copula.
+pub fn plackett_copula(u: f64, v: f64, theta: f64) -> f64 {
+    let u = u.clamp(0.0, 1.0);
+    let v = v.clamp(0.0, 1.0);
+    if (theta - 1.0).abs() < 1e-10 {
+        return u * v;
+    }
+    // Closed-form solution of the quadratic
+    let s = u + v;
+    let eta = theta - 1.0;
+    let a = 1.0 + eta * s;
+    let discriminant = (a * a - 4.0 * theta * eta * u * v).max(0.0);
+    (a - discriminant.sqrt()) / (2.0 * eta)
+}
+
+/// Galambos copula — extreme-value copula.
+///
+/// C(u, v; θ) = u·v · exp(((-ln u)^{-θ} + (-ln v)^{-θ})^{-1/θ}),
+/// θ ≥ 0.  θ → ∞ gives perfect dependence.
+pub fn galambos_copula(u: f64, v: f64, theta: f64) -> f64 {
+    if u <= 0.0 || v <= 0.0 {
+        return 0.0;
+    }
+    if u >= 1.0 {
+        return v;
+    }
+    if v >= 1.0 {
+        return u;
+    }
+    if theta < 1e-14 {
+        return u * v; // independence limit
+    }
+    let lu = -u.ln();
+    let lv = -v.ln();
+    let inner = (lu.powf(-theta) + lv.powf(-theta)).powf(-1.0 / theta);
+    u * v * inner.exp()
+}
+
+/// Marshall-Olkin copula.
+///
+/// C(u, v; α, β) = min(u^{1−α}·v, u·v^{1−β}),  α,β ∈ [0,1].
+///
+/// Captures asymmetric tail dependence.
+pub fn marshall_olkin_copula(u: f64, v: f64, alpha: f64, beta: f64) -> f64 {
+    let u = u.clamp(0.0, 1.0);
+    let v = v.clamp(0.0, 1.0);
+    let t1 = u.powf(1.0 - alpha) * v;
+    let t2 = u * v.powf(1.0 - beta);
+    t1.min(t2)
+}
+
+/// Upper tail dependence coefficient λ_U for the Marshall-Olkin copula.
+///
+/// λ_U = min(α, β) / (α + β − α·β).
+pub fn marshall_olkin_upper_tail(alpha: f64, beta: f64) -> f64 {
+    let denom = alpha + beta - alpha * beta;
+    if denom < 1e-15 {
+        return 0.0;
+    }
+    alpha.min(beta) / denom
+}
+
+#[cfg(test)]
+mod extra_copula_tests {
+    use super::*;
+    use approx::assert_abs_diff_eq;
+
+    #[test]
+    fn independent_copula_value() {
+        assert_abs_diff_eq!(independent_copula(0.5, 0.5), 0.25, epsilon = 1e-12);
+        assert_abs_diff_eq!(independent_copula(0.3, 0.7), 0.21, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn max_copula_comonotone() {
+        assert_abs_diff_eq!(max_copula(0.3, 0.7), 0.3, epsilon = 1e-12);
+        assert_abs_diff_eq!(max_copula(0.8, 0.4), 0.4, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn min_copula_lower_bound() {
+        assert_abs_diff_eq!(min_copula(0.5, 0.5), 0.0, epsilon = 1e-12);
+        assert_abs_diff_eq!(min_copula(0.8, 0.9), 0.7, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn fgm_independence_at_zero() {
+        // θ=0 → independence
+        assert_abs_diff_eq!(fgm_copula(0.4, 0.6, 0.0), 0.24, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn fgm_bounds() {
+        let c = fgm_copula(0.5, 0.5, 1.0);
+        assert!(c >= 0.25 && c <= 0.5, "FGM out of bounds: {c}");
+    }
+
+    #[test]
+    fn plackett_independence() {
+        // θ=1 → independence
+        assert_abs_diff_eq!(plackett_copula(0.4, 0.5, 1.0), 0.2, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn galambos_independence_at_zero() {
+        // θ→0+ → independence
+        assert_abs_diff_eq!(galambos_copula(0.5, 0.5, 1e-10), 0.25, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn galambos_positive() {
+        let c = galambos_copula(0.5, 0.5, 2.0);
+        assert!(c > 0.25 && c <= 0.5, "Galambos out of bounds: {c}");
+    }
+
+    #[test]
+    fn marshall_olkin_symmetric() {
+        // With α=β, result is symmetric in u,v
+        let c1 = marshall_olkin_copula(0.3, 0.7, 0.5, 0.5);
+        let c2 = marshall_olkin_copula(0.7, 0.3, 0.5, 0.5);
+        assert_abs_diff_eq!(c1, c2, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn marshall_olkin_tail_dep() {
+        let lam = marshall_olkin_upper_tail(0.5, 0.5);
+        // min(0.5,0.5)/(0.5+0.5−0.25) = 0.5/0.75 = 2/3
+        assert_abs_diff_eq!(lam, 2.0 / 3.0, epsilon = 1e-12);
+    }
+}

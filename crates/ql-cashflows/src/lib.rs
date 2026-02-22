@@ -53,6 +53,7 @@ pub mod digital_coupon;
 pub mod cashflow_analytics_extended;
 pub mod cpi_coupon;
 pub mod dividend;
+pub mod average_ois_coupon;
 
 // Re-exports
 pub use cashflow::{CashFlow, Leg};
@@ -75,3 +76,7 @@ pub use cashflow_analytics_extended::{
 };
 pub use cpi_coupon::{CPICoupon, generate_cpi_coupons};
 pub use dividend::{Dividend, DividendSchedule};
+pub use average_ois_coupon::{
+    LockoutMode, AverageOisCoupon, AverageOisLeg,
+    average_ois_rate, average_ois_pv01, simple_average_ois_coupon,
+};

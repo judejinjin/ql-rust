@@ -55,6 +55,15 @@ fn ql_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<types::PyAmericanResult>()?;
     m.add_class::<types::PyFDResult>()?;
     m.add_class::<types::PyHestonResult>()?;
+    m.add_class::<types::PyVgResult>()?;
+    m.add_class::<types::PyQuantoResult>()?;
+    m.add_class::<types::PyCvaResult>()?;
+    m.add_class::<types::PyCosHestonResult>()?;
+    m.add_class::<types::PyBinaryBarrierResult>()?;
+    m.add_class::<types::PyCevResult>()?;
+    m.add_class::<types::PyFdHestonBarrierResult>()?;
+    m.add_class::<types::PyHhwResult>()?;
+    m.add_class::<types::PyCdoTranche>()?;
 
     // Pricing functions — analytic
     m.add_function(wrap_pyfunction!(pricing::price_european_bs, m)?)?;
@@ -65,6 +74,17 @@ fn ql_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(pricing::kirk_spread_call_py, m)?)?;
     m.add_function(wrap_pyfunction!(pricing::kirk_spread_put_py, m)?)?;
     m.add_function(wrap_pyfunction!(pricing::sabr_vol_py, m)?)?;
+
+    // Pricing functions — advanced models
+    m.add_function(wrap_pyfunction!(pricing::vg_price_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::price_quanto_vanilla_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::bilateral_cva_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::cos_heston_price_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::analytic_binary_barrier_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::analytic_cev_price_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::fd_heston_barrier_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::heston_hull_white_price_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::cdo_spread_ladder_py, m)?)?;
 
     // Pricing functions — numerical
     m.add_function(wrap_pyfunction!(pricing::mc_european_py, m)?)?;

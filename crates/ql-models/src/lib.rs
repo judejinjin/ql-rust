@@ -34,7 +34,12 @@ pub mod cir;
 pub mod black_karasinski;
 pub mod g2_model;
 pub mod lmm;
+pub mod lmm_extensions;
 pub mod gsr;
+pub mod ptd_heston_model;
+pub mod gjr_garch_model;
+pub mod variance_gamma_model;
+pub mod basis_model;
 
 // Re-exports
 pub use parameter::{Parameter, Constraint, NoConstraint, PositiveConstraint, BoundaryConstraint, CompositeConstraint};
@@ -47,4 +52,16 @@ pub use cir::CIRModel;
 pub use black_karasinski::BlackKarasinskiModel;
 pub use g2_model::G2Model;
 pub use lmm::{LmmConfig, LmmCurveState, LmmResult, lmm_cap_price, lmm_swaption_price, evolve_one_step};
+pub use lmm_extensions::{
+    spot_measure_drift, evolve_one_step_spot_measure,
+    lmm_ratchet_cap_price, lmm_cms_rate,
+    lmm_bermudan_swaption_price, RebonatVolSurface,
+};
 pub use gsr::{Gsr1d, MarkovFunctional};
+pub use ptd_heston_model::{PtdHestonModel, PtdHestonParamSlice};
+pub use gjr_garch_model::GjrGarchModel;
+pub use variance_gamma_model::VarianceGammaModel;
+pub use basis_model::{
+    FraOisBasisModel, CrossCurrencyBasisModel, CcyPair,
+    BasisSwapResult, price_basis_swap,
+};

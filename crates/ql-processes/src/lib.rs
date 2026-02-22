@@ -11,6 +11,9 @@
 //! | [`BatesProcess`] | Heston + Merton jumps | Vol smiles + jumps |
 //! | [`HullWhiteProcess`] | dr = (θ(t)−a·r) dt + σ dW | Interest rates |
 //! | [`CoxIngersollRossProcess`] | dr = κ(θ−r) dt + σ√r dW | Non-negative rates |
+//! | [`GeometricBrownianMotionProcess`] | dS = μS dt + σS dW | Simple GBM / basket MC |
+//! | [`HybridHestonHullWhiteProcess`] | Heston equity + HW rates | Equity/rates hybrids |
+//! | [`HestonSLVProcess`] | Heston + local-vol leverage | Stochastic local vol |
 //!
 //! ## Traits
 //!
@@ -26,6 +29,9 @@ pub mod cir_process;
 pub mod g2_process;
 pub mod merton76_process;
 pub mod gjr_garch_process;
+pub mod geometric_brownian_motion;
+pub mod hybrid_heston_hull_white;
+pub mod heston_slv_process;
 
 // Re-exports
 pub use process::{StochasticProcess, StochasticProcess1D};
@@ -37,3 +43,6 @@ pub use cir_process::{CoxIngersollRossProcess, SquareRootProcess};
 pub use g2_process::G2Process;
 pub use merton76_process::Merton76Process;
 pub use gjr_garch_process::GjrGarchProcess;
+pub use geometric_brownian_motion::GeometricBrownianMotionProcess;
+pub use hybrid_heston_hull_white::HybridHestonHullWhiteProcess;
+pub use heston_slv_process::{HestonSLVProcess, LeverageFunction};

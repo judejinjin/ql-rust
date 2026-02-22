@@ -191,3 +191,194 @@ impl PyHestonResult {
         )
     }
 }
+
+/// Variance Gamma pricing result.
+#[pyclass(name = "VGResult")]
+#[derive(Clone)]
+pub struct PyVgResult {
+    #[pyo3(get)]
+    pub npv: f64,
+    #[pyo3(get)]
+    pub delta: f64,
+    #[pyo3(get)]
+    pub vega: f64,
+}
+
+#[pymethods]
+impl PyVgResult {
+    fn __repr__(&self) -> String {
+        format!("VGResult(npv={:.6}, delta={:.6}, vega={:.6})", self.npv, self.delta, self.vega)
+    }
+}
+
+/// Quanto option pricing result.
+#[pyclass(name = "QuantoResult")]
+#[derive(Clone)]
+pub struct PyQuantoResult {
+    #[pyo3(get)]
+    pub npv: f64,
+    #[pyo3(get)]
+    pub delta: f64,
+    #[pyo3(get)]
+    pub vega: f64,
+    #[pyo3(get)]
+    pub qvega: f64,
+    #[pyo3(get)]
+    pub rho: f64,
+    #[pyo3(get)]
+    pub qlambda: f64,
+}
+
+#[pymethods]
+impl PyQuantoResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "QuantoResult(npv={:.6}, delta={:.6}, vega={:.6}, qvega={:.6})",
+            self.npv, self.delta, self.vega, self.qvega
+        )
+    }
+}
+
+/// COS (Fourier-cosine) Heston pricing result.
+#[pyclass(name = "CosHestonResult")]
+#[derive(Clone)]
+pub struct PyCosHestonResult {
+    #[pyo3(get)]
+    pub price: f64,
+    #[pyo3(get)]
+    pub n_terms: usize,
+    #[pyo3(get)]
+    pub a: f64,
+    #[pyo3(get)]
+    pub b: f64,
+}
+
+#[pymethods]
+impl PyCosHestonResult {
+    fn __repr__(&self) -> String {
+        format!("CosHestonResult(price={:.6}, n_terms={}, a={:.4}, b={:.4})",
+            self.price, self.n_terms, self.a, self.b)
+    }
+}
+
+/// Binary barrier option result.
+#[pyclass(name = "BinaryBarrierResult")]
+#[derive(Clone)]
+pub struct PyBinaryBarrierResult {
+    #[pyo3(get)]
+    pub price: f64,
+    #[pyo3(get)]
+    pub delta: f64,
+}
+
+#[pymethods]
+impl PyBinaryBarrierResult {
+    fn __repr__(&self) -> String {
+        format!("BinaryBarrierResult(price={:.6}, delta={:.6})", self.price, self.delta)
+    }
+}
+
+/// CEV model option result.
+#[pyclass(name = "CevResult")]
+#[derive(Clone)]
+pub struct PyCevResult {
+    #[pyo3(get)]
+    pub price: f64,
+}
+
+#[pymethods]
+impl PyCevResult {
+    fn __repr__(&self) -> String {
+        format!("CevResult(price={:.6})", self.price)
+    }
+}
+
+/// FD Heston barrier result.
+#[pyclass(name = "FdHestonBarrierResult")]
+#[derive(Clone)]
+pub struct PyFdHestonBarrierResult {
+    #[pyo3(get)]
+    pub price: f64,
+    #[pyo3(get)]
+    pub delta: f64,
+    #[pyo3(get)]
+    pub gamma: f64,
+    #[pyo3(get)]
+    pub vega: f64,
+    #[pyo3(get)]
+    pub ns: usize,
+    #[pyo3(get)]
+    pub nv: usize,
+    #[pyo3(get)]
+    pub nt: usize,
+}
+
+#[pymethods]
+impl PyFdHestonBarrierResult {
+    fn __repr__(&self) -> String {
+        format!("FdHestonBarrierResult(price={:.6}, delta={:.6}, gamma={:.6}, vega={:.6})",
+            self.price, self.delta, self.gamma, self.vega)
+    }
+}
+
+/// Heston + Hull-White hybrid pricing result.
+#[pyclass(name = "HestonHullWhiteResult")]
+#[derive(Clone)]
+pub struct PyHhwResult {
+    #[pyo3(get)]
+    pub price: f64,
+    #[pyo3(get)]
+    pub v0_eff: f64,
+    #[pyo3(get)]
+    pub xi: f64,
+}
+
+#[pymethods]
+impl PyHhwResult {
+    fn __repr__(&self) -> String {
+        format!("HestonHullWhiteResult(price={:.6}, v0_eff={:.6}, xi={:.6})",
+            self.price, self.v0_eff, self.xi)
+    }
+}
+
+/// CDO tranche spread result.
+#[pyclass(name = "CdoTrancheSpread")]
+#[derive(Clone)]
+pub struct PyCdoTranche {
+    #[pyo3(get)]
+    pub attachment: f64,
+    #[pyo3(get)]
+    pub detachment: f64,
+    #[pyo3(get)]
+    pub expected_loss: f64,
+    #[pyo3(get)]
+    pub fair_spread: f64,
+}
+
+#[pymethods]
+impl PyCdoTranche {
+    fn __repr__(&self) -> String {
+        format!("CdoTrancheSpread([{:.0}%-{:.0}%] el={:.4} spread={:.4})",
+            self.attachment * 100.0, self.detachment * 100.0,
+            self.expected_loss, self.fair_spread)
+    }
+}
+
+/// Credit Valuation Adjustment result.
+#[pyclass(name = "CVAResult")]
+#[derive(Clone)]
+pub struct PyCvaResult {
+    #[pyo3(get)]
+    pub cva: f64,
+    #[pyo3(get)]
+    pub dva: f64,
+    #[pyo3(get)]
+    pub bcva: f64,
+}
+
+#[pymethods]
+impl PyCvaResult {
+    fn __repr__(&self) -> String {
+        format!("CVAResult(cva={:.6}, dva={:.6}, bcva={:.6})", self.cva, self.dva, self.bcva)
+    }
+}
