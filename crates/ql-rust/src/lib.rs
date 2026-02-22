@@ -41,6 +41,12 @@
 pub use ql_core::{QLError, QLResult};
 pub use ql_core::quote::SimpleQuote;
 pub use ql_core::engine::{PricingEngine, LazyInstrument, ClosureEngine};
+pub use ql_core::market_data::{
+    FeedCallback, FeedDrivenQuote, FeedEvent, FeedField,
+    InMemoryFeed, MarketDataFeed, SubscriptionId,
+};
+pub use ql_core::portfolio::{HasNpv, NpvProvider, ReactivePortfolio, wire_entry};
+pub use ql_core::observable::{Observable, Observer};
 
 // Time types
 pub use ql_time::{
