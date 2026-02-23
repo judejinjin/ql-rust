@@ -1030,6 +1030,173 @@ fn bench_serde_round_trip(c: &mut Criterion) {
     });
 }
 
+// ── Reactive pricing infrastructure ─────────────────────────────────────────
+
+// Shared helper types for the reactive benchmarks.
+#[derive(Clone)]
+struct BenchParams {
+    strike: f64,
+}
+#[derive(Clone)]
+struct BenchResult {
+    npv: f64,
+}
+impl ql_core::portfolio::HasNpv for BenchResult {
+    fn npv_value(&self) -> f64 {
+        self.npv
+    }
+}
+
+fn make_bench_lazy(
+    spot: std::sync::Arc<ql_core::quote::SimpleQuote>,
+    strike: f64,
+) -> std::sync::Arc<ql_core::engine::LazyInstrument<BenchParams, BenchResult>> {
+    use ql_core::errors::QLResult;
+    use ql_core::quote::Quote;
+    let s = std::sync::Arc::clone(&spot);
+    let engine = ql_core::engine::ClosureEngine::new(move |p: &BenchParams| {
+        let sv: QLResult<f64> = s.value();
+        Ok(BenchResult { npv: (sv? - p.strike).max(0.0) })
+    });
+    std::sync::Arc::new(ql_core::engine::LazyInstrument::new(
+        BenchParams { strike },
+        Box::new(engine),
+    ))
+}
+
+/// Hot path: NPV is already cached — measures lock + atomic-flag overhead only.
+fn bench_reactive_lazy_cache_hit(c: &mut Criterion) {
+    use std::sync::Arc;
+    use ql_core::observable::{Observable, Observer};
+    use ql_core::portfolio::NpvProvider;
+    use ql_core::quote::SimpleQuote;
+
+    let spot  = Arc::new(SimpleQuote::new(110.0));
+    let instr = make_bench_lazy(spot.clone(), 100.0);
+    spot.register_observer(&(instr.clone() as Arc<dyn Observer>));
+    let _ = NpvProvider::npv(instr.as_ref()); // warm-up cache
+
+    c.bench_function("reactive_lazy_cache_hit", |b| {
+        b.iter(|| NpvProvider::npv(black_box(instr.as_ref())))
+    });
+}
+
+/// Cold path: quote changes each iteration → cache miss → full engine invocation.
+fn bench_reactive_lazy_cache_miss(c: &mut Criterion) {
+    use std::sync::Arc;
+    use ql_core::observable::{Observable, Observer};
+    use ql_core::portfolio::NpvProvider;
+    use ql_core::quote::SimpleQuote;
+
+    let spot  = Arc::new(SimpleQuote::new(110.0));
+    let instr = make_bench_lazy(spot.clone(), 100.0);
+    spot.register_observer(&(instr.clone() as Arc<dyn Observer>));
+
+    let mut sv = 110.0_f64;
+    c.bench_function("reactive_lazy_cache_miss", |b| {
+        b.iter(|| {
+            sv += 0.001;
+            spot.set_value(black_box(sv));
+            NpvProvider::npv(black_box(instr.as_ref()))
+        })
+    });
+}
+
+/// Cached total NPV across 5 instruments — hot path, nothing dirty.
+fn bench_reactive_portfolio_cached(c: &mut Criterion) {
+    use std::sync::Arc;
+    use ql_core::observable::{Observable, Observer};
+    use ql_core::portfolio::{wire_entry, NpvProvider, ReactivePortfolio};
+    use ql_core::quote::SimpleQuote;
+
+    let portfolio = Arc::new(ReactivePortfolio::new("bench-book"));
+    for i in 0..5_u32 {
+        let spot  = Arc::new(SimpleQuote::new(100.0 + i as f64));
+        let instr = make_bench_lazy(spot.clone(), 90.0);
+        spot.register_observer(&(instr.clone() as Arc<dyn Observer>));
+        wire_entry(&portfolio, instr as Arc<dyn NpvProvider>);
+    }
+    let _ = portfolio.total_npv(); // warm-up
+
+    c.bench_function("reactive_portfolio_5_instruments_cached", |b| {
+        b.iter(|| portfolio.total_npv())
+    });
+}
+
+/// One quote changes per iteration → portfolio dirty → full 5-instrument reprice.
+fn bench_reactive_portfolio_invalidate_reprice(c: &mut Criterion) {
+    use std::sync::Arc;
+    use ql_core::observable::{Observable, Observer};
+    use ql_core::portfolio::{wire_entry, NpvProvider, ReactivePortfolio};
+    use ql_core::quote::SimpleQuote;
+
+    let portfolio = Arc::new(ReactivePortfolio::new("bench-book-inv"));
+    let spot0 = Arc::new(SimpleQuote::new(100.0));
+    let instr0 = make_bench_lazy(spot0.clone(), 90.0);
+    spot0.register_observer(&(instr0.clone() as Arc<dyn Observer>));
+    wire_entry(&portfolio, instr0 as Arc<dyn NpvProvider>);
+
+    for i in 1..5_u32 {
+        let spot  = Arc::new(SimpleQuote::new(100.0 + i as f64));
+        let instr = make_bench_lazy(spot.clone(), 90.0);
+        spot.register_observer(&(instr.clone() as Arc<dyn Observer>));
+        wire_entry(&portfolio, instr as Arc<dyn NpvProvider>);
+    }
+
+    let mut sv = 100.0_f64;
+    c.bench_function("reactive_portfolio_invalidate_reprice", |b| {
+        b.iter(|| {
+            sv += 0.001;
+            spot0.set_value(black_box(sv));
+            portfolio.total_npv()
+        })
+    });
+}
+
+/// Feed publish throughput with a single subscriber.
+fn bench_feed_publish_1_subscriber(c: &mut Criterion) {
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicU64, Ordering as O};
+    use ql_core::market_data::{FeedEvent, InMemoryFeed, MarketDataFeed};
+
+    let feed = Arc::new(InMemoryFeed::new("bench-feed-1"));
+    let counter = Arc::new(AtomicU64::new(0));
+    let cc = counter.clone();
+    feed.subscribe("AAPL", Arc::new(move |_: FeedEvent| { cc.fetch_add(1, O::Relaxed); }));
+
+    let mut price = 100.0_f64;
+    c.bench_function("feed_publish_1_subscriber", |b| {
+        b.iter(|| {
+            price += 0.001;
+            feed.publish(FeedEvent::new("AAPL", black_box(price)))
+        })
+    });
+}
+
+/// Feed publish throughput with ten subscribers on the same ticker.
+fn bench_feed_publish_10_subscribers(c: &mut Criterion) {
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicU64, Ordering as O};
+    use ql_core::market_data::{FeedEvent, InMemoryFeed, MarketDataFeed};
+
+    let feed = Arc::new(InMemoryFeed::new("bench-feed-10"));
+    for _ in 0..10 {
+        let counter = Arc::new(AtomicU64::new(0));
+        feed.subscribe(
+            "AAPL",
+            Arc::new(move |_: FeedEvent| { counter.fetch_add(1, O::Relaxed); }),
+        );
+    }
+
+    let mut price = 100.0_f64;
+    c.bench_function("feed_publish_10_subscribers", |b| {
+        b.iter(|| {
+            price += 0.001;
+            feed.publish(FeedEvent::new("AAPL", black_box(price)))
+        })
+    });
+}
+
 criterion_group!(
     benches,
     bench_bs_pricing,
@@ -1083,5 +1250,12 @@ criterion_group!(
     bench_lookback,
     bench_variance_swap,
     bench_serde_round_trip,
+    // -- Phase 25: reactive pricing infrastructure --
+    bench_reactive_lazy_cache_hit,
+    bench_reactive_lazy_cache_miss,
+    bench_reactive_portfolio_cached,
+    bench_reactive_portfolio_invalidate_reprice,
+    bench_feed_publish_1_subscriber,
+    bench_feed_publish_10_subscribers,
 );
 criterion_main!(benches);

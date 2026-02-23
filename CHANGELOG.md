@@ -2,6 +2,34 @@
 
 All notable changes to the ql-rust project are documented in this file.
 
+## [0.2.1] — 2026-02-23
+
+### Phase 25: Reactive Pricing Infrastructure
+
+#### Observer / LazyObject wiring (item 4)
+- `HasNpv` trait — extract a scalar NPV from any pricing result struct
+- `NpvProvider` trait (`Observer + Observable + Send + Sync`) — reactive lazy instrument abstraction
+- Blanket `impl NpvProvider for LazyInstrument<I, R> where R: HasNpv`
+- `ReactivePortfolio` — aggregates `NpvProvider` entries; lazy-cached `total_npv()` with `AtomicBool` valid flag; self-invalidates and notifies downstream on any entry change
+- `wire_entry()` free function — adds entry to portfolio and registers portfolio as its observer in one call
+- 8 unit tests in `ql-core::portfolio`
+
+#### Real-time market data trait (item 5)
+- `MarketDataFeed` trait (dyn-compatible) — `subscribe(&str, …)`, `unsubscribe`, `publish`, `active_tickers`, `subscription_count`
+- `FeedEvent` struct with `new`, `with_bbo`, `full` constructors
+- `FeedField` enum — `Bid`, `Ask`, `Mid` (default), `Last`
+- `SubscriptionId` opaque newtype
+- `FeedCallback = Arc<dyn Fn(FeedEvent) + Send + Sync>`
+- `InMemoryFeed` — thread-safe mock feed (RwLock-protected subscriber map)
+- `FeedDrivenQuote` — bridges feed ticks into `SimpleQuote`; auto-unsubscribes on `Drop`
+- 14 unit tests + doctests in `ql-core::market_data`
+
+#### Integration
+- `ql-rust` facade re-exports all new types (`MarketDataFeed`, `InMemoryFeed`, `FeedDrivenQuote`, `FeedEvent`, `FeedField`, `SubscriptionId`, `FeedCallback`, `HasNpv`, `NpvProvider`, `ReactivePortfolio`, `wire_entry`, `Observable`, `Observer`)
+- `reactive_pricing` example: `SimpleQuote → LazyInstrument → ReactivePortfolio` + `InMemoryFeed → FeedDrivenQuote → instrument`
+- 15 integration tests in `ql-rust::test_reactive_integration` (full observer chain, feed → portfolio, 3-level chain, Drop cleanup)
+- 6 new Criterion benchmarks: lazy cache-hit, lazy cache-miss, portfolio cached, portfolio after invalidation, feed publish 1 subscriber, feed publish 10 subscribers
+
 ## [0.2.0] — 2026-02-18
 
 ### Phase 13: Advanced American Option Engines
