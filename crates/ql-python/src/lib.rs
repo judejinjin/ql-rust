@@ -64,6 +64,14 @@ fn ql_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<types::PyFdHestonBarrierResult>()?;
     m.add_class::<types::PyHhwResult>()?;
     m.add_class::<types::PyCdoTranche>()?;
+    // New result types (QuantLib parity gap items 2-9)
+    m.add_class::<types::PyAsianResult>()?;
+    m.add_class::<types::PyJuAmericanResult>()?;
+    m.add_class::<types::PyIntegralResult>()?;
+    m.add_class::<types::PyBasketSpreadResult>()?;
+    m.add_class::<types::PyPartialBarrierResult>()?;
+    m.add_class::<types::PyTwoAssetCorrelationResult>()?;
+    m.add_class::<types::PyExtensibleOptionResult>()?;
 
     // Pricing functions — analytic
     m.add_function(wrap_pyfunction!(pricing::price_european_bs, m)?)?;
@@ -91,6 +99,28 @@ fn ql_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(pricing::mc_barrier_py, m)?)?;
     m.add_function(wrap_pyfunction!(pricing::binomial_crr_py, m)?)?;
     m.add_function(wrap_pyfunction!(pricing::fd_black_scholes_py, m)?)?;
+
+    // Pricing functions — Asian options
+    m.add_function(wrap_pyfunction!(pricing::asian_continuous_geo_avg_price_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::asian_discrete_geo_avg_price_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::asian_continuous_geo_avg_strike_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::asian_discrete_geo_avg_strike_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::asian_turnbull_wakeman_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::asian_levy_py, m)?)?;
+
+    // Pricing functions — basket / spread
+    m.add_function(wrap_pyfunction!(pricing::choi_basket_spread_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::dlz_basket_price_py, m)?)?;
+
+    // Pricing functions — American / integral
+    m.add_function(wrap_pyfunction!(pricing::ju_quadratic_american_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::integral_european_py, m)?)?;
+
+    // Pricing functions — exotic options
+    m.add_function(wrap_pyfunction!(pricing::partial_time_barrier_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::two_asset_correlation_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::holder_extensible_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::writer_extensible_py, m)?)?;
 
     // Term structure bootstrapping
     m.add_function(wrap_pyfunction!(termstructures::bootstrap_yield_curve, m)?)?;

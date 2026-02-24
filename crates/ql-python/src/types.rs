@@ -382,3 +382,155 @@ impl PyCvaResult {
         format!("CVAResult(cva={:.6}, dva={:.6}, bcva={:.6})", self.cva, self.dva, self.bcva)
     }
 }
+
+// ---------------------------------------------------------------------------
+// New engine result types (Phase 33 / QuantLib parity gap items 2-9)
+// ---------------------------------------------------------------------------
+
+/// Asian option pricing result (analytic engines).
+#[pyclass(name = "AsianResult")]
+#[derive(Clone)]
+pub struct PyAsianResult {
+    /// Net present value.
+    #[pyo3(get)]
+    pub npv: f64,
+    /// Effective volatility used internally (σ_A).
+    #[pyo3(get)]
+    pub effective_vol: f64,
+    /// Effective forward / adjusted mean.
+    #[pyo3(get)]
+    pub effective_forward: f64,
+}
+
+#[pymethods]
+impl PyAsianResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "AsianResult(npv={:.6}, effective_vol={:.6}, effective_forward={:.6})",
+            self.npv, self.effective_vol, self.effective_forward
+        )
+    }
+}
+
+/// Ju-Zhong (1999) American option result.
+#[pyclass(name = "JuAmericanResult")]
+#[derive(Clone)]
+pub struct PyJuAmericanResult {
+    /// Net present value.
+    #[pyo3(get)]
+    pub npv: f64,
+    /// Delta (∂V/∂S via finite difference).
+    #[pyo3(get)]
+    pub delta: f64,
+    /// Critical asset price (early-exercise boundary).
+    #[pyo3(get)]
+    pub critical_price: f64,
+}
+
+#[pymethods]
+impl PyJuAmericanResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "JuAmericanResult(npv={:.6}, delta={:.6}, critical_price={:.6})",
+            self.npv, self.delta, self.critical_price
+        )
+    }
+}
+
+/// Integral European engine result.
+#[pyclass(name = "IntegralResult")]
+#[derive(Clone)]
+pub struct PyIntegralResult {
+    /// Net present value.
+    #[pyo3(get)]
+    pub npv: f64,
+}
+
+#[pymethods]
+impl PyIntegralResult {
+    fn __repr__(&self) -> String {
+        format!("IntegralResult(npv={:.6})", self.npv)
+    }
+}
+
+/// Basket / spread option pricing result.
+#[pyclass(name = "BasketSpreadResult")]
+#[derive(Clone)]
+pub struct PyBasketSpreadResult {
+    /// Net present value.
+    #[pyo3(get)]
+    pub npv: f64,
+    /// Delta with respect to asset 1.
+    #[pyo3(get)]
+    pub delta1: f64,
+    /// Delta with respect to asset 2.
+    #[pyo3(get)]
+    pub delta2: f64,
+}
+
+#[pymethods]
+impl PyBasketSpreadResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "BasketSpreadResult(npv={:.6}, delta1={:.6}, delta2={:.6})",
+            self.npv, self.delta1, self.delta2
+        )
+    }
+}
+
+/// Partial-time barrier option result.
+#[pyclass(name = "PartialBarrierResult")]
+#[derive(Clone)]
+pub struct PyPartialBarrierResult {
+    /// Net present value.
+    #[pyo3(get)]
+    pub npv: f64,
+}
+
+#[pymethods]
+impl PyPartialBarrierResult {
+    fn __repr__(&self) -> String {
+        format!("PartialBarrierResult(npv={:.6})", self.npv)
+    }
+}
+
+/// Two-asset correlation option result.
+#[pyclass(name = "TwoAssetCorrelationResult")]
+#[derive(Clone)]
+pub struct PyTwoAssetCorrelationResult {
+    /// Net present value.
+    #[pyo3(get)]
+    pub npv: f64,
+    /// Delta with respect to asset 1.
+    #[pyo3(get)]
+    pub delta1: f64,
+    /// Delta with respect to asset 2.
+    #[pyo3(get)]
+    pub delta2: f64,
+}
+
+#[pymethods]
+impl PyTwoAssetCorrelationResult {
+    fn __repr__(&self) -> String {
+        format!(
+            "TwoAssetCorrelationResult(npv={:.6}, delta1={:.6}, delta2={:.6})",
+            self.npv, self.delta1, self.delta2
+        )
+    }
+}
+
+/// Extensible option result (holder or writer extensible).
+#[pyclass(name = "ExtensibleOptionResult")]
+#[derive(Clone)]
+pub struct PyExtensibleOptionResult {
+    /// Net present value.
+    #[pyo3(get)]
+    pub npv: f64,
+}
+
+#[pymethods]
+impl PyExtensibleOptionResult {
+    fn __repr__(&self) -> String {
+        format!("ExtensibleOptionResult(npv={:.6})", self.npv)
+    }
+}

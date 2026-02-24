@@ -25,12 +25,31 @@ use ql_models::HestonModel;
 use ql_models::VarianceGammaModel;
 use ql_termstructures::sabr::sabr_volatility;
 
+// New engines (QuantLib parity gap items 2-9)
+use ql_pricingengines::analytic_asian::{
+    asian_geometric_continuous_avg_price, asian_geometric_discrete_avg_price,
+    asian_geometric_continuous_avg_strike, asian_geometric_discrete_avg_strike,
+    asian_turnbull_wakeman, asian_levy,
+};
+use ql_pricingengines::basket_engines::{choi_basket_spread, dlz_basket_price};
+use ql_pricingengines::vanilla_extra_engines::{
+    ju_quadratic_american, integral_european_vanilla,
+};
+use ql_pricingengines::exotic_options::{
+    partial_time_barrier, PartialBarrierType,
+    two_asset_correlation, holder_extensible, writer_extensible,
+};
+
 use crate::types::{
     PyAnalyticResults, PyMCResult, PyLatticeResult,
     PyAmericanResult, PyFDResult, PyHestonResult,
     PyVgResult, PyQuantoResult, PyCvaResult,
     PyCosHestonResult, PyBinaryBarrierResult, PyCevResult,
     PyFdHestonBarrierResult, PyHhwResult, PyCdoTranche,
+    // New result types
+    PyAsianResult, PyJuAmericanResult, PyIntegralResult,
+    PyBasketSpreadResult, PyPartialBarrierResult,
+    PyTwoAssetCorrelationResult, PyExtensibleOptionResult,
 };
 
 // ---------------------------------------------------------------------------
@@ -831,4 +850,334 @@ pub fn cdo_spread_ladder_py(
         expected_loss: t.expected_loss,
         fair_spread: t.fair_spread,
     }).collect())
+}
+
+// ---------------------------------------------------------------------------
+// Asian option engines
+// ---------------------------------------------------------------------------
+
+/// Price a **continuous geometric average-price** Asian option (Kemna-Vorst).
+///
+/// Parameters:
+///   spot, strike, r, q, vol, t — standard Black-Scholes inputs
+///   is_call — True for call, False for put
+///
+/// Returns an ``AsianResult`` with npv, effective_vol, effective_forward.
+#[pyfunction]
+#[pyo3(signature = (spot, strike, r, q, vol, t, is_call=true))]
+pub fn asian_continuous_geo_avg_price_py(
+    spot: f64, strike: f64, r: f64, q: f64, vol: f64, t: f64, is_call: bool,
+) -> PyAsianResult {
+    let opt = if is_call { OptionType::Call } else { OptionType::Put };
+    let res = asian_geometric_continuous_avg_price(spot, strike, r, q, vol, t, opt);
+    PyAsianResult { npv: res.npv, effective_vol: res.effective_vol, effective_forward: res.effective_forward }
+}
+
+/// Price a **discrete geometric average-price** Asian option.
+///
+/// Parameters:
+///   spot, strike, r, q, vol, t — standard Black-Scholes inputs
+///   n — number of equally spaced averaging dates
+///   is_call — True for call, False for put
+#[pyfunction]
+#[pyo3(signature = (spot, strike, r, q, vol, t, n, is_call=true))]
+pub fn asian_discrete_geo_avg_price_py(
+    spot: f64, strike: f64, r: f64, q: f64, vol: f64, t: f64, n: usize, is_call: bool,
+) -> PyAsianResult {
+    let opt = if is_call { OptionType::Call } else { OptionType::Put };
+    let res = asian_geometric_discrete_avg_price(spot, strike, r, q, vol, t, n, opt);
+    PyAsianResult { npv: res.npv, effective_vol: res.effective_vol, effective_forward: res.effective_forward }
+}
+
+/// Price a **continuous geometric average-strike** Asian option.
+///
+/// Parameters:
+///   spot, r, q, vol, t — standard Black-Scholes inputs (no strike — payoff is S_T - G_T)
+///   is_call — True for call, False for put
+#[pyfunction]
+#[pyo3(signature = (spot, r, q, vol, t, is_call=true))]
+pub fn asian_continuous_geo_avg_strike_py(
+    spot: f64, r: f64, q: f64, vol: f64, t: f64, is_call: bool,
+) -> PyAsianResult {
+    let opt = if is_call { OptionType::Call } else { OptionType::Put };
+    let res = asian_geometric_continuous_avg_strike(spot, r, q, vol, t, opt);
+    PyAsianResult { npv: res.npv, effective_vol: res.effective_vol, effective_forward: res.effective_forward }
+}
+
+/// Price a **discrete geometric average-strike** Asian option.
+///
+/// Parameters:
+///   spot, r, q, vol, t — standard Black-Scholes inputs
+///   n — number of averaging dates
+///   is_call — True for call, False for put
+#[pyfunction]
+#[pyo3(signature = (spot, r, q, vol, t, n, is_call=true))]
+pub fn asian_discrete_geo_avg_strike_py(
+    spot: f64, r: f64, q: f64, vol: f64, t: f64, n: usize, is_call: bool,
+) -> PyAsianResult {
+    let opt = if is_call { OptionType::Call } else { OptionType::Put };
+    let res = asian_geometric_discrete_avg_strike(spot, r, q, vol, t, n, opt);
+    PyAsianResult { npv: res.npv, effective_vol: res.effective_vol, effective_forward: res.effective_forward }
+}
+
+/// Price an **arithmetic average-price** Asian option via Turnbull-Wakeman (1991).
+///
+/// Parameters:
+///   spot, strike, r, q, vol, t — standard Black-Scholes inputs
+///   t0 — time already elapsed in averaging window (0 for fresh option)
+///   a  — accumulated average so far (0 if t0 == 0)
+///   is_call — True for call, False for put
+#[pyfunction]
+#[pyo3(signature = (spot, strike, r, q, vol, t, t0=0.0, a=0.0, is_call=true))]
+pub fn asian_turnbull_wakeman_py(
+    spot: f64, strike: f64, r: f64, q: f64, vol: f64, t: f64,
+    t0: f64, a: f64, is_call: bool,
+) -> PyAsianResult {
+    let opt = if is_call { OptionType::Call } else { OptionType::Put };
+    let res = asian_turnbull_wakeman(spot, strike, r, q, vol, t, t0, a, opt);
+    PyAsianResult { npv: res.npv, effective_vol: res.effective_vol, effective_forward: res.effective_forward }
+}
+
+/// Price an **arithmetic average-price** Asian option via Levy (1992).
+///
+/// Equivalent to `asian_turnbull_wakeman` with t0=0, a=0.
+///
+/// Parameters:
+///   spot, strike, r, q, vol, t — standard Black-Scholes inputs
+///   is_call — True for call, False for put
+#[pyfunction]
+#[pyo3(signature = (spot, strike, r, q, vol, t, is_call=true))]
+pub fn asian_levy_py(
+    spot: f64, strike: f64, r: f64, q: f64, vol: f64, t: f64, is_call: bool,
+) -> PyAsianResult {
+    let opt = if is_call { OptionType::Call } else { OptionType::Put };
+    let res = asian_levy(spot, strike, r, q, vol, t, opt);
+    PyAsianResult { npv: res.npv, effective_vol: res.effective_vol, effective_forward: res.effective_forward }
+}
+
+// ---------------------------------------------------------------------------
+// Basket / spread engines
+// ---------------------------------------------------------------------------
+
+/// Price a European **spread option** (S1 - S2 - K) via Choi (2018).
+///
+/// Parameters:
+///   s1, s2 — asset prices
+///   r       — risk-free rate
+///   q1, q2  — dividend yields
+///   v1, v2  — volatilities
+///   rho     — correlation between log-returns
+///   t       — time to expiry
+///   k       — spread strike (usually ≥ 0)
+///   is_call — True for max(S1-S2-K,0), False for max(K-S1+S2,0)
+///
+/// Returns a ``BasketSpreadResult`` with npv, delta1, delta2.
+#[pyfunction]
+#[pyo3(signature = (s1, s2, r, q1, q2, v1, v2, rho, t, k=0.0, is_call=true))]
+pub fn choi_basket_spread_py(
+    s1: f64, s2: f64, r: f64, q1: f64, q2: f64,
+    v1: f64, v2: f64, rho: f64, t: f64, k: f64, is_call: bool,
+) -> PyBasketSpreadResult {
+    let res = choi_basket_spread(s1, s2, r, q1, q2, v1, v2, rho, t, k, is_call);
+    PyBasketSpreadResult { npv: res.npv, delta1: res.delta1, delta2: res.delta2 }
+}
+
+/// Price an **N-asset arithmetic basket** option via Deng-Li-Zhou (2008).
+///
+/// Parameters:
+///   spots   — list of current asset prices (length N)
+///   weights — list of basket weights (must sum to something sensible, e.g. 1.0)
+///   r       — risk-free rate
+///   divs    — list of dividend yields (length N)
+///   vols    — list of volatilities (length N)
+///   corr    — correlation matrix, row-major flat list (N×N)
+///   t       — time to expiry
+///   strike  — strike on the weighted basket
+///   is_call — True for call, False for put
+///
+/// Returns the NPV as a float.
+///
+/// Raises ValueError if dimension mismatches are detected.
+#[pyfunction]
+#[pyo3(signature = (spots, weights, r, divs, vols, corr, t, strike, is_call=true))]
+pub fn dlz_basket_price_py(
+    spots: Vec<f64>,
+    weights: Vec<f64>,
+    r: f64,
+    divs: Vec<f64>,
+    vols: Vec<f64>,
+    corr: Vec<f64>,
+    t: f64,
+    strike: f64,
+    is_call: bool,
+) -> PyResult<f64> {
+    let n = spots.len();
+    if weights.len() != n || divs.len() != n || vols.len() != n || corr.len() != n * n {
+        return Err(PyValueError::new_err(
+            "spots/weights/divs/vols must all be length N; corr must be N×N (flat)"
+        ));
+    }
+    Ok(dlz_basket_price(&spots, &weights, r, &divs, &vols, &corr, t, strike, is_call))
+}
+
+// ---------------------------------------------------------------------------
+// Vanilla extra engines
+// ---------------------------------------------------------------------------
+
+/// Price an **American option** using the Ju-Zhong (1999) quadratic approximation.
+///
+/// More accurate than BAW near the early-exercise boundary. Includes a
+/// correction term beyond the standard quadratic formula.
+///
+/// Parameters:
+///   spot, strike, r, q, sigma, t — standard Black-Scholes inputs
+///   is_call — True for call, False for put
+///
+/// Returns a ``JuAmericanResult`` with npv, delta, critical_price.
+#[pyfunction]
+#[pyo3(signature = (spot, strike, r, q, sigma, t, is_call=true))]
+pub fn ju_quadratic_american_py(
+    spot: f64, strike: f64, r: f64, q: f64, sigma: f64, t: f64, is_call: bool,
+) -> PyJuAmericanResult {
+    let res = ju_quadratic_american(spot, strike, r, q, sigma, t, is_call);
+    PyJuAmericanResult { npv: res.npv, delta: res.delta, critical_price: res.critical_price }
+}
+
+/// Price a **European option** via 20-point Gauss-Hermite integration.
+///
+/// Supports an arbitrary payoff; this wrapper prices a vanilla call or put.
+/// Useful for comparing with analytic prices or pricing near-vanilla exotics.
+///
+/// Parameters:
+///   spot, strike, r, q, sigma, t — standard Black-Scholes inputs
+///   is_call — True for call, False for put
+///
+/// Returns an ``IntegralResult`` with npv.
+#[pyfunction]
+#[pyo3(signature = (spot, strike, r, q, sigma, t, is_call=true))]
+pub fn integral_european_py(
+    spot: f64, strike: f64, r: f64, q: f64, sigma: f64, t: f64, is_call: bool,
+) -> PyIntegralResult {
+    let res = integral_european_vanilla(spot, strike, r, q, sigma, t, is_call);
+    PyIntegralResult { npv: res.npv }
+}
+
+// ---------------------------------------------------------------------------
+// Exotic option engines
+// ---------------------------------------------------------------------------
+
+/// Price a **partial-time barrier** option (Heynen-Kat 1994).
+///
+/// Barrier is active only during [0, t1]; full option expiry is at t.
+///
+/// Parameters:
+///   spot, strike, barrier — asset price, strike, barrier level
+///   r, q, sigma           — risk-free rate, dividend yield, volatility
+///   t                     — total time to expiry
+///   t1                    — end of barrier monitoring window (≤ t)
+///   barrier_type          — one of ``"down_out"``, ``"down_in"``, ``"up_out"``, ``"up_in"``
+///   is_call               — True for call, False for put
+///
+/// Returns a ``PartialBarrierResult`` with npv.
+///
+/// Raises ValueError on unknown barrier_type.
+#[pyfunction]
+#[pyo3(signature = (spot, strike, barrier, r, q, sigma, t, t1, barrier_type, is_call=true))]
+pub fn partial_time_barrier_py(
+    spot: f64, strike: f64, barrier: f64,
+    r: f64, q: f64, sigma: f64,
+    t: f64, t1: f64,
+    barrier_type: &str,
+    is_call: bool,
+) -> PyResult<PyPartialBarrierResult> {
+    let bt = match barrier_type {
+        "down_out" => PartialBarrierType::B1DownOut,
+        "down_in"  => PartialBarrierType::B1DownIn,
+        "up_out"   => PartialBarrierType::B1UpOut,
+        "up_in"    => PartialBarrierType::B1UpIn,
+        other => return Err(PyValueError::new_err(format!(
+            "Unknown barrier_type '{}'; use down_out/down_in/up_out/up_in", other
+        ))),
+    };
+    let res = partial_time_barrier(spot, strike, barrier, r, q, sigma, t, t1, bt, is_call);
+    Ok(PyPartialBarrierResult { npv: res.npv })
+}
+
+/// Price a **two-asset correlation** option (Zhang 1995).
+///
+/// Call payoff: max(S1 - K1, 0) * 1{S2 > K2}
+/// Put payoff:  max(K1 - S1, 0) * 1{S2 < K2}
+///
+/// Parameters:
+///   s1, s2     — current prices of assets 1 and 2
+///   k1, k2     — strike on asset 1; barrier/condition on asset 2
+///   r          — risk-free rate
+///   q1, q2     — dividend yields
+///   v1, v2     — volatilities
+///   rho        — correlation between log-returns
+///   t          — time to expiry
+///   is_call    — True for call, False for put
+///
+/// Returns a ``TwoAssetCorrelationResult`` with npv, delta1, delta2.
+#[pyfunction]
+#[pyo3(signature = (s1, s2, k1, k2, r, q1, q2, v1, v2, rho, t, is_call=true))]
+pub fn two_asset_correlation_py(
+    s1: f64, s2: f64, k1: f64, k2: f64,
+    r: f64, q1: f64, q2: f64, v1: f64, v2: f64, rho: f64,
+    t: f64, is_call: bool,
+) -> PyTwoAssetCorrelationResult {
+    let res = two_asset_correlation(s1, s2, k1, k2, r, q1, q2, v1, v2, rho, t, is_call);
+    PyTwoAssetCorrelationResult { npv: res.npv, delta1: res.delta1, delta2: res.delta2 }
+}
+
+/// Price a **holder-extensible** option (Longstaff 1990).
+///
+/// The holder can extend the option at T1 by paying a premium,
+/// resetting the strike to K2 and extending expiry to T2.
+///
+/// Parameters:
+///   spot                — current asset price
+///   k1, k2             — original and extension strikes
+///   r, q, sigma        — market parameters
+///   t1, t2             — original and extended expiries
+///   extension_premium  — cost to the holder of extending
+///   is_call            — True for call, False for put
+///
+/// Returns an ``ExtensibleOptionResult`` with npv.
+#[pyfunction]
+#[pyo3(signature = (spot, k1, k2, r, q, sigma, t1, t2, extension_premium=0.0, is_call=true))]
+pub fn holder_extensible_py(
+    spot: f64, k1: f64, k2: f64,
+    r: f64, q: f64, sigma: f64,
+    t1: f64, t2: f64,
+    extension_premium: f64,
+    is_call: bool,
+) -> PyExtensibleOptionResult {
+    let res = holder_extensible(spot, k1, k2, r, q, sigma, t1, t2, extension_premium, is_call);
+    PyExtensibleOptionResult { npv: res.npv }
+}
+
+/// Price a **writer-extensible** option.
+///
+/// At T1 the writer (not the holder) may extend to T2 at strike K2
+/// if doing so reduces their liability.
+///
+/// Parameters:
+///   spot            — current asset price
+///   k1, k2         — original and extension strikes
+///   r, q, sigma    — market parameters
+///   t1, t2         — original and extended expiries
+///   is_call        — True for call, False for put
+///
+/// Returns an ``ExtensibleOptionResult`` with npv.
+#[pyfunction]
+#[pyo3(signature = (spot, k1, k2, r, q, sigma, t1, t2, is_call=true))]
+pub fn writer_extensible_py(
+    spot: f64, k1: f64, k2: f64,
+    r: f64, q: f64, sigma: f64,
+    t1: f64, t2: f64,
+    is_call: bool,
+) -> PyExtensibleOptionResult {
+    let res = writer_extensible(spot, k1, k2, r, q, sigma, t1, t2, is_call);
+    PyExtensibleOptionResult { npv: res.npv }
 }

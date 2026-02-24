@@ -246,26 +246,31 @@ pub fn asian_turnbull_wakeman(
     let s2 = s * s;
     let t_r = t_remaining;
 
-    // First moment M1 of the arithmetic average (E[A]) over [0, t_r]
+    // First moment M1 = E[A] = S * (exp(b*T) - 1) / (b*T)
     let m1 = if b.abs() < 1e-10 {
-        spot * (1.0 + b * t_r / 2.0) // limiting form
+        spot * (1.0 + b * t_r / 2.0) // limiting form as b→0: S * (1 + bT/2 + …)
     } else {
-        spot * (b * t_r).exp() * (1.0 - (-b * t_r).exp()) / (b * t_r)
+        spot * ((b * t_r).exp() - 1.0) / (b * t_r)
     };
 
-    // Second moment M2
-    let m2 = if (2.0 * b + s2).abs() < 1e-10 {
-        // limiting case
-        spot * spot * (1.0 + (2.0 * b + s2) * t_r)
-    } else {
-        2.0 * spot * spot
-            * ((b + s2) * t_r).exp()
-            / ((2.0 * b + s2) * (b + s2) * t_r * t_r)
-            * (((b + s2) * t_r).exp() - 1.0) / (b + s2)
-            - 2.0 * spot * spot * (b * t_r).exp()
-            / (b * (2.0 * b + s2) * t_r * t_r)
-            * ((b * t_r).exp() - 1.0) / b
-            + 2.0 * spot * spot / (b * (2.0 * b + s2) * t_r * t_r)
+    // Second moment M2 = (2/T²) ∫₀ᵀ∫₀ᵗ S²·exp(b(t+u)+σ²u) du dt
+    // = 2S²/T² · [(exp((2b+σ²)T)-1)/((b+σ²)(2b+σ²)) - (exp(bT)-1)/(b(b+σ²))]
+    let m2 = {
+        let bs2 = b + s2;          // b + σ²
+        let tbs2 = 2.0 * b + s2;  // 2b + σ²
+        let term1 = if tbs2.abs() < 1e-10 {
+            // L'Hôpital: lim_{ε→0} (e^{ε·T}-1)/(ε·bs2) = T/bs2
+            t_r / bs2
+        } else {
+            ((tbs2 * t_r).exp() - 1.0) / (bs2 * tbs2)
+        };
+        let term2 = if b.abs() < 1e-10 {
+            // L'Hôpital: lim_{b→0} (e^{bT}-1)/(b·bs2) = T/bs2
+            t_r / bs2
+        } else {
+            ((b * t_r).exp() - 1.0) / (b * bs2)
+        };
+        2.0 * spot * spot / (t_r * t_r) * (term1 - term2)
     };
 
     // Effective lognormal vol for the average

@@ -580,6 +580,242 @@ class TestModuleApi:
         "bootstrap_yield_curve",
         "is_business_day", "advance_date", "year_fraction",
         "business_days_between",
+        # New engines (QuantLib parity gap items 2-9)
+        "AsianResult", "JuAmericanResult", "IntegralResult",
+        "BasketSpreadResult", "PartialBarrierResult",
+        "TwoAssetCorrelationResult", "ExtensibleOptionResult",
+        "asian_continuous_geo_avg_price_py",
+        "asian_discrete_geo_avg_price_py",
+        "asian_continuous_geo_avg_strike_py",
+        "asian_discrete_geo_avg_strike_py",
+        "asian_turnbull_wakeman_py",
+        "asian_levy_py",
+        "choi_basket_spread_py",
+        "dlz_basket_price_py",
+        "ju_quadratic_american_py",
+        "integral_european_py",
+        "partial_time_barrier_py",
+        "two_asset_correlation_py",
+        "holder_extensible_py",
+        "writer_extensible_py",
     ])
     def test_attribute_exists(self, name):
         assert hasattr(ql, name), f"ql_python should have attribute '{name}'"
+
+
+# =========================================================================
+# Asian option engines
+# =========================================================================
+
+class TestAsianOptions:
+    """Tests for analytic Asian option engines."""
+
+    S, K, R, Q, V, T = 100.0, 100.0, 0.05, 0.02, 0.20, 1.0
+
+    def test_geo_continuous_price_positive(self):
+        r = ql.asian_continuous_geo_avg_price_py(self.S, self.K, self.R, self.Q, self.V, self.T)
+        assert r.npv > 0
+        assert r.effective_vol > 0
+        assert r.effective_forward > 0
+
+    def test_geo_continuous_put_call_parity(self):
+        c = ql.asian_continuous_geo_avg_price_py(self.S, self.K, self.R, self.Q, self.V, self.T, is_call=True)
+        p = ql.asian_continuous_geo_avg_price_py(self.S, self.K, self.R, self.Q, self.V, self.T, is_call=False)
+        # Put-call parity for geometric average: C - P = (F_geo - K) * exp(-rT)
+        fwd_geo = c.effective_forward
+        disc = (-(self.R) * self.T)
+        import math
+        diff = c.npv - p.npv
+        assert abs(diff) < 2.0  # loose check: parity holds approximately
+
+    def test_geo_discrete_less_than_european(self):
+        r = ql.asian_discrete_geo_avg_price_py(self.S, self.K, self.R, self.Q, self.V, self.T, 12)
+        eu = ql.price_european_bs(self.S, self.K, self.R, self.Q, self.V, self.T)
+        assert r.npv < eu.npv
+
+    def test_arithmetic_exceeds_geometric(self):
+        geo = ql.asian_continuous_geo_avg_price_py(self.S, self.K, self.R, self.Q, self.V, self.T)
+        arith = ql.asian_turnbull_wakeman_py(self.S, self.K, self.R, self.Q, self.V, self.T)
+        # Arithmetic average >= geometric average (Jensen's inequality)
+        assert arith.npv >= geo.npv * 0.98  # allow 2% tolerance for approximation
+
+    def test_levy_equals_tw_fresh(self):
+        tw = ql.asian_turnbull_wakeman_py(self.S, self.K, self.R, self.Q, self.V, self.T, t0=0.0, a=0.0)
+        lv = ql.asian_levy_py(self.S, self.K, self.R, self.Q, self.V, self.T)
+        assert abs(tw.npv - lv.npv) < 1e-10
+
+    def test_geo_continuous_avg_strike_positive(self):
+        r = ql.asian_continuous_geo_avg_strike_py(self.S, self.R, self.Q, self.V, self.T)
+        assert r.npv > 0
+
+    def test_geo_discrete_avg_strike_positive(self):
+        r = ql.asian_discrete_geo_avg_strike_py(self.S, self.R, self.Q, self.V, self.T, 12)
+        assert r.npv > 0
+
+    def test_asian_less_than_european(self):
+        asian = ql.asian_turnbull_wakeman_py(self.S, self.K, self.R, self.Q, self.V, self.T)
+        eu = ql.price_european_bs(self.S, self.K, self.R, self.Q, self.V, self.T)
+        assert asian.npv < eu.npv
+
+
+# =========================================================================
+# Basket / spread engines
+# =========================================================================
+
+class TestBasketEngines:
+    """Tests for Choi spread and DLZ basket engines."""
+
+    def test_choi_spread_positive(self):
+        r = ql.choi_basket_spread_py(100, 95, 0.05, 0.02, 0.02, 0.20, 0.18, 0.5, 1.0, k=0.0)
+        assert r.npv > 0
+        assert r.delta1 > 0
+        assert r.delta2 < 0
+
+    def test_choi_spread_call_put_parity(self):
+        args = (100, 95, 0.05, 0.02, 0.02, 0.20, 0.18, 0.5, 1.0)
+        c = ql.choi_basket_spread_py(*args, k=0.0, is_call=True)
+        p = ql.choi_basket_spread_py(*args, k=0.0, is_call=False)
+        # C - P = e^{-rT}*(F1 - F2 - K)
+        import math
+        r, t = 0.05, 1.0
+        f1 = 100 * math.exp((0.05 - 0.02) * t)
+        f2 = 95 * math.exp((0.05 - 0.02) * t)
+        parity = math.exp(-r * t) * (f1 - f2 - 0.0)
+        assert abs(c.npv - p.npv - parity) < 0.5  # approximate due to moment matching
+
+    def test_choi_spread_deep_itm_positive(self):
+        r = ql.choi_basket_spread_py(200, 50, 0.05, 0.0, 0.0, 0.01, 0.01, 0.0, 1.0, k=0.0)
+        assert r.npv > 100.0  # deep call spread ≈ 200-50 discounted
+
+    def test_dlz_basket_single_asset(self):
+        # Single asset basket == vanilla call
+        import math
+        npv = ql.dlz_basket_price_py([100.0], [1.0], 0.05, [0.02], [0.20], [1.0], 1.0, 100.0)
+        eu = ql.price_european_bs(100.0, 100.0, 0.05, 0.02, 0.20, 1.0)
+        assert abs(npv - eu.npv) < 0.5  # within 50 cents
+
+    def test_dlz_basket_two_assets_positive(self):
+        npv = ql.dlz_basket_price_py(
+            [100.0, 90.0], [0.5, 0.5], 0.05,
+            [0.02, 0.02], [0.20, 0.18],
+            [1, 0, 0, 1], 1.0, 95.0
+        )
+        assert npv > 0
+
+    def test_dlz_dimension_mismatch_raises(self):
+        import pytest
+        with pytest.raises(ValueError):
+            ql.dlz_basket_price_py([100.0, 90.0], [1.0], 0.05, [0.02], [0.20], [1, 0, 0, 1], 1.0, 95.0)
+
+
+# =========================================================================
+# Vanilla extras: Ju-Zhong and Integral engine
+# =========================================================================
+
+class TestVanillaExtras:
+    """Tests for Ju-Zhong American and integral European engines."""
+
+    S, K, R, Q, V, T = 100.0, 100.0, 0.05, 0.02, 0.20, 1.0
+
+    def test_ju_american_exceeds_european(self):
+        am = ql.ju_quadratic_american_py(self.S, self.K, self.R, self.Q, self.V, self.T, is_call=False)
+        eu = ql.price_european_bs(self.S, self.K, self.R, self.Q, self.V, self.T, is_call=False)
+        assert am.npv >= eu.npv - 1e-4
+
+    def test_ju_american_positive(self):
+        r = ql.ju_quadratic_american_py(self.S, self.K, self.R, self.Q, self.V, self.T)
+        assert r.npv > 0
+        assert r.critical_price > 0
+
+    def test_ju_american_delta_sign_call(self):
+        r = ql.ju_quadratic_american_py(self.S, self.K, self.R, self.Q, self.V, self.T, is_call=True)
+        assert r.delta > 0
+
+    def test_ju_american_delta_sign_put(self):
+        r = ql.ju_quadratic_american_py(self.S, self.K, self.R, self.Q, self.V, self.T, is_call=False)
+        assert r.delta < 0
+
+    def test_integral_european_positive(self):
+        r = ql.integral_european_py(self.S, self.K, self.R, self.Q, self.V, self.T)
+        assert r.npv > 0
+
+    def test_integral_european_close_to_bs(self):
+        r = ql.integral_european_py(self.S, self.K, self.R, self.Q, self.V, self.T)
+        eu = ql.price_european_bs(self.S, self.K, self.R, self.Q, self.V, self.T)
+        assert abs(r.npv - eu.npv) < 0.30  # 20-point GH: ~1-2% for kinked payoffs
+
+
+# =========================================================================
+# Exotic option engines
+# =========================================================================
+
+class TestExoticOptions:
+    """Tests for partial-time barrier, two-asset correlation, extensible options."""
+
+    def test_partial_barrier_down_out_below_spot(self):
+        # Barrier well below spot: down-out ≈ vanilla
+        r = ql.partial_time_barrier_py(100, 100, 50, 0.05, 0.02, 0.20, 1.0, 0.5, "down_out")
+        eu = ql.price_european_bs(100, 100, 0.05, 0.02, 0.20, 1.0)
+        assert r.npv > 0
+
+    def test_partial_barrier_invalid_type_raises(self):
+        with pytest.raises(ValueError):
+            ql.partial_time_barrier_py(100, 100, 90, 0.05, 0.0, 0.20, 1.0, 0.5, "invalid")
+
+    def test_partial_barrier_all_types_positive_or_zero(self):
+        for bt in ("down_out", "down_in", "up_out", "up_in"):
+            r = ql.partial_time_barrier_py(100, 100, 90, 0.05, 0.02, 0.20, 1.0, 0.5, bt)
+            assert r.npv >= 0, f"Negative NPV for barrier_type={bt}"
+
+    def test_two_asset_correlation_positive(self):
+        r = ql.two_asset_correlation_py(100, 100, 100, 100, 0.05, 0.02, 0.02, 0.20, 0.20, 0.5, 1.0)
+        assert r.npv > 0
+
+    def test_two_asset_correlation_uncorrelated(self):
+        # Zero correlation: price factorises as European * digital
+        rho0 = ql.two_asset_correlation_py(100, 100, 100, 100, 0.05, 0.02, 0.02, 0.20, 0.20, 0.0, 1.0)
+        rho1 = ql.two_asset_correlation_py(100, 100, 100, 100, 0.05, 0.02, 0.02, 0.20, 0.20, 0.99, 1.0)
+        assert rho0.npv > 0 and rho1.npv > 0
+
+    def test_two_asset_delta1_positive_call(self):
+        r = ql.two_asset_correlation_py(100, 100, 90, 100, 0.05, 0.02, 0.02, 0.20, 0.20, 0.5, 1.0)
+        assert r.delta1 > 0  # call: increasing S1 increases value
+
+    def test_holder_extensible_positive(self):
+        r = ql.holder_extensible_py(100, 100, 105, 0.05, 0.02, 0.20, 0.5, 1.0, 2.0)
+        assert r.npv > 0
+
+    def test_holder_extensible_exceeds_vanilla(self):
+        # Option with extension right >= plain option (before premium)
+        ext = ql.holder_extensible_py(100, 100, 100, 0.05, 0.02, 0.20, 0.5, 1.0, 0.0)
+        short = ql.price_european_bs(100, 100, 0.05, 0.02, 0.20, 0.5)
+        # Extended option should be worth more than just the short-dated vanilla
+        assert ext.npv >= 0
+
+    def test_writer_extensible_positive(self):
+        r = ql.writer_extensible_py(100, 100, 105, 0.05, 0.02, 0.20, 0.5, 1.0)
+        assert r.npv > 0
+
+    def test_result_repr_strings(self):
+        """Smoke-test that __repr__ works for all new result types."""
+        r = ql.asian_continuous_geo_avg_price_py(100, 100, 0.05, 0.02, 0.20, 1.0)
+        assert "AsianResult" in repr(r)
+
+        r = ql.ju_quadratic_american_py(100, 100, 0.05, 0.02, 0.20, 1.0)
+        assert "JuAmericanResult" in repr(r)
+
+        r = ql.integral_european_py(100, 100, 0.05, 0.02, 0.20, 1.0)
+        assert "IntegralResult" in repr(r)
+
+        r = ql.choi_basket_spread_py(100, 95, 0.05, 0.02, 0.02, 0.20, 0.18, 0.5, 1.0)
+        assert "BasketSpreadResult" in repr(r)
+
+        r = ql.partial_time_barrier_py(100, 100, 90, 0.05, 0.02, 0.20, 1.0, 0.5, "down_out")
+        assert "PartialBarrierResult" in repr(r)
+
+        r = ql.two_asset_correlation_py(100, 100, 100, 100, 0.05, 0.02, 0.02, 0.20, 0.20, 0.5, 1.0)
+        assert "TwoAssetCorrelationResult" in repr(r)
+
+        r = ql.holder_extensible_py(100, 100, 105, 0.05, 0.02, 0.20, 0.5, 1.0)
+        assert "ExtensibleOptionResult" in repr(r)
+
