@@ -126,6 +126,94 @@ impl OvernightIndex {
             DayCounter::Actual365Fixed,
         )
     }
+
+    /// SARON (Swiss Average Rate Overnight).
+    pub fn saron() -> Self {
+        Self::new(
+            "SARON",
+            0,
+            Currency::chf(),
+            Calendar::Switzerland,
+            DayCounter::Actual360,
+        )
+    }
+
+    /// CORRA (Canadian Overnight Repo Rate Average).
+    pub fn corra() -> Self {
+        Self::new(
+            "CORRA",
+            0,
+            Currency::cad(),
+            Calendar::Canada,
+            DayCounter::Actual365Fixed,
+        )
+    }
+
+    /// AONIA (Australian Overnight Index Average).
+    pub fn aonia() -> Self {
+        Self::new(
+            "AONIA",
+            0,
+            Currency::aud(),
+            Calendar::Australia,
+            DayCounter::Actual365Fixed,
+        )
+    }
+
+    /// NZOCR (New Zealand Official Cash Rate).
+    pub fn nzocr() -> Self {
+        Self::new(
+            "NZOCR",
+            0,
+            Currency::nzd(),
+            Calendar::NewZealand,
+            DayCounter::Actual365Fixed,
+        )
+    }
+
+    /// FedFunds (US Federal Funds Rate).
+    pub fn fedfunds() -> Self {
+        Self::new(
+            "FedFunds",
+            0,
+            Currency::usd(),
+            Calendar::UnitedStates(ql_time::calendar::USMarket::Settlement),
+            DayCounter::Actual360,
+        )
+    }
+
+    /// SWESTR (Swedish Krona Short Term Rate).
+    pub fn swestr() -> Self {
+        Self::new(
+            "SWESTR",
+            0,
+            Currency::sek(),
+            Calendar::Sweden,
+            DayCounter::Actual360,
+        )
+    }
+
+    /// DKKOIS (Danish Krone Overnight Index Swap rate).
+    pub fn dkkois() -> Self {
+        Self::new(
+            "DKKOIS",
+            0,
+            Currency::dkk(),
+            Calendar::Denmark,
+            DayCounter::Actual360,
+        )
+    }
+
+    /// NOWA (Norwegian Overnight Weighted Average).
+    pub fn nowa() -> Self {
+        Self::new(
+            "NOWA",
+            0,
+            Currency::nok(),
+            Calendar::Norway,
+            DayCounter::Actual360,
+        )
+    }
 }
 
 // ===========================================================================

@@ -159,10 +159,7 @@ impl IborIndex {
     pub fn usd_libor_3m() -> Self {
         Self::new(
             "USDLibor3M",
-            Period {
-                length: 3,
-                unit: TimeUnit::Months,
-            },
+            Period { length: 3, unit: TimeUnit::Months },
             2,
             Currency::usd(),
             Calendar::UnitedStates(ql_time::calendar::USMarket::Settlement),
@@ -170,6 +167,206 @@ impl IborIndex {
             true,
             DayCounter::Actual360,
         )
+    }
+
+    // -----------------------------------------------------------------------
+    // Euribor additional tenors
+    // -----------------------------------------------------------------------
+
+    /// Euribor 1-Month.
+    pub fn euribor_1m() -> Self {
+        Self::new("Euribor1M", Period { length: 1, unit: TimeUnit::Months }, 2,
+            Currency::eur(), Calendar::Target,
+            BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual360)
+    }
+
+    /// Euribor 1-Week.
+    pub fn euribor_1w() -> Self {
+        Self::new("Euribor1W", Period { length: 1, unit: TimeUnit::Weeks }, 2,
+            Currency::eur(), Calendar::Target,
+            BusinessDayConvention::Following, false, DayCounter::Actual360)
+    }
+
+    /// Euribor 12-Month.
+    pub fn euribor_12m() -> Self {
+        Self::new("Euribor12M", Period { length: 12, unit: TimeUnit::Months }, 2,
+            Currency::eur(), Calendar::Target,
+            BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual360)
+    }
+
+    // -----------------------------------------------------------------------
+    // GBP LIBOR (legacy)
+    // -----------------------------------------------------------------------
+
+    /// GBP LIBOR 3-Month (legacy).
+    pub fn gbp_libor_3m() -> Self {
+        Self::new("GBPLibor3M", Period { length: 3, unit: TimeUnit::Months }, 0,
+            Currency::gbp(), Calendar::UnitedKingdom,
+            BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual365Fixed)
+    }
+
+    /// GBP LIBOR 6-Month (legacy).
+    pub fn gbp_libor_6m() -> Self {
+        Self::new("GBPLibor6M", Period { length: 6, unit: TimeUnit::Months }, 0,
+            Currency::gbp(), Calendar::UnitedKingdom,
+            BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual365Fixed)
+    }
+
+    // -----------------------------------------------------------------------
+    // CHF LIBOR (legacy)
+    // -----------------------------------------------------------------------
+
+    /// CHF LIBOR 3-Month (legacy).
+    pub fn chf_libor_3m() -> Self {
+        Self::new("CHFLibor3M", Period { length: 3, unit: TimeUnit::Months }, 2,
+            Currency::chf(), Calendar::Switzerland,
+            BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual360)
+    }
+
+    // -----------------------------------------------------------------------
+    // JPY LIBOR (legacy)
+    // -----------------------------------------------------------------------
+
+    /// JPY LIBOR 3-Month (legacy).
+    pub fn jpy_libor_3m() -> Self {
+        Self::new("JPYLibor3M", Period { length: 3, unit: TimeUnit::Months }, 2,
+            Currency::jpy(), Calendar::Japan,
+            BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual360)
+    }
+
+    /// JPY LIBOR 6-Month (legacy).
+    pub fn jpy_libor_6m() -> Self {
+        Self::new("JPYLibor6M", Period { length: 6, unit: TimeUnit::Months }, 2,
+            Currency::jpy(), Calendar::Japan,
+            BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual360)
+    }
+
+    // -----------------------------------------------------------------------
+    // BBSW (Bank Bill Swap Rate — AUD)
+    // -----------------------------------------------------------------------
+
+    /// BBSW 3-Month (Australian Bank Bill Swap Rate).
+    pub fn bbsw_3m() -> Self {
+        Self::new("BBSW3M", Period { length: 3, unit: TimeUnit::Months }, 1,
+            Currency::aud(), Calendar::Australia,
+            BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual365Fixed)
+    }
+
+    /// BBSW 6-Month.
+    pub fn bbsw_6m() -> Self {
+        Self::new("BBSW6M", Period { length: 6, unit: TimeUnit::Months }, 1,
+            Currency::aud(), Calendar::Australia,
+            BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual365Fixed)
+    }
+
+    // -----------------------------------------------------------------------
+    // TIBOR (Tokyo IBOR — JPY)
+    // -----------------------------------------------------------------------
+
+    /// TIBOR 3-Month (Domestic Japanese Yen TIBOR).
+    pub fn tibor_3m() -> Self {
+        Self::new("TIBOR3M", Period { length: 3, unit: TimeUnit::Months }, 2,
+            Currency::jpy(), Calendar::Japan,
+            BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual365Fixed)
+    }
+
+    /// TIBOR 6-Month.
+    pub fn tibor_6m() -> Self {
+        Self::new("TIBOR6M", Period { length: 6, unit: TimeUnit::Months }, 2,
+            Currency::jpy(), Calendar::Japan,
+            BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual365Fixed)
+    }
+
+    // -----------------------------------------------------------------------
+    // SHIBOR (Shanghai IBOR — CNY)
+    // -----------------------------------------------------------------------
+
+    /// SHIBOR 3-Month (Shanghai Interbank Offered Rate).
+    pub fn shibor_3m() -> Self {
+        Self::new("SHIBOR3M", Period { length: 3, unit: TimeUnit::Months }, 1,
+            Currency::cny(), Calendar::China,
+            BusinessDayConvention::ModifiedFollowing, false, DayCounter::Actual360)
+    }
+
+    // -----------------------------------------------------------------------
+    // WIBOR (Warsaw IBOR — PLN)
+    // -----------------------------------------------------------------------
+
+    /// WIBOR 3-Month (Warsaw Interbank Offered Rate).
+    pub fn wibor_3m() -> Self {
+        Self::new("WIBOR3M", Period { length: 3, unit: TimeUnit::Months }, 2,
+            Currency::pln(), Calendar::Poland,
+            BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual365Fixed)
+    }
+
+    /// WIBOR 6-Month.
+    pub fn wibor_6m() -> Self {
+        Self::new("WIBOR6M", Period { length: 6, unit: TimeUnit::Months }, 2,
+            Currency::pln(), Calendar::Poland,
+            BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual365Fixed)
+    }
+
+    // -----------------------------------------------------------------------
+    // PRIBOR (Prague IBOR — CZK)
+    // -----------------------------------------------------------------------
+
+    /// PRIBOR 3-Month (Prague Interbank Offered Rate).
+    pub fn pribor_3m() -> Self {
+        Self::new("PRIBOR3M", Period { length: 3, unit: TimeUnit::Months }, 2,
+            Currency::czk(), Calendar::CzechRepublic,
+            BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual360)
+    }
+
+    /// PRIBOR 6-Month.
+    pub fn pribor_6m() -> Self {
+        Self::new("PRIBOR6M", Period { length: 6, unit: TimeUnit::Months }, 2,
+            Currency::czk(), Calendar::CzechRepublic,
+            BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual360)
+    }
+
+    // -----------------------------------------------------------------------
+    // BUBOR (Budapest IBOR — HUF)
+    // -----------------------------------------------------------------------
+
+    /// BUBOR 3-Month (Budapest Interbank Offered Rate).
+    pub fn bubor_3m() -> Self {
+        Self::new("BUBOR3M", Period { length: 3, unit: TimeUnit::Months }, 2,
+            Currency::huf(), Calendar::Hungary,
+            BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual360)
+    }
+
+    // -----------------------------------------------------------------------
+    // ROBOR (Bucharest IBOR — RON)
+    // -----------------------------------------------------------------------
+
+    /// ROBOR 3-Month (Romanian Interbank Offered Rate).
+    pub fn robor_3m() -> Self {
+        Self::new("ROBOR3M", Period { length: 3, unit: TimeUnit::Months }, 2,
+            Currency::ron(), Calendar::Romania,
+            BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual360)
+    }
+
+    // -----------------------------------------------------------------------
+    // TRLIBOR (Turkey)
+    // -----------------------------------------------------------------------
+
+    /// TRLIBOR 3-Month (Turkish Lira IBOR).
+    pub fn trlibor_3m() -> Self {
+        Self::new("TRLIBOR3M", Period { length: 3, unit: TimeUnit::Months }, 2,
+            Currency::try_(), Calendar::Turkey,
+            BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual360)
+    }
+
+    // -----------------------------------------------------------------------
+    // USD SOFR-linked IBOR (BSBY / SOFR term rate - placeholder)
+    // -----------------------------------------------------------------------
+
+    /// USD SOFR Term 3-Month (placeholder for SOFR-linked term rate).
+    pub fn sofr_term_3m() -> Self {
+        Self::new("SOFRTerm3M", Period { length: 3, unit: TimeUnit::Months }, 2,
+            Currency::usd(),
+            Calendar::UnitedStates(ql_time::calendar::USMarket::Settlement),
+            BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual360)
     }
 }
 

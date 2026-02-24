@@ -76,6 +76,42 @@ pub enum Calendar {
     Poland,
     /// New Zealand (NZX / Settlement).
     NewZealand,
+    /// Argentina (Buenos Aires SE / MERVAL).
+    Argentina,
+    /// Austria (Vienna Stock Exchange).
+    Austria,
+    /// Botswana (BSE).
+    Botswana,
+    /// Chile (Santiago SE / IPSA).
+    Chile,
+    /// Czech Republic (Prague Stock Exchange).
+    CzechRepublic,
+    /// Finland (Helsinki / Nasdaq Nordic).
+    Finland,
+    /// Hungary (Budapest Stock Exchange).
+    Hungary,
+    /// Iceland (Nasdaq Iceland).
+    Iceland,
+    /// Indonesia (IDX).
+    Indonesia,
+    /// Israel (TASE).
+    Israel,
+    /// Romania (Bucharest SE).
+    Romania,
+    /// Russia (Moscow Exchange / MOEX).
+    Russia,
+    /// Saudi Arabia (Saudi Exchange / Tadawul). Weekend = Fri+Sat.
+    SaudiArabia,
+    /// Slovakia (Bratislava SE).
+    Slovakia,
+    /// Taiwan (TWSE).
+    Taiwan,
+    /// Thailand (Stock Exchange of Thailand — SET).
+    Thailand,
+    /// Turkey (Borsa Istanbul — BIST).
+    Turkey,
+    /// Ukraine (PFTS / Ukrainian Exchange).
+    Ukraine,
     /// Joint calendar combining two calendars.
     Joint(JointRule, Box<Calendar>, Box<Calendar>),
 }
@@ -142,6 +178,24 @@ impl Calendar {
             Calendar::Norway => norway_is_business_day(date),
             Calendar::Poland => poland_is_business_day(date),
             Calendar::NewZealand => new_zealand_is_business_day(date),
+            Calendar::Argentina => argentina_is_business_day(date),
+            Calendar::Austria => austria_is_business_day(date),
+            Calendar::Botswana => botswana_is_business_day(date),
+            Calendar::Chile => chile_is_business_day(date),
+            Calendar::CzechRepublic => czech_republic_is_business_day(date),
+            Calendar::Finland => finland_is_business_day(date),
+            Calendar::Hungary => hungary_is_business_day(date),
+            Calendar::Iceland => iceland_is_business_day(date),
+            Calendar::Indonesia => indonesia_is_business_day(date),
+            Calendar::Israel => israel_is_business_day(date),
+            Calendar::Romania => romania_is_business_day(date),
+            Calendar::Russia => russia_is_business_day(date),
+            Calendar::SaudiArabia => saudi_arabia_is_business_day(date),
+            Calendar::Slovakia => slovakia_is_business_day(date),
+            Calendar::Taiwan => taiwan_is_business_day(date),
+            Calendar::Thailand => thailand_is_business_day(date),
+            Calendar::Turkey => turkey_is_business_day(date),
+            Calendar::Ukraine => ukraine_is_business_day(date),
             Calendar::Joint(rule, a, b) => match rule {
                 JointRule::JoinHolidays => a.is_business_day(date) && b.is_business_day(date),
                 JointRule::JoinBusinessDays => a.is_business_day(date) || b.is_business_day(date),
@@ -1566,6 +1620,532 @@ fn new_zealand_is_business_day(date: Date) -> bool {
             || (d == 27 && matches!(wd, Weekday::Monday | Weekday::Tuesday))
             || (d == 28 && matches!(wd, Weekday::Monday | Weekday::Tuesday)))
     { return false; }
+    true
+}
+
+// ============================================================================
+//  Argentina calendar (Buenos Aires SE / BCRA)
+// ============================================================================
+
+fn argentina_is_business_day(date: Date) -> bool {
+    if is_weekend(date) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+    let wd = date.weekday();
+
+    // New Year's Day
+    if m == Month::January && d == 1 { return false; }
+    // Carnival (2 weekdays before Ash Wednesday = Mon+Tue before Ash Wed)
+    // Ash Wednesday = Easter Sunday - 46. Carnival = ES - 48 (Mon) and ES - 47 (Tue)
+    let (em_month, em_day) = easter_monday(y);
+    let em_serial = Date::from_ymd_opt(y, em_month, em_day).unwrap_or_else(|| unreachable!()).serial();
+    // Easter Sunday serial = em_serial - 1
+    let carnival_mon = Date::from_serial(em_serial - 1 - 48);
+    let carnival_tue = Date::from_serial(em_serial - 1 - 47);
+    if date == carnival_mon || date == carnival_tue { return false; }
+    // National Truth and Justice Day (Mar 24)
+    if m == Month::March && d == 24 { return false; }
+    // Good Thursday + Good Friday
+    let holy_thu = Date::from_serial(em_serial - 4);
+    let gf = Date::from_serial(em_serial - 3);
+    if date == holy_thu || date == gf { return false; }
+    // Labour Day (May 1)
+    if m == Month::May && d == 1 { return false; }
+    // May Revolution Day (May 25)
+    if m == Month::May && d == 25 { return false; }
+    // Belgrano Day (3rd Monday of June)
+    if m == Month::June && wd == Weekday::Monday && (15..=21).contains(&d) { return false; }
+    // Independence Day (Jul 9)
+    if m == Month::July && d == 9 { return false; }
+    // San Martín Day (3rd Monday of August)
+    if m == Month::August && wd == Weekday::Monday && (15..=21).contains(&d) { return false; }
+    // Diversity Day / Columbus Day (2nd Monday of October)
+    if m == Month::October && wd == Weekday::Monday && (8..=14).contains(&d) { return false; }
+    // National Sovereignty Day (last Monday on or before Nov 20)
+    if m == Month::November && wd == Weekday::Monday && (18..=24).contains(&d) { return false; }
+    // Immaculate Conception (Dec 8)
+    if m == Month::December && d == 8 { return false; }
+    // Christmas (Dec 25)
+    if m == Month::December && d == 25 { return false; }
+    true
+}
+
+// ============================================================================
+//  Austria calendar (Vienna Stock Exchange — Wiener Börse)
+// ============================================================================
+
+fn austria_is_business_day(date: Date) -> bool {
+    if is_weekend(date) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+
+    if m == Month::January && d == 1 { return false; }  // New Year
+    if m == Month::January && d == 6 { return false; }  // Epiphany
+    let (em_month, em_day) = easter_monday(y);
+    let em_serial = Date::from_ymd_opt(y, em_month, em_day).unwrap_or_else(|| unreachable!()).serial();
+    let gf = Date::from_serial(em_serial - 3);
+    let em = Date::from_serial(em_serial);
+    let ascension = Date::from_serial(em_serial - 1 + 39);
+    let whit_mon = Date::from_serial(em_serial - 1 + 50);
+    let corpus = Date::from_serial(em_serial - 1 + 60);
+    if date == gf || date == em { return false; }
+    if date == ascension { return false; }
+    if date == whit_mon { return false; }
+    if date == corpus { return false; }
+    if m == Month::May && d == 1 { return false; }      // Labour Day
+    if m == Month::August && d == 15 { return false; }  // Assumption
+    if m == Month::October && d == 26 { return false; } // National Day
+    if m == Month::November && d == 1 { return false; } // All Saints
+    if m == Month::December && d == 8 { return false; } // Immaculate Conception
+    if m == Month::December && d == 25 { return false; } // Christmas
+    if m == Month::December && d == 26 { return false; } // St. Stephen
+    true
+}
+
+// ============================================================================
+//  Botswana calendar (BSE)
+// ============================================================================
+
+fn botswana_is_business_day(date: Date) -> bool {
+    if is_weekend(date) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+    let wd = date.weekday();
+
+    if m == Month::January && (d == 1 || (d == 2 && wd == Weekday::Monday)) { return false; }
+    let (em_month, em_day) = easter_monday(y);
+    let em_serial = Date::from_ymd_opt(y, em_month, em_day).unwrap_or_else(|| unreachable!()).serial();
+    let gf = Date::from_serial(em_serial - 3);
+    let holy_sat = Date::from_serial(em_serial - 2);
+    let em = Date::from_serial(em_serial);
+    let ascension = Date::from_serial(em_serial - 1 + 39);
+    if date == gf || date == holy_sat || date == em { return false; }
+    if date == ascension { return false; }
+    if m == Month::May && d == 1 { return false; }     // Labour Day
+    if m == Month::July && d == 1 { return false; }    // Sir Seretse Khama Day
+    // President's Day: 3rd Monday of July + following Tuesday
+    if m == Month::July && wd == Weekday::Monday && (15..=21).contains(&d) { return false; }
+    if m == Month::July && wd == Weekday::Tuesday && (16..=22).contains(&d) { return false; }
+    // Botswana Day (Sep 30 + Oct 1)
+    if m == Month::September && d == 30 { return false; }
+    if m == Month::October && (d == 1 || (d == 2 && wd == Weekday::Monday)) { return false; }
+    if m == Month::December && d == 25 { return false; }
+    if m == Month::December && (d == 26 || (d == 27 && wd == Weekday::Monday)) { return false; }
+    true
+}
+
+// ============================================================================
+//  Chile calendar (Bolsa de Comercio de Santiago)
+// ============================================================================
+
+fn chile_is_business_day(date: Date) -> bool {
+    if is_weekend(date) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+    let wd = date.weekday();
+
+    if m == Month::January && d == 1 { return false; }
+    let (em_month, em_day) = easter_monday(y);
+    let em_serial = Date::from_ymd_opt(y, em_month, em_day).unwrap_or_else(|| unreachable!()).serial();
+    let gf = Date::from_serial(em_serial - 3);
+    let holy_sat = Date::from_serial(em_serial - 2);
+    if date == gf || date == holy_sat { return false; }
+    if m == Month::May && d == 1 { return false; }      // Labour Day
+    if m == Month::May && d == 21 { return false; }     // Navy Day (Glorias Navales)
+    if m == Month::June && d == 29 { return false; }    // St. Peter and St. Paul
+    if m == Month::July && d == 16 { return false; }    // Our Lady of Mt. Carmel
+    if m == Month::August && d == 15 { return false; }  // Assumption
+    if m == Month::September && d == 18 { return false; } // Independence Day
+    if m == Month::September && d == 19 { return false; } // Army Day
+    // Columbus/Diversity Day (Oct 12, or nearest Monday if observed)
+    if m == Month::October && d == 12 { return false; }
+    if m == Month::October && d == 31 { return false; } // Reformation Day
+    if m == Month::November && d == 1 { return false; } // All Saints
+    if m == Month::December && d == 8 { return false; } // Immaculate Conception
+    if m == Month::December && d == 25 { return false; } // Christmas
+    let _ = wd; // suppress warning
+    true
+}
+
+// ============================================================================
+//  Czech Republic calendar (Prague Stock Exchange)
+// ============================================================================
+
+fn czech_republic_is_business_day(date: Date) -> bool {
+    if is_weekend(date) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+
+    if m == Month::January && d == 1 { return false; }   // New Year + Czech Statehood
+    let (em_month, em_day) = easter_monday(y);
+    let em = Date::from_ymd_opt(y, em_month, em_day).unwrap_or_else(|| unreachable!());
+    if date == em { return false; }
+    if m == Month::May && d == 1 { return false; }        // Labour Day
+    if m == Month::May && d == 8 { return false; }        // Liberation Day
+    if m == Month::July && d == 5 { return false; }       // SS Cyril and Methodius
+    if m == Month::July && d == 6 { return false; }       // Jan Hus Day
+    if m == Month::September && d == 28 { return false; } // Czech Statehood Day
+    if m == Month::October && d == 28 { return false; }   // Independence Day
+    if m == Month::November && d == 17 { return false; }  // Struggle for Freedom and Democracy
+    if m == Month::December && d == 24 { return false; }  // Christmas Eve
+    if m == Month::December && d == 25 { return false; }  // Christmas Day
+    if m == Month::December && d == 26 { return false; }  // St. Stephen
+    true
+}
+
+// ============================================================================
+//  Finland calendar (Nasdaq Helsinki)
+// ============================================================================
+
+fn finland_is_business_day(date: Date) -> bool {
+    if is_weekend(date) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+
+    if m == Month::January && d == 1 { return false; }
+    if m == Month::January && d == 6 { return false; } // Epiphany
+    let (em_month, em_day) = easter_monday(y);
+    let em_serial = Date::from_ymd_opt(y, em_month, em_day).unwrap_or_else(|| unreachable!()).serial();
+    let gf = Date::from_serial(em_serial - 3);
+    let em = Date::from_serial(em_serial);
+    let ascension = Date::from_serial(em_serial - 1 + 39);
+    if date == gf || date == em { return false; }
+    if date == ascension { return false; }
+    if m == Month::May && d == 1 { return false; }     // Labour Day
+    // Midsummer Eve: Friday between Jun 19-25
+    if m == Month::June && date.weekday() == Weekday::Friday && (19..=25).contains(&d) { return false; }
+    // Midsummer Day: Saturday between Jun 20-26
+    if m == Month::June && date.weekday() == Weekday::Saturday && (20..=26).contains(&d) { return false; }
+    if m == Month::November && date.weekday() == Weekday::Saturday && (1..=7).contains(&d) { return false; } // All Saints (1st Sat Nov)
+    if m == Month::December && d == 6 { return false; }  // Independence Day
+    if m == Month::December && d == 24 { return false; } // Christmas Eve
+    if m == Month::December && d == 25 { return false; } // Christmas
+    if m == Month::December && d == 26 { return false; } // Boxing Day
+    true
+}
+
+// ============================================================================
+//  Hungary calendar (Budapest Stock Exchange)
+// ============================================================================
+
+fn hungary_is_business_day(date: Date) -> bool {
+    if is_weekend(date) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+
+    if m == Month::January && d == 1 { return false; }
+    if m == Month::March && d == 15 { return false; }   // 1848 Revolution Day
+    let (em_month, em_day) = easter_monday(y);
+    let em_serial = Date::from_ymd_opt(y, em_month, em_day).unwrap_or_else(|| unreachable!()).serial();
+    let gf = Date::from_serial(em_serial - 3);
+    let em = Date::from_serial(em_serial);
+    let whit_mon = Date::from_serial(em_serial - 1 + 50);
+    if date == gf || date == em { return false; }
+    if date == whit_mon { return false; }
+    if m == Month::May && d == 1 { return false; }      // Labour Day
+    if m == Month::August && d == 20 { return false; }  // St. Stephen / National Holiday
+    if m == Month::October && d == 23 { return false; } // Republic Day
+    if m == Month::November && d == 1 { return false; } // All Saints
+    if m == Month::December && d == 25 { return false; } // Christmas
+    if m == Month::December && d == 26 { return false; } // St. Stephen
+    true
+}
+
+// ============================================================================
+//  Iceland calendar (Nasdaq Iceland)
+// ============================================================================
+
+fn iceland_is_business_day(date: Date) -> bool {
+    if is_weekend(date) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+    let wd = date.weekday();
+
+    if m == Month::January && d == 1 { return false; }
+    let (em_month, em_day) = easter_monday(y);
+    let em_serial = Date::from_ymd_opt(y, em_month, em_day).unwrap_or_else(|| unreachable!()).serial();
+    let holy_thu = Date::from_serial(em_serial - 4);
+    let gf = Date::from_serial(em_serial - 3);
+    let em = Date::from_serial(em_serial);
+    let ascension = Date::from_serial(em_serial - 1 + 39);
+    let whit_mon = Date::from_serial(em_serial - 1 + 50);
+    if date == holy_thu || date == gf || date == em { return false; }
+    if date == ascension || date == whit_mon { return false; }
+    // First Day of Summer (first Thursday on or after Apr 19)
+    if m == Month::April && wd == Weekday::Thursday && (19..=25).contains(&d) { return false; }
+    if m == Month::May && d == 1 { return false; }       // Labour Day
+    if m == Month::June && d == 17 { return false; }     // National Day
+    // Commerce Day (1st Monday of August)
+    if m == Month::August && wd == Weekday::Monday && d <= 7 { return false; }
+    if m == Month::December && d == 24 { return false; } // Christmas Eve
+    if m == Month::December && d == 25 { return false; } // Christmas
+    if m == Month::December && d == 26 { return false; } // Boxing Day
+    if m == Month::December && d == 31 { return false; } // New Year's Eve
+    true
+}
+
+// ============================================================================
+//  Indonesia calendar (IDX — Indonesia Stock Exchange)
+// ============================================================================
+
+fn indonesia_is_business_day(date: Date) -> bool {
+    if is_weekend(date) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+    let wd = date.weekday();
+
+    if m == Month::January && d == 1 { return false; }
+    let (em_month, em_day) = easter_monday(y);
+    let em_serial = Date::from_ymd_opt(y, em_month, em_day).unwrap_or_else(|| unreachable!()).serial();
+    let gf = Date::from_serial(em_serial - 3);
+    let ascension = Date::from_serial(em_serial - 1 + 39);
+    if date == gf { return false; }
+    if date == ascension { return false; }
+    if m == Month::May && d == 1 { return false; }       // Labour Day
+    if m == Month::June && d == 1 { return false; }      // Pancasila Day
+    if m == Month::August && d == 17 { return false; }   // Independence Day
+    if m == Month::December && d == 25 { return false; } // Christmas
+    let _ = wd;
+    true
+}
+
+// ============================================================================
+//  Israel calendar (TASE — Tel Aviv SE)
+//  Primary non-weekend days are Sun–Thu; Fri+Sat are weekend.
+// ============================================================================
+
+fn israel_is_business_day(date: Date) -> bool {
+    // Israel weekend: Friday + Saturday
+    if matches!(date.weekday(), Weekday::Friday | Weekday::Saturday) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+    // Fixed approximations of Jewish holidays (Gregorian calendar equivalents vary)
+    // We use fixed western-calendar approximations for the most commonly traded
+    // public holidays. Actual TASE closures require the Hebrew calendar.
+    // Rosh Hashanah (approx Sep/Oct, 2 days)
+    // Yom Kippur (10 days after Rosh Hashanah)
+    // Sukkot, Passover, Shavuot — simplified: only Independence Day is consistent.
+    if m == Month::April && d == 27 { return false; } // Independence Day (approx)
+    if m == Month::September && d == 16 { return false; } // Rosh Hashanah approx
+    if m == Month::September && d == 17 { return false; }
+    if m == Month::September && d == 25 { return false; } // Yom Kippur approx
+    if m == Month::December && d == 25 { return false; } // Christmas (exchange closed)
+    true
+}
+
+// ============================================================================
+//  Romania calendar (Bucharest SE — BVB)
+// ============================================================================
+
+fn romania_is_business_day(date: Date) -> bool {
+    if is_weekend(date) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+    let wd = date.weekday();
+
+    if m == Month::January && d == 1 { return false; }   // New Year
+    if m == Month::January && (d == 2 || (d == 3 && wd == Weekday::Monday)) { return false; }
+    if m == Month::January && d == 24 { return false; }  // Unification Day
+    // Orthodox Easter Monday (same algorithm but Orthodox Church uses Julian calendar
+    // → approx offset: Orthodox Easter is typically 1 or 4–5 weeks after Gregorian)
+    // We use the Gregorian Easter + the standard Julian offset for ~2020–2040:
+    let (em_month, em_day) = easter_monday(y);
+    let em_serial = Date::from_ymd_opt(y, em_month, em_day).unwrap_or_else(|| unreachable!()).serial();
+    // Orthodox Easter typically runs 0, 1, 4, or 5 weeks later.
+    // Per QuantLib Romania calendar: uses the same easter_monday but offset by +13 days (Julian)
+    // For simplicity, use same Easter easter_monday + 13 days as approximation:
+    let orth_em = Date::from_serial(em_serial + 13);
+    let orth_gf = Date::from_serial(em_serial + 13 - 3);
+    if date == orth_gf || date == orth_em { return false; }
+    if m == Month::May && d == 1 { return false; }        // Labour Day
+    if m == Month::June && d == 1 { return false; }       // Children's Day
+    // Orthodox Whit Monday (7 weeks after Orthodox Easter Monday)
+    let orth_whit = Date::from_serial(em_serial + 13 - 1 + 50);
+    if date == orth_whit { return false; }
+    if m == Month::August && d == 15 { return false; }    // Dormition of Theotokos
+    if m == Month::November && d == 30 { return false; }  // St. Andrew
+    if m == Month::December && d == 1 { return false; }   // National Day
+    if m == Month::December && d == 25 { return false; }  // Christmas
+    if m == Month::December && d == 26 { return false; }  // Christmas 2nd day
+    true
+}
+
+// ============================================================================
+//  Russia calendar (Moscow Exchange — MOEX)
+// ============================================================================
+
+fn russia_is_business_day(date: Date) -> bool {
+    if is_weekend(date) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+
+    // New Year holiday week (Jan 1–8)
+    if m == Month::January && d <= 8 { return false; }
+    if m == Month::February && d == 23 { return false; } // Defender of the Fatherland
+    if m == Month::March && d == 8 { return false; }     // International Women's Day
+    if m == Month::May && d == 1 { return false; }       // Spring and Labour Day
+    if m == Month::May && d == 9 { return false; }       // Victory Day
+    if m == Month::June && d == 12 { return false; }     // Russia Day
+    if m == Month::November && d == 4 { return false; }  // National Unity Day
+    true
+}
+
+// ============================================================================
+//  Saudi Arabia calendar (Saudi Exchange — Tadawul)
+//  Weekend = Friday + Saturday.
+// ============================================================================
+
+fn saudi_arabia_is_business_day(date: Date) -> bool {
+    // Saudi weekend: Friday + Saturday
+    if matches!(date.weekday(), Weekday::Friday | Weekday::Saturday) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+
+    if m == Month::February && d == 22 { return false; }  // Founding Day
+    if m == Month::September && d == 23 { return false; } // National Day
+    // Islamic holidays (Eid al-Fitr, Eid al-Adha) require lunar calendar — skipped here.
+    true
+}
+
+// ============================================================================
+//  Slovakia calendar (Bratislava SE)
+// ============================================================================
+
+fn slovakia_is_business_day(date: Date) -> bool {
+    if is_weekend(date) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+
+    if m == Month::January && d == 1 { return false; }   // New Year + Slovak Republic Day
+    if m == Month::January && d == 6 { return false; }   // Epiphany
+    let (em_month, em_day) = easter_monday(y);
+    let em_serial = Date::from_ymd_opt(y, em_month, em_day).unwrap_or_else(|| unreachable!()).serial();
+    let gf = Date::from_serial(em_serial - 3);
+    let em = Date::from_serial(em_serial);
+    if date == gf || date == em { return false; }
+    if m == Month::May && d == 1 { return false; }        // Labour Day
+    if m == Month::May && d == 8 { return false; }        // Liberation Day
+    if m == Month::July && d == 5 { return false; }       // SS Cyril and Methodius
+    if m == Month::August && d == 29 { return false; }    // Slovak National Uprising
+    if m == Month::September && d == 1 { return false; }  // Constitution Day
+    if m == Month::September && d == 15 { return false; } // Our Lady of Sorrows
+    if m == Month::November && d == 1 { return false; }   // All Saints
+    if m == Month::November && d == 17 { return false; }  // Day of Freedom and Democracy
+    if m == Month::December && d == 24 { return false; }  // Christmas Eve
+    if m == Month::December && d == 25 { return false; }  // Christmas
+    if m == Month::December && d == 26 { return false; }  // St. Stephen
+    true
+}
+
+// ============================================================================
+//  Taiwan calendar (TWSE)
+// ============================================================================
+
+fn taiwan_is_business_day(date: Date) -> bool {
+    if is_weekend(date) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+
+    if m == Month::January && d == 1 { return false; }   // New Year
+    // Chinese New Year week (approx Jan 28 – Feb 6, varies ±2 weeks)
+    // Use a simple approximation: Jan 27–Feb 7 (major overlap years 2020–2035)
+    if m == Month::February && (1..=6).contains(&d) { return false; }
+    if m == Month::February && d == 28 { return false; } // Peace Memorial Day
+    // Tomb Sweeping Day (Apr 4 or 5)
+    if m == Month::April && (d == 4 || d == 5) { return false; }
+    if m == Month::June && d == 10 { return false; }     // Dragon Boat Festival (approx)
+    if m == Month::October && d == 10 { return false; }  // National Day
+    true
+}
+
+// ============================================================================
+//  Thailand calendar (SET — Stock Exchange of Thailand)
+// ============================================================================
+
+fn thailand_is_business_day(date: Date) -> bool {
+    if is_weekend(date) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+    let wd = date.weekday();
+
+    if m == Month::January && d == 1 { return false; }    // New Year
+    if m == Month::February && d == 2 { return false; }   // Makha Bucha (approx)
+    if m == Month::April && d == 6 { return false; }      // Chakri Day
+    if m == Month::April && (d == 13 || d == 14 || d == 15) { return false; } // Songkran
+    if m == Month::May && d == 1 { return false; }        // Labour Day
+    if m == Month::May && d == 4 { return false; }        // Coronation Day
+    if m == Month::May && d == 13 { return false; }       // Wisakha Bucha (approx)
+    if m == Month::June && d == 3 { return false; }       // Queen's Birthday (HM Suthida)
+    if m == Month::July && d == 28 { return false; }      // HM King Vajiralongkorn Birthday
+    if m == Month::August && d == 12 { return false; }    // Mother's Day (HM Queen Sirikit)
+    if m == Month::October && d == 13 { return false; }   // Memorial Day (Rama IX)
+    if m == Month::October && d == 23 { return false; }   // Chulalongkorn Day
+    if m == Month::December && d == 5 { return false; }   // National Day / Rama IX Birthday
+    if m == Month::December && d == 10 { return false; }  // Constitution Day
+    if m == Month::December && d == 31 { return false; }  // New Year's Eve
+    let _ = (y, wd);
+    true
+}
+
+// ============================================================================
+//  Turkey calendar (Borsa Istanbul — BIST)
+// ============================================================================
+
+fn turkey_is_business_day(date: Date) -> bool {
+    if is_weekend(date) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+
+    if m == Month::January && d == 1 { return false; }    // New Year
+    if m == Month::April && d == 23 { return false; }     // National Sovereignty / Children's Day
+    if m == Month::May && d == 1 { return false; }        // Labour Day
+    if m == Month::May && d == 19 { return false; }       // Youth and Sports Day
+    if m == Month::July && d == 15 { return false; }      // Democracy Day
+    if m == Month::August && d == 30 { return false; }    // Victory Day
+    if m == Month::October && d == 29 { return false; }   // Republic Day
+    // Islamic holidays (Eid, Ramadan) require lunar calendar — skipped.
+    true
+}
+
+// ============================================================================
+//  Ukraine calendar (PFTS / Ukrainian Exchange)
+// ============================================================================
+
+fn ukraine_is_business_day(date: Date) -> bool {
+    if is_weekend(date) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+
+    if m == Month::January && d == 1 { return false; }    // New Year
+    if m == Month::January && d == 7 { return false; }    // Orthodox Christmas
+    if m == Month::March && d == 8 { return false; }      // International Women's Day
+    // Orthodox Easter Monday (approx: Julian Easter + 13 days ≈ Gregorian Easter + 13 days)
+    let (em_month, em_day) = easter_monday(y);
+    let em_serial = Date::from_ymd_opt(y, em_month, em_day).unwrap_or_else(|| unreachable!()).serial();
+    let orth_em = Date::from_serial(em_serial + 13);
+    if date == orth_em { return false; }
+    if m == Month::May && d == 1 { return false; }        // Labour Day
+    if m == Month::May && d == 9 { return false; }        // Victory Day
+    // Orthodox Trinity / Pentecost Monday (approx)
+    let orth_whit = Date::from_serial(em_serial + 13 - 1 + 50);
+    if date == orth_whit { return false; }
+    if m == Month::June && d == 28 { return false; }      // Constitution Day
+    if m == Month::August && d == 24 { return false; }    // Independence Day
+    if m == Month::October && d == 14 { return false; }   // Defender's Day / Cossack Holiday
+    if m == Month::December && d == 25 { return false; }  // Christmas (western, since 2017)
     true
 }
 

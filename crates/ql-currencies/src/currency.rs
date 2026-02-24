@@ -185,6 +185,214 @@ impl Currency {
         }
     }
 
+    /// New Zealand dollar (NZD).
+    pub fn nzd() -> Self {
+        Self {
+            code: "NZD",
+            name: "New Zealand dollar",
+            numeric_code: 554,
+            symbol: "NZ$",
+            fraction_symbol: "",
+            fractions_per_unit: 100,
+            rounding: Rounding::Closest(2),
+        }
+    }
+
+    /// Swedish krona (SEK).
+    pub fn sek() -> Self {
+        Self {
+            code: "SEK",
+            name: "Swedish krona",
+            numeric_code: 752,
+            symbol: "kr",
+            fraction_symbol: "",
+            fractions_per_unit: 100,
+            rounding: Rounding::Closest(2),
+        }
+    }
+
+    /// Danish krone (DKK).
+    pub fn dkk() -> Self {
+        Self {
+            code: "DKK",
+            name: "Danish krone",
+            numeric_code: 208,
+            symbol: "kr",
+            fraction_symbol: "",
+            fractions_per_unit: 100,
+            rounding: Rounding::Closest(2),
+        }
+    }
+
+    /// Norwegian krone (NOK).
+    pub fn nok() -> Self {
+        Self {
+            code: "NOK",
+            name: "Norwegian krone",
+            numeric_code: 578,
+            symbol: "kr",
+            fraction_symbol: "",
+            fractions_per_unit: 100,
+            rounding: Rounding::Closest(2),
+        }
+    }
+
+    /// Brazilian real (BRL).
+    pub fn brl() -> Self {
+        Self {
+            code: "BRL",
+            name: "Brazilian real",
+            numeric_code: 986,
+            symbol: "R$",
+            fraction_symbol: "",
+            fractions_per_unit: 100,
+            rounding: Rounding::Closest(2),
+        }
+    }
+
+    /// Polish zloty (PLN).
+    pub fn pln() -> Self {
+        Self {
+            code: "PLN",
+            name: "Polish zloty",
+            numeric_code: 985,
+            symbol: "zł",
+            fraction_symbol: "",
+            fractions_per_unit: 100,
+            rounding: Rounding::Closest(2),
+        }
+    }
+
+    /// Czech koruna (CZK).
+    pub fn czk() -> Self {
+        Self {
+            code: "CZK",
+            name: "Czech koruna",
+            numeric_code: 203,
+            symbol: "Kč",
+            fraction_symbol: "",
+            fractions_per_unit: 100,
+            rounding: Rounding::Closest(2),
+        }
+    }
+
+    /// Hungarian forint (HUF).
+    pub fn huf() -> Self {
+        Self {
+            code: "HUF",
+            name: "Hungarian forint",
+            numeric_code: 348,
+            symbol: "Ft",
+            fraction_symbol: "",
+            fractions_per_unit: 100,
+            rounding: Rounding::Closest(2),
+        }
+    }
+
+    /// Romanian leu (RON).
+    pub fn ron() -> Self {
+        Self {
+            code: "RON",
+            name: "Romanian leu",
+            numeric_code: 946,
+            symbol: "lei",
+            fraction_symbol: "",
+            fractions_per_unit: 100,
+            rounding: Rounding::Closest(2),
+        }
+    }
+
+    /// Turkish lira (TRY).
+    pub fn try_() -> Self {
+        Self {
+            code: "TRY",
+            name: "Turkish lira",
+            numeric_code: 949,
+            symbol: "₺",
+            fraction_symbol: "",
+            fractions_per_unit: 100,
+            rounding: Rounding::Closest(2),
+        }
+    }
+
+    /// South African rand (ZAR).
+    pub fn zar() -> Self {
+        Self {
+            code: "ZAR",
+            name: "South African rand",
+            numeric_code: 710,
+            symbol: "R",
+            fraction_symbol: "",
+            fractions_per_unit: 100,
+            rounding: Rounding::Closest(2),
+        }
+    }
+
+    /// Chinese renminbi (CNY).
+    pub fn cny() -> Self {
+        Self {
+            code: "CNY",
+            name: "Chinese renminbi",
+            numeric_code: 156,
+            symbol: "¥",
+            fraction_symbol: "",
+            fractions_per_unit: 100,
+            rounding: Rounding::Closest(2),
+        }
+    }
+
+    /// Indian rupee (INR).
+    pub fn inr() -> Self {
+        Self {
+            code: "INR",
+            name: "Indian rupee",
+            numeric_code: 356,
+            symbol: "₹",
+            fraction_symbol: "",
+            fractions_per_unit: 100,
+            rounding: Rounding::Closest(2),
+        }
+    }
+
+    /// South Korean won (KRW).
+    pub fn krw() -> Self {
+        Self {
+            code: "KRW",
+            name: "South Korean won",
+            numeric_code: 410,
+            symbol: "₩",
+            fraction_symbol: "",
+            fractions_per_unit: 1,
+            rounding: Rounding::Closest(0),
+        }
+    }
+
+    /// Singapore dollar (SGD).
+    pub fn sgd() -> Self {
+        Self {
+            code: "SGD",
+            name: "Singapore dollar",
+            numeric_code: 702,
+            symbol: "S$",
+            fraction_symbol: "",
+            fractions_per_unit: 100,
+            rounding: Rounding::Closest(2),
+        }
+    }
+
+    /// Hong Kong dollar (HKD).
+    pub fn hkd() -> Self {
+        Self {
+            code: "HKD",
+            name: "Hong Kong dollar",
+            numeric_code: 344,
+            symbol: "HK$",
+            fraction_symbol: "",
+            fractions_per_unit: 100,
+            rounding: Rounding::Closest(2),
+        }
+    }
+
     /// Apply the currency's rounding convention to a monetary amount.
     pub fn round(&self, amount: f64) -> f64 {
         self.rounding.round(amount)

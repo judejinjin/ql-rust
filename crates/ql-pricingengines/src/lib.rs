@@ -62,6 +62,10 @@ pub mod analytic_vanilla_extra;
 pub mod analytic_binary_barrier;
 pub mod fd_heston_barrier;
 pub mod variance_gamma_engine;
+pub mod analytic_asian;
+pub mod basket_engines;
+pub mod vanilla_extra_engines;
+pub mod exotic_options;
 
 // Re-exports
 pub use american_engines::{
@@ -171,3 +175,20 @@ pub use fd_heston_barrier::{
     fd_heston_double_barrier, FdHestonDoubleBarrierResult,
 };
 pub use variance_gamma_engine::{vg_cos_price, VgResult};
+pub use analytic_asian::{
+    asian_geometric_continuous_avg_price, asian_geometric_discrete_avg_price,
+    asian_geometric_continuous_avg_strike, asian_geometric_discrete_avg_strike,
+    asian_turnbull_wakeman, asian_levy, AsianResult,
+};
+pub use basket_engines::{
+    choi_basket_spread, dlz_basket_price, BasketSpreadResult,
+};
+pub use vanilla_extra_engines::{
+    ju_quadratic_american, integral_european, integral_european_vanilla,
+    JuAmericanResult, IntegralResult,
+};
+pub use exotic_options::{
+    partial_time_barrier, PartialBarrierResult, PartialBarrierType,
+    two_asset_correlation, TwoAssetCorrelationResult,
+    holder_extensible, writer_extensible, ExtensibleOptionResult,
+};

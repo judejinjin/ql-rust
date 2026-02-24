@@ -4,7 +4,7 @@
 //! interest rate, or implied volatility). When the value changes, all
 //! registered observers are notified.
 
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 use crate::errors::{QLError, QLResult};
 use crate::observable::{Observable, ObservableState};
@@ -80,6 +80,262 @@ impl Quote for SimpleQuote {
 
     fn is_valid(&self) -> bool {
         self.value.read().unwrap_or_else(|p| p.into_inner()).is_some()
+    }
+}
+
+// ===========================================================================
+// DerivedQuote — applies a transformation to a source quote
+// ===========================================================================
+
+/// A quote that applies a transformation function to a source quote.
+///
+/// # Example
+/// ```
+/// # use ql_core::quote::{SimpleQuote, DerivedQuote, Quote};
+/// # use std::sync::Arc;
+/// let base = Arc::new(SimpleQuote::new(100.0));
+/// let derived = DerivedQuote::new(base, |x| x * 1.05);
+/// assert!((derived.value().unwrap() - 105.0).abs() < 1e-12);
+/// ```
+pub struct DerivedQuote<F: Fn(f64) -> f64 + Send + Sync> {
+    source: Arc<dyn Quote>,
+    transform: F,
+    state: RwLock<ObservableState>,
+}
+
+impl<F: Fn(f64) -> f64 + Send + Sync> DerivedQuote<F> {
+    pub fn new(source: Arc<dyn Quote>, transform: F) -> Self {
+        Self {
+            source,
+            transform,
+            state: RwLock::new(ObservableState::new()),
+        }
+    }
+}
+
+impl<F: Fn(f64) -> f64 + Send + Sync> Observable for DerivedQuote<F> {
+    fn observable_state(&self) -> &RwLock<ObservableState> {
+        &self.state
+    }
+}
+
+impl<F: Fn(f64) -> f64 + Send + Sync> Quote for DerivedQuote<F> {
+    fn value(&self) -> QLResult<f64> {
+        self.source.value().map(|v| (self.transform)(v))
+    }
+
+    fn is_valid(&self) -> bool {
+        self.source.is_valid()
+    }
+}
+
+// ===========================================================================
+// CompositeQuote — combines two quotes with a binary function
+// ===========================================================================
+
+/// A quote that combines two source quotes with a binary transformation.
+///
+/// # Example
+/// ```
+/// # use ql_core::quote::{SimpleQuote, CompositeQuote, Quote};
+/// # use std::sync::Arc;
+/// let a = Arc::new(SimpleQuote::new(3.0));
+/// let b = Arc::new(SimpleQuote::new(4.0));
+/// let spread = CompositeQuote::new(a, b, |x, y| x - y);
+/// assert!((spread.value().unwrap() - (-1.0)).abs() < 1e-12);
+/// ```
+pub struct CompositeQuote<F: Fn(f64, f64) -> f64 + Send + Sync> {
+    lhs: Arc<dyn Quote>,
+    rhs: Arc<dyn Quote>,
+    combine: F,
+    state: RwLock<ObservableState>,
+}
+
+impl<F: Fn(f64, f64) -> f64 + Send + Sync> CompositeQuote<F> {
+    pub fn new(lhs: Arc<dyn Quote>, rhs: Arc<dyn Quote>, combine: F) -> Self {
+        Self {
+            lhs,
+            rhs,
+            combine,
+            state: RwLock::new(ObservableState::new()),
+        }
+    }
+}
+
+impl<F: Fn(f64, f64) -> f64 + Send + Sync> Observable for CompositeQuote<F> {
+    fn observable_state(&self) -> &RwLock<ObservableState> {
+        &self.state
+    }
+}
+
+impl<F: Fn(f64, f64) -> f64 + Send + Sync> Quote for CompositeQuote<F> {
+    fn value(&self) -> QLResult<f64> {
+        let l = self.lhs.value()?;
+        let r = self.rhs.value()?;
+        Ok((self.combine)(l, r))
+    }
+
+    fn is_valid(&self) -> bool {
+        self.lhs.is_valid() && self.rhs.is_valid()
+    }
+}
+
+// ===========================================================================
+// DeltaVolQuote — implied vol quoted in delta space
+// ===========================================================================
+
+/// Type of delta quotation.
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
+pub enum DeltaType {
+    /// Spot delta (Δ_s = N(d1)).
+    Spot,
+    /// Forward delta (Δ_f = N(d2)).
+    Forward,
+    /// Delta neutral straddle.
+    Atm,
+}
+
+/// Implied volatility quoted in delta space.
+///
+/// Stores (delta, vol, maturity, delta_type).
+pub struct DeltaVolQuote {
+    delta: f64,
+    vol: Arc<dyn Quote>,
+    maturity: f64,
+    delta_type: DeltaType,
+    state: RwLock<ObservableState>,
+}
+
+impl DeltaVolQuote {
+    pub fn new(delta: f64, vol: Arc<dyn Quote>, maturity: f64, delta_type: DeltaType) -> Self {
+        Self {
+            delta,
+            vol,
+            maturity,
+            delta_type,
+            state: RwLock::new(ObservableState::new()),
+        }
+    }
+
+    pub fn delta(&self) -> f64 { self.delta }
+    pub fn maturity(&self) -> f64 { self.maturity }
+    pub fn delta_type(&self) -> DeltaType { self.delta_type }
+}
+
+impl Observable for DeltaVolQuote {
+    fn observable_state(&self) -> &RwLock<ObservableState> { &self.state }
+}
+
+impl Quote for DeltaVolQuote {
+    fn value(&self) -> QLResult<f64> { self.vol.value() }
+    fn is_valid(&self) -> bool { self.vol.is_valid() }
+}
+
+// ===========================================================================
+// EurodollarFuturesQuote — converts futures price to rate
+// ===========================================================================
+
+/// A quote wrapping a Eurodollar futures price (100 - rate*100).
+///
+/// `value()` returns the *rate* = (100 - price) / 100.
+pub struct EurodollarFuturesQuote {
+    price: Arc<dyn Quote>,
+    state: RwLock<ObservableState>,
+}
+
+impl EurodollarFuturesQuote {
+    pub fn new(price: Arc<dyn Quote>) -> Self {
+        Self { price, state: RwLock::new(ObservableState::new()) }
+    }
+
+    /// The raw futures price (100 - rate*100).
+    pub fn futures_price(&self) -> QLResult<f64> { self.price.value() }
+}
+
+impl Observable for EurodollarFuturesQuote {
+    fn observable_state(&self) -> &RwLock<ObservableState> { &self.state }
+}
+
+impl Quote for EurodollarFuturesQuote {
+    fn value(&self) -> QLResult<f64> {
+        self.price.value().map(|p| (100.0 - p) / 100.0)
+    }
+    fn is_valid(&self) -> bool { self.price.is_valid() }
+}
+
+// ===========================================================================
+// FuturesConvAdjustmentQuote — futures quote + convexity adjustment
+// ===========================================================================
+
+/// A futures-based quote with a convexity adjustment added to the implied rate.
+///
+/// `value()` = futures_rate + convexity_adjustment.
+pub struct FuturesConvAdjustmentQuote {
+    futures: Arc<dyn Quote>,
+    /// Additive convexity adjustment (e.g. from HullWhite model).
+    convexity_adj: Arc<dyn Quote>,
+    state: RwLock<ObservableState>,
+}
+
+impl FuturesConvAdjustmentQuote {
+    pub fn new(futures: Arc<dyn Quote>, convexity_adj: Arc<dyn Quote>) -> Self {
+        Self { futures, convexity_adj, state: RwLock::new(ObservableState::new()) }
+    }
+}
+
+impl Observable for FuturesConvAdjustmentQuote {
+    fn observable_state(&self) -> &RwLock<ObservableState> { &self.state }
+}
+
+impl Quote for FuturesConvAdjustmentQuote {
+    fn value(&self) -> QLResult<f64> {
+        let fut_rate = self.futures.value().map(|p| (100.0 - p) / 100.0)?;
+        let adj = self.convexity_adj.value()?;
+        Ok(fut_rate + adj)
+    }
+    fn is_valid(&self) -> bool {
+        self.futures.is_valid() && self.convexity_adj.is_valid()
+    }
+}
+
+// ===========================================================================
+// ForwardValueQuote — discounted forward value of a quote
+// ===========================================================================
+
+/// A quote representing the forward value: `spot * growth_factor / discount_factor`.
+///
+/// Used for projecting a spot quote to a future date.
+pub struct ForwardValueQuote {
+    spot: Arc<dyn Quote>,
+    /// Growth factor (e.g. e^{q*T}) — often the dividend-adjusted growth.
+    growth: Arc<dyn Quote>,
+    /// Discount factor to the forward date.
+    discount: Arc<dyn Quote>,
+    state: RwLock<ObservableState>,
+}
+
+impl ForwardValueQuote {
+    pub fn new(spot: Arc<dyn Quote>, growth: Arc<dyn Quote>, discount: Arc<dyn Quote>) -> Self {
+        Self { spot, growth, discount, state: RwLock::new(ObservableState::new()) }
+    }
+}
+
+impl Observable for ForwardValueQuote {
+    fn observable_state(&self) -> &RwLock<ObservableState> { &self.state }
+}
+
+impl Quote for ForwardValueQuote {
+    fn value(&self) -> QLResult<f64> {
+        let s = self.spot.value()?;
+        let g = self.growth.value()?;
+        let d = self.discount.value()?;
+        if d.abs() < 1e-15 {
+            return Err(QLError::InvalidArgument("discount factor is zero".to_string()));
+        }
+        Ok(s * g / d)
+    }
+    fn is_valid(&self) -> bool {
+        self.spot.is_valid() && self.growth.is_valid() && self.discount.is_valid()
     }
 }
 
