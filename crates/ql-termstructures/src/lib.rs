@@ -55,6 +55,7 @@ pub mod kahale_smile_section;
 pub mod spreaded_smile_section;
 pub mod abcd_vol_term_structure;
 pub mod gaussian1d_smile_section;
+pub mod ufr_term_structure;
 
 // Re-exports
 pub use term_structure::TermStructure;
@@ -110,3 +111,7 @@ pub use spreaded_smile_section::{
 };
 pub use abcd_vol_term_structure::{AbcdParameters, AbcdVolTermStructure, integrate_abcd_sq};
 pub use gaussian1d_smile_section::{HullWhiteParams, Gaussian1dSmileSection};
+pub use ufr_term_structure::{
+    SmithWilsonParams, UltimateForwardTermStructure as SmithWilsonCurve,
+    OisFutureRateHelper,
+};

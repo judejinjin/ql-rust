@@ -74,6 +74,11 @@ pub mod complex_chooser_option;
 pub mod bma_swap;
 pub mod cpi_swap;
 pub mod quanto_option;
+pub mod overnight_index_future;
+pub mod two_asset_barrier_option;
+pub mod vanilla_swing_option;
+pub mod zero_coupon_swap;
+pub mod perpetual_futures;
 
 // Re-exports
 pub use payoff::{OptionType, Payoff, Exercise};
@@ -126,4 +131,22 @@ pub use cpi_swap::{
 pub use quanto_option::{
     QuantoVanillaOption, QuantoForwardVanillaOption, QuantoResult,
     price_quanto_vanilla, price_quanto_forward,
+};
+pub use overnight_index_future::{
+    OvernightIndexFuture, OvernightIndexFutureResult,
+    price_overnight_index_future,
+};
+pub use two_asset_barrier_option::{
+    TwoAssetBarrierOption, TwoAssetBarrierType, TwoAssetBarrierResult,
+    price_two_asset_barrier,
+};
+pub use vanilla_swing_option::{
+    VanillaSwingOption, VanillaStorageOption, StorageAction,
+    SwingOptionPricingResult, StorageOptionPricingResult,
+};
+pub use zero_coupon_swap::{
+    ZeroCouponSwap, ZeroCouponSwapResult, price_zero_coupon_swap,
+};
+pub use perpetual_futures::{
+    PerpetualFuture, PerpetualFutureResult, analyze_perpetual,
 };

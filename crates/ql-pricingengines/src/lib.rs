@@ -192,3 +192,44 @@ pub use exotic_options::{
     two_asset_correlation, TwoAssetCorrelationResult,
     holder_extensible, writer_extensible, ExtensibleOptionResult,
 };
+
+// --- New engines (QuantLib parity) ---
+pub mod heston_pdf_engine;
+pub mod qdfp_american;
+pub mod digital_american;
+pub mod mc_asian;
+pub mod fd_asian;
+pub mod choi_asian;
+pub mod fd_bs_barrier;
+pub mod double_binary_barrier;
+pub mod barrier_mc_tree;
+pub mod mc_basket;
+pub mod fd_2d_engine;
+pub mod spread_engines;
+pub mod mc_forward;
+pub mod quanto_wrapper;
+pub mod fd_vanilla_extensions;
+pub mod shout_swing;
+pub mod variance_swap_advanced;
+pub mod mc_digital;
+pub mod gjrgarch_vasicek_engines;
+
+pub use heston_pdf_engine::{heston_pdf_price, HestonPdfResult, exponential_fitting_heston, ExpFitHestonResult};
+pub use qdfp_american::{qdfp_american, QdFpAmericanResult};
+pub use digital_american::{digital_american, DigitalAmericanResult, DigitalAmericanType};
+pub use mc_asian::{mc_asian_arithmetic_price, mc_asian_arithmetic_strike, mc_asian_geometric_price, mc_asian_heston_price, McAsianResult};
+pub use fd_asian::{fd_asian, FdAsianResult};
+pub use choi_asian::{choi_asian, ChoiAsianResult};
+pub use fd_bs_barrier::{fd_bs_barrier, fd_bs_rebate, FdBsBarrierResult, FdBsBarrierType};
+pub use double_binary_barrier::{double_binary_barrier, DoubleBinaryBarrierResult, DoubleBinaryType};
+pub use barrier_mc_tree::{binomial_barrier, mc_barrier, BarrierTreeMcResult, McBarrierType};
+pub use mc_basket::{mc_european_basket, mc_american_basket, McBasketResult, BasketPayoffType};
+pub use fd_2d_engine::{fd_2d_vanilla, Fd2dResult, Fd2dPayoff};
+pub use spread_engines::{operator_splitting_spread, single_factor_bsm_basket, SpreadEngineResult};
+pub use mc_forward::{mc_forward_european_bs, mc_forward_european_heston, McForwardResult};
+pub use quanto_wrapper::{quanto_adjustment, quanto_vanilla, QuantoAdjustment, QuantoVanillaResult, QuantoTermStructure};
+pub use fd_vanilla_extensions::{fd_bates_vanilla, fd_sabr_vanilla, fd_cev_vanilla, fd_cir_vanilla, fd_heston_hull_white, FdExtVanillaResult};
+pub use shout_swing::{fd_shout_option, ShoutOptionResult, fd_swing_option, SwingOptionResult};
+pub use variance_swap_advanced::{replicating_variance_swap, mc_variance_swap, VarianceSwapResult as AdvVarianceSwapResult};
+pub use mc_digital::{mc_digital, McDigitalResult, McDigitalType};
+pub use gjrgarch_vasicek_engines::{gjr_garch_option, GjrGarchResult, vasicek_bond_option, VasicekBondOptionResult, vasicek_european_equity, VasicekEquityResult};
