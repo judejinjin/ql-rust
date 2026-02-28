@@ -35,24 +35,45 @@ pub enum DayCounter {
     Actual360,
     /// Actual / 365 (Fixed)
     Actual365Fixed,
+    /// Actual / 366 — used in some Nordic and commodity markets.
+    Actual366,
+    /// Actual / 364 — used in some weekly settlement contexts.
+    Actual364,
+    /// Actual / 365.25 — average year length (regulatory, insurance).
+    Actual36525,
     /// 30/360 variants
     Thirty360(Thirty360Convention),
     /// Actual/Actual variants
     ActualActual(ActualActualConvention),
     /// Business/252 (Brazilian convention: business days / 252).
     Business252,
+    /// Simple day counter — year fraction = days / 365.25, day count = serial diff.
+    /// Used for quick calculations without specific market convention.
+    Simple,
+    /// One — always returns year fraction = 1 and day count = 1.
+    /// Useful for zero-coupon instruments or as a placeholder.
+    One,
 }
 
 impl DayCounter {
     /// Number of calendar days between `d1` (exclusive) and `d2` (inclusive).
     pub fn day_count(&self, d1: Date, d2: Date) -> i32 {
         match self {
-            DayCounter::Actual360 | DayCounter::Actual365Fixed | DayCounter::ActualActual(_) => {
+            DayCounter::Actual360
+            | DayCounter::Actual365Fixed
+            | DayCounter::Actual366
+            | DayCounter::Actual364
+            | DayCounter::Actual36525
+            | DayCounter::ActualActual(_)
+            | DayCounter::Simple => {
                 d2.serial() - d1.serial()
             }
             DayCounter::Thirty360(convention) => thirty360_day_count(d1, d2, *convention),
             DayCounter::Business252 => {
                 crate::calendar::Calendar::Brazil.business_days_between(d1, d2)
+            }
+            DayCounter::One => {
+                if d1 == d2 { 0 } else { 1 }
             }
         }
     }
@@ -81,6 +102,18 @@ impl DayCounter {
                 let days = d2.serial() - d1.serial();
                 days as Real / 365.0
             }
+            DayCounter::Actual366 => {
+                let days = d2.serial() - d1.serial();
+                days as Real / 366.0
+            }
+            DayCounter::Actual364 => {
+                let days = d2.serial() - d1.serial();
+                days as Real / 364.0
+            }
+            DayCounter::Actual36525 => {
+                let days = d2.serial() - d1.serial();
+                days as Real / 365.25
+            }
             DayCounter::Thirty360(_) => {
                 let days = self.day_count(d1, d2);
                 days as Real / 360.0
@@ -91,6 +124,13 @@ impl DayCounter {
             DayCounter::Business252 => {
                 self.day_count(d1, d2) as Real / 252.0
             }
+            DayCounter::Simple => {
+                let days = d2.serial() - d1.serial();
+                days as Real / 365.25
+            }
+            DayCounter::One => {
+                if d1 == d2 { 0.0 } else { 1.0 }
+            }
         }
     }
 
@@ -99,12 +139,17 @@ impl DayCounter {
         match self {
             DayCounter::Actual360 => "Actual/360",
             DayCounter::Actual365Fixed => "Actual/365 (Fixed)",
+            DayCounter::Actual366 => "Actual/366",
+            DayCounter::Actual364 => "Actual/364",
+            DayCounter::Actual36525 => "Actual/365.25",
             DayCounter::Thirty360(Thirty360Convention::BondBasis) => "30/360 (Bond Basis)",
             DayCounter::Thirty360(Thirty360Convention::EurobondBasis) => "30E/360 (Eurobond Basis)",
             DayCounter::ActualActual(ActualActualConvention::ISDA) => "Actual/Actual (ISDA)",
             DayCounter::ActualActual(ActualActualConvention::ISMA) => "Actual/Actual (ISMA)",
             DayCounter::ActualActual(ActualActualConvention::AFB) => "Actual/Actual (AFB)",
             DayCounter::Business252 => "Business/252",
+            DayCounter::Simple => "Simple",
+            DayCounter::One => "1/1",
         }
     }
 }
@@ -296,5 +341,53 @@ mod tests {
         let bd = dc.day_count(d1, d2);
         assert!(bd > 0);
         assert_relative_eq!(dc.year_fraction(d1, d2), bd as f64 / 252.0, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn actual366_year_fraction() {
+        let dc = DayCounter::Actual366;
+        let d1 = Date::from_ymd(2025, Month::January, 1);
+        let d2 = Date::from_ymd(2025, Month::July, 1);
+        assert_eq!(dc.day_count(d1, d2), 181);
+        assert_relative_eq!(dc.year_fraction(d1, d2), 181.0 / 366.0, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn actual364_year_fraction() {
+        let dc = DayCounter::Actual364;
+        let d1 = Date::from_ymd(2025, Month::January, 1);
+        let d2 = Date::from_ymd(2025, Month::July, 1);
+        assert_relative_eq!(dc.year_fraction(d1, d2), 181.0 / 364.0, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn actual365_25_year_fraction() {
+        let dc = DayCounter::Actual36525;
+        let d1 = Date::from_ymd(2025, Month::January, 1);
+        let d2 = Date::from_ymd(2026, Month::January, 1);
+        assert_relative_eq!(dc.year_fraction(d1, d2), 365.0 / 365.25, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn simple_day_counter() {
+        let dc = DayCounter::Simple;
+        let d1 = Date::from_ymd(2025, Month::January, 1);
+        let d2 = Date::from_ymd(2026, Month::January, 1);
+        assert_eq!(dc.day_count(d1, d2), 365);
+        assert_relative_eq!(dc.year_fraction(d1, d2), 365.0 / 365.25, epsilon = 1e-12);
+        assert_eq!(dc.name(), "Simple");
+    }
+
+    #[test]
+    fn one_day_counter() {
+        let dc = DayCounter::One;
+        let d1 = Date::from_ymd(2025, Month::January, 1);
+        let d2 = Date::from_ymd(2030, Month::January, 1);
+        assert_eq!(dc.day_count(d1, d2), 1);
+        assert_relative_eq!(dc.year_fraction(d1, d2), 1.0, epsilon = 1e-12);
+        // Same date
+        assert_eq!(dc.day_count(d1, d1), 0);
+        assert_relative_eq!(dc.year_fraction(d1, d1), 0.0, epsilon = 1e-12);
+        assert_eq!(dc.name(), "1/1");
     }
 }

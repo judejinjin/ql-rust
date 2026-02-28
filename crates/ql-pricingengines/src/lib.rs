@@ -217,6 +217,11 @@ pub mod vanna_volga;
 pub mod integral_cds;
 pub mod cva_swap_engine;
 pub mod credit_portfolio;
+pub mod fd_g2_swaption;
+pub mod soft_barrier;
+pub mod bsm_hull_white;
+pub mod gaussian1d_nonstd_swaption;
+pub mod mc_heston_hw;
 
 pub use heston_pdf_engine::{heston_pdf_price, HestonPdfResult, exponential_fitting_heston, ExpFitHestonResult};
 pub use qdfp_american::{qdfp_american, QdFpAmericanResult};
@@ -244,3 +249,10 @@ pub use credit_portfolio::{
     Issuer, CreditBasket, CdoTranche, LossDistribution, CdoTrancheResult,
     loss_distribution_lhp, price_cdo_tranche,
 };
+pub use fd_g2_swaption::{fd_g2_swaption, FdG2SwaptionResult, FdG2GridParams};
+pub use soft_barrier::{price_soft_barrier, SoftBarrierResult, SoftBarrierConfig, SoftBarrierType};
+pub use bsm_hull_white::{price_bsm_hull_white, BsmHullWhiteResult, BsmHullWhiteParams};
+pub use gaussian1d_nonstd_swaption::{
+    price_gaussian1d_nonstd_swaption, Gaussian1dNonstdSwaptionResult, Gaussian1dNonstdSwaptionParams,
+};
+pub use mc_heston_hw::{price_mc_heston_hw, McHestonHwResult, McHestonHwParams};

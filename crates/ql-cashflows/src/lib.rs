@@ -56,6 +56,8 @@ pub mod dividend;
 pub mod average_ois_coupon;
 pub mod cms_pricer;
 pub mod cms_spread_coupon;
+pub mod multiple_resets_coupon;
+pub mod indexed_cashflow;
 
 // Re-exports
 pub use cashflow::{CashFlow, Leg};
@@ -84,3 +86,5 @@ pub use average_ois_coupon::{
     LockoutMode, AverageOisCoupon, AverageOisLeg,
     average_ois_rate, average_ois_pv01, simple_average_ois_coupon,
 };
+pub use multiple_resets_coupon::{MultipleResetsCoupon, SubPeriodReset, CompoundingType};
+pub use indexed_cashflow::{IndexedCashFlow, IndexedCashFlowLeg};

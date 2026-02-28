@@ -51,3 +51,8 @@ pub mod quasi_random;
 pub mod solvers1d;
 pub mod statistics;
 pub mod abcd;
+pub mod bspline;
+pub mod chebyshev;
+pub mod richardson;
+pub mod brownian_bridge;
+pub mod halton;

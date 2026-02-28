@@ -61,6 +61,10 @@ pub mod seasonality;
 pub mod inflation_vol;
 pub mod heston_vol_surface;
 pub mod xccy_helpers;
+pub mod piecewise_spread;
+pub mod interpolated_swaption_vol_cube;
+pub mod caplet_variance_curve;
+pub mod spreaded_swaption_vol;
 
 // Re-exports
 pub use term_structure::TermStructure;
@@ -131,3 +135,10 @@ pub use ufr_term_structure::{
     SmithWilsonParams, UltimateForwardTermStructure as SmithWilsonCurve,
     OisFutureRateHelper,
 };
+pub use piecewise_spread::{
+    PiecewiseZeroSpreadedTermStructure, PiecewiseForwardSpreadedTermStructure,
+    SpreadInterpolation,
+};
+pub use interpolated_swaption_vol_cube::InterpolatedSwaptionVolCube;
+pub use caplet_variance_curve::{CapletVarianceCurve, CapletVarInterp};
+pub use spreaded_swaption_vol::{SpreadedSwaptionVol, SpreadSpec};
