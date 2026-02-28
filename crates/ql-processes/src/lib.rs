@@ -32,6 +32,7 @@ pub mod gjr_garch_process;
 pub mod geometric_brownian_motion;
 pub mod hybrid_heston_hull_white;
 pub mod heston_slv_process;
+pub mod process_array;
 
 // Re-exports
 pub use process::{StochasticProcess, StochasticProcess1D};
@@ -46,3 +47,4 @@ pub use gjr_garch_process::GjrGarchProcess;
 pub use geometric_brownian_motion::GeometricBrownianMotionProcess;
 pub use hybrid_heston_hull_white::HybridHestonHullWhiteProcess;
 pub use heston_slv_process::{HestonSLVProcess, LeverageFunction};
+pub use process_array::{StochasticProcessArray, ProcessComponent, cholesky_decompose};

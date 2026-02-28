@@ -40,6 +40,7 @@ pub mod ptd_heston_model;
 pub mod gjr_garch_model;
 pub mod variance_gamma_model;
 pub mod basis_model;
+pub mod vol_estimators;
 
 // Re-exports
 pub use parameter::{Parameter, Constraint, NoConstraint, PositiveConstraint, BoundaryConstraint, CompositeConstraint};
@@ -61,6 +62,10 @@ pub use gsr::{Gsr1d, MarkovFunctional};
 pub use ptd_heston_model::{PtdHestonModel, PtdHestonParamSlice};
 pub use gjr_garch_model::GjrGarchModel;
 pub use variance_gamma_model::VarianceGammaModel;
+pub use vol_estimators::{
+    GarchParams, garch_fit, garch_forecast,
+    garman_klass_vol, rogers_satchell_vol, yang_zhang_vol,
+};
 pub use basis_model::{
     FraOisBasisModel, CrossCurrencyBasisModel, CcyPair,
     BasisSwapResult, price_basis_swap,

@@ -38,6 +38,7 @@ pub mod overnight_index;
 pub mod swap_index;
 pub mod equity_index;
 pub mod bma_index;
+pub mod inflation_indexes;
 
 pub use ibor_index::IborIndex;
 pub use index::{Index, IndexManager, TimeSeries};
@@ -47,3 +48,8 @@ pub use overnight_index::OvernightIndex;
 pub use swap_index::SwapIndex;
 pub use equity_index::EquityIndex;
 pub use bma_index::{BmaIndex, BmaSwapFixedLeg};
+pub use inflation_indexes::{
+    NamedInflationIndex, InflationInterpolation, InflationFrequency,
+    uscpi, ukrpi, euhicp, aucpi, zacpi, frhicp, jpcpi,
+    inflation_index_by_name, all_inflation_indexes,
+};

@@ -213,6 +213,10 @@ pub mod shout_swing;
 pub mod variance_swap_advanced;
 pub mod mc_digital;
 pub mod gjrgarch_vasicek_engines;
+pub mod vanna_volga;
+pub mod integral_cds;
+pub mod cva_swap_engine;
+pub mod credit_portfolio;
 
 pub use heston_pdf_engine::{heston_pdf_price, HestonPdfResult, exponential_fitting_heston, ExpFitHestonResult};
 pub use qdfp_american::{qdfp_american, QdFpAmericanResult};
@@ -233,3 +237,10 @@ pub use shout_swing::{fd_shout_option, ShoutOptionResult, fd_swing_option, Swing
 pub use variance_swap_advanced::{replicating_variance_swap, mc_variance_swap, VarianceSwapResult as AdvVarianceSwapResult};
 pub use mc_digital::{mc_digital, McDigitalResult, McDigitalType};
 pub use gjrgarch_vasicek_engines::{gjr_garch_option, GjrGarchResult, vasicek_bond_option, VasicekBondOptionResult, vasicek_european_equity, VasicekEquityResult};
+pub use vanna_volga::{vanna_volga_barrier, VannaVolgaBarrierResult, VvBarrierType};
+pub use integral_cds::{integral_cds_engine, IntegralCdsResult, risky_bond_engine, RiskyBondResult};
+pub use cva_swap_engine::{cva_swap_engine, CvaSwapResult};
+pub use credit_portfolio::{
+    Issuer, CreditBasket, CdoTranche, LossDistribution, CdoTrancheResult,
+    loss_distribution_lhp, price_cdo_tranche,
+};

@@ -56,6 +56,11 @@ pub mod spreaded_smile_section;
 pub mod abcd_vol_term_structure;
 pub mod gaussian1d_smile_section;
 pub mod ufr_term_structure;
+pub mod global_bootstrap;
+pub mod seasonality;
+pub mod inflation_vol;
+pub mod heston_vol_surface;
+pub mod xccy_helpers;
 
 // Re-exports
 pub use term_structure::TermStructure;
@@ -111,6 +116,17 @@ pub use spreaded_smile_section::{
 };
 pub use abcd_vol_term_structure::{AbcdParameters, AbcdVolTermStructure, integrate_abcd_sq};
 pub use gaussian1d_smile_section::{HullWhiteParams, Gaussian1dSmileSection};
+pub use global_bootstrap::{GlobalBootstrapHelper, GlobalHelperType, GlobalBootstrapResult, global_bootstrap};
+pub use seasonality::{Seasonality, SeasonalityType, estimate_seasonality};
+pub use inflation_vol::{
+    CpiVolSurface, YoYOptionletVolSurface, ConstantCpiVol, ConstantYoYVol,
+    strip_yoy_optionlet_vols,
+};
+pub use heston_vol_surface::{HestonBlackVolSurface, HestonVolParams};
+pub use xccy_helpers::{
+    CrossCurrencyBasisSwapHelper, TenorBasisSwapHelper, XccyBootstrapResult,
+    bootstrap_xccy_curve, bootstrap_tenor_basis_curve,
+};
 pub use ufr_term_structure::{
     SmithWilsonParams, UltimateForwardTermStructure as SmithWilsonCurve,
     OisFutureRateHelper,

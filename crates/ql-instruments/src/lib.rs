@@ -79,6 +79,7 @@ pub mod two_asset_barrier_option;
 pub mod vanilla_swing_option;
 pub mod zero_coupon_swap;
 pub mod perpetual_futures;
+pub mod commodity;
 
 // Re-exports
 pub use payoff::{OptionType, Payoff, Exercise};
@@ -149,4 +150,9 @@ pub use zero_coupon_swap::{
 };
 pub use perpetual_futures::{
     PerpetualFuture, PerpetualFutureResult, analyze_perpetual,
+};
+pub use commodity::{
+    CommodityForwardCurve, CommodityForward, CommodityForwardResult,
+    CommoditySwap, CommoditySwapResult, ForwardPoint,
+    price_commodity_forward, price_commodity_swap,
 };

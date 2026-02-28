@@ -54,6 +54,8 @@ pub mod cashflow_analytics_extended;
 pub mod cpi_coupon;
 pub mod dividend;
 pub mod average_ois_coupon;
+pub mod cms_pricer;
+pub mod cms_spread_coupon;
 
 // Re-exports
 pub use cashflow::{CashFlow, Leg};
@@ -76,6 +78,8 @@ pub use cashflow_analytics_extended::{
 };
 pub use cpi_coupon::{CPICoupon, generate_cpi_coupons};
 pub use dividend::{Dividend, DividendSchedule};
+pub use cms_pricer::{CmsPricerResult, conundrum_cms_pricer, linear_tsr_cms_pricer};
+pub use cms_spread_coupon::{CmsSpreadCoupon, CmsSpreadPricerResult, cms_spread_pricer};
 pub use average_ois_coupon::{
     LockoutMode, AverageOisCoupon, AverageOisLeg,
     average_ois_rate, average_ois_pv01, simple_average_ois_coupon,
