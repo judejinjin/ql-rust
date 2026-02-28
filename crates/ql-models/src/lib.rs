@@ -41,6 +41,7 @@ pub mod gjr_garch_model;
 pub mod variance_gamma_model;
 pub mod basis_model;
 pub mod vol_estimators;
+pub mod models_extended;
 
 // Re-exports
 pub use parameter::{Parameter, Constraint, NoConstraint, PositiveConstraint, BoundaryConstraint, CompositeConstraint};
@@ -69,4 +70,8 @@ pub use vol_estimators::{
 pub use basis_model::{
     FraOisBasisModel, CrossCurrencyBasisModel, CcyPair,
     BasisSwapResult, price_basis_swap,
+};
+pub use models_extended::{
+    HestonSlvFdmModel, HestonSlvMcModel, ExtendedCoxIngersollRoss,
+    CapHelper, SwaptionHelper, SwaptionVolType, ConstantVolEstimator,
 };

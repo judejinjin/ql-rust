@@ -142,3 +142,13 @@ pub use piecewise_spread::{
 pub use interpolated_swaption_vol_cube::InterpolatedSwaptionVolCube;
 pub use caplet_variance_curve::{CapletVarianceCurve, CapletVarInterp};
 pub use spreaded_swaption_vol::{SpreadedSwaptionVol, SpreadSpec};
+
+pub mod term_structure_extended;
+pub use term_structure_extended::{
+    VolatilityType, ConstantLocalVol, FixedLocalVolSurface,
+    GridModelLocalVolSurface, ImpliedVolTermStructure,
+    InterpolatedHazardRateCurve, InterpolatedSurvivalProbCurve,
+    CapFloorTermVolCurve, OptionletVolatilityStructure,
+    ConstantOptionletVol, SpreadedOptionletVol,
+    InterpolatedZeroInflationCurve, Gaussian1dSwaptionVol,
+};

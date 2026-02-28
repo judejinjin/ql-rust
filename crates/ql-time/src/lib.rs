@@ -52,6 +52,7 @@ pub mod day_counter;
 pub mod imm;
 pub mod period;
 pub mod schedule;
+pub mod time_extended;
 
 pub use business_day_convention::BusinessDayConvention;
 pub use calendar::{Calendar, JointRule};
@@ -59,3 +60,4 @@ pub use date::{Date, Month, Weekday};
 pub use day_counter::DayCounter;
 pub use period::{Frequency, Period, TimeUnit};
 pub use schedule::Schedule;
+pub use time_extended::{asx, ecb, thirty365_day_count, thirty365_year_fraction};

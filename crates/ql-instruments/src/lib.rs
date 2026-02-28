@@ -81,6 +81,7 @@ pub mod zero_coupon_swap;
 pub mod perpetual_futures;
 pub mod commodity;
 pub mod cat_bond;
+pub mod instruments_extended;
 
 // Re-exports
 pub use payoff::{OptionType, Payoff, Exercise};
@@ -160,4 +161,10 @@ pub use commodity::{
 pub use cat_bond::{
     CatBond, CatBondResult, CatTrigger, CatLossModel, SeverityDistribution,
     price_cat_bond, cat_bond_analytic_exponential,
+};
+pub use instruments_extended::{
+    YearOnYearInflationSwap, ZeroCouponInflationSwap,
+    FloatFloatSwaption, CmsRateBond, AmortizingCmsRateBond,
+    Btp, DividendVanillaOption, DividendEntry, DividendBarrierOption,
+    DividendBarrierType, StickyRatchet, StickyRatchetType,
 };

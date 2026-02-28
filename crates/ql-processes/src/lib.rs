@@ -48,3 +48,10 @@ pub use geometric_brownian_motion::GeometricBrownianMotionProcess;
 pub use hybrid_heston_hull_white::HybridHestonHullWhiteProcess;
 pub use heston_slv_process::{HestonSLVProcess, LeverageFunction};
 pub use process_array::{StochasticProcessArray, ProcessComponent, cholesky_decompose};
+
+pub mod processes_extended;
+pub use processes_extended::{
+    GsrProcess, MarkovFunctionalStateProcess,
+    ForwardMeasureProcess,
+    DiscretizationScheme, discretize_step, simulate_path,
+};

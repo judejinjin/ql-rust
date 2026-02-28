@@ -42,6 +42,7 @@ pub mod distributions;
 pub mod fft;
 pub mod integration;
 pub mod integration_advanced;
+pub mod integration_extended;
 pub mod interpolation;
 pub mod interpolation_extended;
 pub mod interpolation_advanced;
@@ -49,7 +50,10 @@ pub mod matrix;
 pub mod optimization;
 pub mod quasi_random;
 pub mod solvers1d;
+pub mod solvers1d_extended;
+pub mod special_functions;
 pub mod statistics;
+pub mod rng_extended;
 pub mod abcd;
 pub mod bspline;
 pub mod chebyshev;
@@ -59,3 +63,14 @@ pub mod halton;
 pub mod black_delta;
 pub mod ode;
 pub mod sparse;
+pub mod math_extended;
+
+// Re-exports from math_extended (G33-G38)
+pub use math_extended::{
+    GaussianOrthogonalPolynomial, GaussianQuadratureType,
+    XabrInterpolation, XabrModel,
+    KernelInterpolation, KernelType,
+    MultiCubicSpline2d,
+    AbcdInterpolation,
+    BackwardFlatLinearInterpolation,
+};

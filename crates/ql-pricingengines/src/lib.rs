@@ -258,3 +258,13 @@ pub use gaussian1d_nonstd_swaption::{
 };
 pub use mc_heston_hw::{price_mc_heston_hw, McHestonHwResult, McHestonHwParams};
 pub use mountain_range::{mc_mountain_range, MountainRangeResult, MountainType};
+
+pub mod engines_extended;
+pub use engines_extended::{
+    BlackCalculator, BondFunctions,
+    AnalyticDividendEuropeanResult, analytic_dividend_european,
+    G2SwaptionResult, g2_swaption_price,
+    TreeSwapResult, tree_swap_engine,
+    AnalyticPerformanceResult, analytic_performance,
+    ForwardPerformanceResult, forward_performance,
+};

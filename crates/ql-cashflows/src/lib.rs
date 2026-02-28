@@ -58,6 +58,7 @@ pub mod cms_pricer;
 pub mod cms_spread_coupon;
 pub mod multiple_resets_coupon;
 pub mod indexed_cashflow;
+pub mod cashflows_extended;
 
 // Re-exports
 pub use cashflow::{CashFlow, Leg};
@@ -88,3 +89,9 @@ pub use average_ois_coupon::{
 };
 pub use multiple_resets_coupon::{MultipleResetsCoupon, SubPeriodReset, CompoundingType};
 pub use indexed_cashflow::{IndexedCashFlow, IndexedCashFlowLeg};
+pub use cashflows_extended::{
+    RateAveraging, compute_averaged_rate,
+    YoYInflationCoupon, ZeroInflationCashFlow, EquityCashFlow,
+    DigitalIborCoupon, DigitalCmsCoupon,
+    CapFlooredInflationCoupon, CpiCouponPricer,
+};

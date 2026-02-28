@@ -37,6 +37,7 @@ pub mod fdm_meshers;
 pub mod fdm_operators;
 pub mod fdm_schemes;
 pub mod lattice_2d;
+pub mod fdm_extended;
 
 // Re-exports
 pub use monte_carlo::{Path, PathGenerator, MultiPath, MultiPathGenerator};
@@ -63,3 +64,10 @@ pub use fdm_schemes::{
     Fd1dSolver, Fd1dStepResult, heston_adi_solve,
 };
 pub use lattice_2d::{lattice_2d, trinomial_2d_bond_option, Lattice2dResult, FactorParams};
+pub use fdm_extended::{
+    FdmDirichletBoundary, BoundarySide, FdmBermudanStepCondition,
+    Fdm3DimSolver, Fdm3dResult,
+    build_cev_operator, build_cir_operator,
+    build_hull_white_operator, build_g2_operators,
+    craig_sneyd_step, trbdf2_step, method_of_lines_step,
+};
