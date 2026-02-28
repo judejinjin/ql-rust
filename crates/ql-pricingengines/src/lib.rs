@@ -222,6 +222,7 @@ pub mod soft_barrier;
 pub mod bsm_hull_white;
 pub mod gaussian1d_nonstd_swaption;
 pub mod mc_heston_hw;
+pub mod mountain_range;
 
 pub use heston_pdf_engine::{heston_pdf_price, HestonPdfResult, exponential_fitting_heston, ExpFitHestonResult};
 pub use qdfp_american::{qdfp_american, QdFpAmericanResult};
@@ -256,3 +257,4 @@ pub use gaussian1d_nonstd_swaption::{
     price_gaussian1d_nonstd_swaption, Gaussian1dNonstdSwaptionResult, Gaussian1dNonstdSwaptionParams,
 };
 pub use mc_heston_hw::{price_mc_heston_hw, McHestonHwResult, McHestonHwParams};
+pub use mountain_range::{mc_mountain_range, MountainRangeResult, MountainType};

@@ -115,6 +115,80 @@ pub fn symmetric_eigenvalues(matrix: &Matrix) -> QLResult<Vector> {
     Ok(sym.eigenvalues)
 }
 
+// ---------------------------------------------------------------------------
+// Singular Value Decomposition
+// ---------------------------------------------------------------------------
+
+/// Full SVD decomposition result.
+#[derive(Debug, Clone)]
+pub struct SvdResult {
+    /// Left singular vectors (m × min(m,n)), columns are the left singular vectors.
+    pub u: Matrix,
+    /// Singular values in descending order.
+    pub singular_values: Vector,
+    /// Right singular vectors transposed (min(m,n) × n).
+    pub v_t: Matrix,
+}
+
+/// Compute the (thin) Singular Value Decomposition of a matrix.
+///
+/// Returns `U`, `Σ` (as a vector), and `V^T` such that `A = U · diag(Σ) · V^T`.
+/// Singular values are returned in descending order.
+pub fn svd(matrix: &Matrix) -> QLResult<SvdResult> {
+    let decomp = nalgebra::linalg::SVD::new(matrix.clone(), true, true);
+    let u = decomp
+        .u
+        .ok_or_else(|| QLError::InvalidArgument("SVD failed to compute U".into()))?;
+    let v_t = decomp
+        .v_t
+        .ok_or_else(|| QLError::InvalidArgument("SVD failed to compute V^T".into()))?;
+
+    // nalgebra doesn't guarantee descending order — sort if needed
+    let sv = &decomp.singular_values;
+    let k = sv.len();
+    let mut indices: Vec<usize> = (0..k).collect();
+    indices.sort_by(|&a, &b| sv[b].partial_cmp(&sv[a]).unwrap());
+
+    let mut sorted_sv = Vector::zeros(k);
+    let mut sorted_u = Matrix::zeros(u.nrows(), k);
+    let mut sorted_vt = Matrix::zeros(k, v_t.ncols());
+    for (new_i, &old_i) in indices.iter().enumerate() {
+        sorted_sv[new_i] = sv[old_i];
+        sorted_u.set_column(new_i, &u.column(old_i));
+        sorted_vt.set_row(new_i, &v_t.row(old_i));
+    }
+
+    Ok(SvdResult {
+        u: sorted_u,
+        singular_values: sorted_sv,
+        v_t: sorted_vt,
+    })
+}
+
+/// Compute the rank of a matrix (number of singular values above tolerance).
+pub fn matrix_rank(matrix: &Matrix, tolerance: f64) -> QLResult<usize> {
+    let decomp = svd(matrix)?;
+    Ok(decomp.singular_values.iter().filter(|&&s| s > tolerance).count())
+}
+
+/// Compute the condition number (ratio of largest to smallest singular value).
+///
+/// Returns `f64::INFINITY` if the matrix is singular.
+pub fn condition_number(matrix: &Matrix) -> QLResult<f64> {
+    let decomp = svd(matrix)?;
+    let k = decomp.singular_values.len();
+    if k == 0 {
+        return Ok(f64::INFINITY);
+    }
+    let s_max = decomp.singular_values[0];
+    let s_min = decomp.singular_values[k - 1];
+    if s_min < 1e-15 {
+        Ok(f64::INFINITY)
+    } else {
+        Ok(s_max / s_min)
+    }
+}
+
 // ===========================================================================
 // Tests
 // ===========================================================================
@@ -237,5 +311,68 @@ mod tests {
         assert_abs_diff_eq!(c[(0, 1)], 22.0, epsilon = 1e-12);
         assert_abs_diff_eq!(c[(1, 0)], 43.0, epsilon = 1e-12);
         assert_abs_diff_eq!(c[(1, 1)], 50.0, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn svd_identity() {
+        let m = Matrix::identity(3, 3);
+        let res = svd(&m).unwrap();
+        // All singular values should be 1
+        for i in 0..3 {
+            assert_abs_diff_eq!(res.singular_values[i], 1.0, epsilon = 1e-12);
+        }
+    }
+
+    #[test]
+    fn svd_reconstruction() {
+        let m = matrix_from_rows(2, 3, &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]).unwrap();
+        let res = svd(&m).unwrap();
+        // Reconstruct: A = U * diag(s) * V^T
+        let k = res.singular_values.len();
+        let mut sigma = Matrix::zeros(k, k);
+        for i in 0..k {
+            sigma[(i, i)] = res.singular_values[i];
+        }
+        let reconstructed = &res.u * sigma * &res.v_t;
+        for i in 0..2 {
+            for j in 0..3 {
+                assert_abs_diff_eq!(reconstructed[(i, j)], m[(i, j)], epsilon = 1e-10);
+            }
+        }
+    }
+
+    #[test]
+    fn svd_singular_values_descending() {
+        let m = matrix_from_rows(3, 3, &[1.0, 2.0, 0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 5.0]).unwrap();
+        let res = svd(&m).unwrap();
+        for i in 1..res.singular_values.len() {
+            assert!(res.singular_values[i] <= res.singular_values[i - 1] + 1e-14,
+                    "SVs not descending: {} > {}", res.singular_values[i], res.singular_values[i - 1]);
+        }
+    }
+
+    #[test]
+    fn matrix_rank_full() {
+        let m = Matrix::identity(4, 4);
+        assert_eq!(matrix_rank(&m, 1e-10).unwrap(), 4);
+    }
+
+    #[test]
+    fn matrix_rank_deficient() {
+        // Rank 1: [[1,2],[2,4]]
+        let m = matrix_from_rows(2, 2, &[1.0, 2.0, 2.0, 4.0]).unwrap();
+        assert_eq!(matrix_rank(&m, 1e-10).unwrap(), 1);
+    }
+
+    #[test]
+    fn condition_number_identity() {
+        let m = Matrix::identity(3, 3);
+        assert_abs_diff_eq!(condition_number(&m).unwrap(), 1.0, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn condition_number_singular() {
+        let m = matrix_from_rows(2, 2, &[1.0, 2.0, 2.0, 4.0]).unwrap();
+        assert!(condition_number(&m).unwrap().is_infinite());
     }
 }

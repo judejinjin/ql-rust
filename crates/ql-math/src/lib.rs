@@ -56,3 +56,6 @@ pub mod chebyshev;
 pub mod richardson;
 pub mod brownian_bridge;
 pub mod halton;
+pub mod black_delta;
+pub mod ode;
+pub mod sparse;

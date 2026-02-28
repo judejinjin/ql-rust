@@ -1,18 +1,18 @@
 # ql-rust vs QuantLib C++ — Gap Analysis
 
 **Date:** 2026-02-28  
-**ql-rust commit:** `059d2ff` (1,764 tests passing)  
+**ql-rust commit:** `3a27f8b` → current (1,904 tests passing)  
 **QuantLib C++ reference:** `/mnt/c/cplusplus/quantlib/`
 
 ## Current Coverage Summary
 
 | Metric | ql-rust | QuantLib C++ | Coverage |
 |--------|---------|--------------|----------|
-| Source files | 292 `.rs` | ~1,312 `.hpp` | — |
-| SLOC (approx) | ~92K | ~300K+ | — |
+| Source files | 300+ `.rs` | ~1,312 `.hpp` | — |
+| SLOC (approx) | ~95K | ~300K+ | — |
 | Crates / modules | 14 crates | 16 directories | — |
-| Instrument types | 39 | ~80+ | ~49% |
-| Pricing engines | 52 modules | ~150+ | ~35% |
+| Instrument types | 40+ | ~80+ | ~50% |
+| Pricing engines | 53+ modules | ~150+ | ~35% |
 | Models | 17 | ~15 core + 125 LMM | ~80% core |
 | Stochastic processes | 12 | 21 | ~57% |
 | Term structures (yield) | 25+ | 26 | ~96% |
@@ -20,10 +20,10 @@
 | Calendars | 44 | 45 | ~98% |
 | Day counters | 8 variants | 12 | ~67% |
 | Optimization methods | 6 | 13 | ~46% |
-| Math/interpolation | 12+ | 21 | ~57% |
-| Tests | 1,727 | — | — |
+| Math/interpolation | 15+ | 21 | ~71% |
+| Tests | 1,904 | — | — |
 
-**Overall estimated coverage: ~55%** of QuantLib C++ production features.
+**Overall estimated coverage: ~58%** of QuantLib C++ production features.
 
 ---
 
@@ -75,23 +75,23 @@
 
 ---
 
-## LOW Priority Gaps (partial list)
+## LOW Priority Gaps
 
-| # | Gap | Description |
-|---|-----|-------------|
-| L1 | CAT bonds | Catastrophe bonds with event-triggered losses |
-| L3 | Himalaya/Everest/Pagoda options | Mountain-range multi-asset exotics |
-| L7 | FX `BlackDeltaCalculator` | FX delta conventions (spot, forward, premium-adjusted) |
-| L10 | 8 more copulas | Ali-Mikhail-Haq, FGM, Galambos, Husler-Reiss, Marshall-Olkin, Plackett, Max, Min |
-| L13 | Exp-sinh / Tanh-sinh quadrature | Doubly-exponential quadrature methods |
-| L20 | Sparse matrix / ILU preconditioner | Sparse linear algebra utilities |
-| L21 | BiCGStab / GMRES solvers | Iterative sparse linear system solvers |
-| L23 | SVD decomposition | Singular value decomposition |
-| L24 | Adaptive Runge-Kutta ODE solver | ODE integration |
-| L25 | Lattice2d / trinomial trees | 2-factor lattice methods |
-| L31 | Actual/366, Actual/364, One | Specialized day counter variants (also in H4) |
-| L32–L37 | Composite/derived/delta quotes | Extended quote types |
-| L38–L41 | Missing indexes/currencies | ~20 IBOR indexes, ~35 currencies, exchange rate manager |
+| # | Gap | Description | Status |
+|---|-----|-------------|--------|
+| L1 | CAT bonds | Catastrophe bonds with event-triggered losses | ✅ `ql-instruments/src/cat_bond.rs` |
+| L3 | Himalaya/Everest/Pagoda options | Mountain-range multi-asset exotics | ✅ `ql-pricingengines/src/mountain_range.rs` |
+| L7 | FX `BlackDeltaCalculator` | FX delta conventions (spot, forward, premium-adjusted) | ✅ `ql-math/src/black_delta.rs` |
+| L10 | 2 missing copulas | Ali-Mikhail-Haq, Husler-Reiss (6 others already existed) | ✅ `ql-math/src/copulas.rs` |
+| L13 | Exp-sinh quadrature | Doubly-exponential quadrature for semi-infinite integrals | ✅ `ql-math/src/integration_advanced.rs` |
+| L20 | Sparse matrix / ILU preconditioner | CSR storage + ILU(0) factorization | ✅ `ql-math/src/sparse.rs` |
+| L21 | BiCGStab / GMRES solvers | Iterative sparse linear system solvers | ✅ `ql-math/src/sparse.rs` |
+| L23 | SVD decomposition | Singular value decomposition convenience wrapper | ✅ `ql-math/src/matrix.rs` |
+| L24 | Adaptive Runge-Kutta ODE solver | RK4 + Dormand-Prince RK45 adaptive | ✅ `ql-math/src/ode.rs` |
+| L25 | Lattice2d / trinomial trees | 2-factor trinomial lattice with correlation | ✅ `ql-methods/src/lattice_2d.rs` |
+| L31 | Actual/366, Actual/364, One | Specialized day counter variants (done in H4) | ✅ done |
+| L32–L37 | Composite/derived/delta quotes | Extended quote types | ✅ already existed |
+| L38–L41 | Missing indexes/currencies | ~20 IBOR indexes, ~35 currencies, exchange rate manager | — |
 
 ---
 
@@ -115,10 +115,12 @@
 
 ## Implementation Plan
 
-**Phase 1 — HIGH priority (H1–H4):** 4 items  
-**Phase 2 — MEDIUM engines/instruments (M1, M7, M12, M13):** 4 items  
-**Phase 3 — MEDIUM term structures (M16, M17):** 2 items  
-**Phase 4 — MEDIUM math (M27, M28, M30, M31, M34):** 5 items  
-**Phase 5 — MEDIUM cashflows (M44, M45):** 2 items  
+**Phase 1 — HIGH priority (H1–H4):** 4 items ✅ done  
+**Phase 2 — MEDIUM engines/instruments (M1, M7, M12, M13):** 4 items ✅ done  
+**Phase 3 — MEDIUM term structures (M16, M17):** 2 items ✅ done  
+**Phase 4 — MEDIUM math (M27, M28, M30, M31, M34):** 5 items ✅ done  
+**Phase 5 — MEDIUM cashflows (M44, M45):** 2 items ✅ done  
+**Phase 6 — LOW priority (L1–L25):** 10 items ✅ done  
 
-**Total: 17 new modules** to implement.
+**Total: 27 modules implemented** across 3 sessions.  
+**Remaining:** L38–L41 (missing indexes/currencies) — low value-add.

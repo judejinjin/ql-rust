@@ -362,6 +362,99 @@ pub fn marshall_olkin_upper_tail(alpha: f64, beta: f64) -> f64 {
     alpha.min(beta) / denom
 }
 
+/// Ali-Mikhail-Haq (AMH) copula.
+///
+/// C(u, v; θ) = u·v / (1 − θ·(1−u)·(1−v)),  θ ∈ [−1, 1].
+///
+/// Captures weak lower tail dependence.  θ = 0 → independence.
+pub fn ali_mikhail_haq_copula(u: f64, v: f64, theta: f64) -> f64 {
+    let u = u.clamp(0.0, 1.0);
+    let v = v.clamp(0.0, 1.0);
+    if u == 0.0 || v == 0.0 {
+        return 0.0;
+    }
+    if u >= 1.0 {
+        return v;
+    }
+    if v >= 1.0 {
+        return u;
+    }
+    let denom = 1.0 - theta * (1.0 - u) * (1.0 - v);
+    if denom.abs() < 1e-15 {
+        return u * v;
+    }
+    u * v / denom
+}
+
+/// Kendall's τ for the Ali-Mikhail-Haq copula.
+///
+/// τ(θ) = 1 − (2/3θ) · (1 − 2(1−θ)²·ln(1−θ)/θ²)  for θ ≠ 0.
+/// τ(0) = 0.
+pub fn amh_tau_from_theta(theta: f64) -> f64 {
+    if theta.abs() < 1e-10 {
+        return 0.0;
+    }
+    let t2 = theta * theta;
+    let dilog_part = if (1.0 - theta).abs() < 1e-14 {
+        // Limit: when θ→1, τ → 1 − 2ln2/3 ≈ 0.5363
+        1.0 - 2.0 * 2.0_f64.ln() / 3.0
+    } else {
+        1.0 - (2.0 / (3.0 * theta)) * (1.0 - 2.0 * (1.0 - theta).powi(2) * (1.0 - theta).ln() / t2)
+    };
+    dilog_part
+}
+
+/// Hüsler-Reiss copula — extreme-value copula.
+///
+/// C(u, v; θ) = exp(−ũ·Φ(1/θ + θ/2·ln(ũ/ṽ)) − ṽ·Φ(1/θ + θ/2·ln(ṽ/ũ)))
+///
+/// where ũ = −ln u, ṽ = −ln v, Φ is the standard normal CDF.
+/// θ > 0.  θ → 0 gives perfect dependence (M), θ → ∞ gives independence.
+pub fn husler_reiss_copula(u: f64, v: f64, theta: f64) -> f64 {
+    if u <= 0.0 || v <= 0.0 {
+        return 0.0;
+    }
+    if u >= 1.0 {
+        return v;
+    }
+    if v >= 1.0 {
+        return u;
+    }
+    if theta < 1e-8 {
+        // θ→0: perfect dependence → min(u,v)
+        return u.min(v);
+    }
+    let lu = -u.ln();
+    let lv = -v.ln();
+    if lu < 1e-15 || lv < 1e-15 {
+        return u * v;
+    }
+    let ratio = (lu / lv).ln();
+    let z1 = 1.0 / theta + 0.5 * theta * ratio;
+    let z2 = 1.0 / theta - 0.5 * theta * ratio;
+    let exp_arg = -(lu * norm_cdf(z1) + lv * norm_cdf(z2));
+    exp_arg.exp()
+}
+
+/// Standard normal CDF using Abramowitz & Stegun approximation (7.1.26).
+fn norm_cdf(x: f64) -> f64 {
+    let z = x / std::f64::consts::SQRT_2;
+    0.5 * (1.0 + erf_approx(z))
+}
+
+/// Error function approximation (Abramowitz & Stegun 7.1.26, max error ≈ 1.5e-7).
+fn erf_approx(x: f64) -> f64 {
+    let sign = if x >= 0.0 { 1.0 } else { -1.0 };
+    let x = x.abs();
+    let t = 1.0 / (1.0 + 0.3275911 * x);
+    let poly = t * (0.254829592
+        + t * (-0.284496736
+            + t * (1.421413741
+                + t * (-1.453152027
+                    + t * 1.061405429))));
+    sign * (1.0 - poly * (-x * x).exp())
+}
+
 #[cfg(test)]
 mod extra_copula_tests {
     use super::*;
@@ -428,5 +521,51 @@ mod extra_copula_tests {
         let lam = marshall_olkin_upper_tail(0.5, 0.5);
         // min(0.5,0.5)/(0.5+0.5−0.25) = 0.5/0.75 = 2/3
         assert_abs_diff_eq!(lam, 2.0 / 3.0, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn amh_independence_at_zero() {
+        // θ=0 → independence
+        assert_abs_diff_eq!(ali_mikhail_haq_copula(0.4, 0.6, 0.0), 0.24, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn amh_boundary() {
+        assert_abs_diff_eq!(ali_mikhail_haq_copula(1.0, 0.5, 0.5), 0.5, epsilon = 1e-12);
+        assert_abs_diff_eq!(ali_mikhail_haq_copula(0.5, 1.0, 0.5), 0.5, epsilon = 1e-12);
+        assert_abs_diff_eq!(ali_mikhail_haq_copula(0.0, 0.5, 0.5), 0.0, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn amh_positive_theta_greater() {
+        // positive θ gives positive dependence (C > u·v)
+        let c = ali_mikhail_haq_copula(0.5, 0.5, 0.8);
+        assert!(c > 0.25, "AMH(0.5,0.5,0.8) should exceed independence: {c}");
+        assert!(c <= 0.5, "AMH should be ≤ min(u,v)");
+    }
+
+    #[test]
+    fn amh_tau_zero() {
+        assert_abs_diff_eq!(amh_tau_from_theta(0.0), 0.0, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn husler_reiss_boundary() {
+        assert_abs_diff_eq!(husler_reiss_copula(1.0, 0.5, 1.0), 0.5, epsilon = 1e-12);
+        assert_abs_diff_eq!(husler_reiss_copula(0.5, 1.0, 1.0), 0.5, epsilon = 1e-12);
+        assert_abs_diff_eq!(husler_reiss_copula(0.0, 0.5, 1.0), 0.0, epsilon = 1e-12);
+    }
+
+    #[test]
+    fn husler_reiss_perfect_dependence_limit() {
+        // θ→0 → perfect dependence: C(u,v) → min(u,v)
+        let c = husler_reiss_copula(0.3, 0.7, 1e-10);
+        assert_abs_diff_eq!(c, 0.3, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn husler_reiss_positive() {
+        let c = husler_reiss_copula(0.5, 0.5, 1.0);
+        assert!(c > 0.25 && c <= 0.5, "HR out of bounds: {c}");
     }
 }

@@ -80,6 +80,7 @@ pub mod vanilla_swing_option;
 pub mod zero_coupon_swap;
 pub mod perpetual_futures;
 pub mod commodity;
+pub mod cat_bond;
 
 // Re-exports
 pub use payoff::{OptionType, Payoff, Exercise};
@@ -155,4 +156,8 @@ pub use commodity::{
     CommodityForwardCurve, CommodityForward, CommodityForwardResult,
     CommoditySwap, CommoditySwapResult, ForwardPoint,
     price_commodity_forward, price_commodity_swap,
+};
+pub use cat_bond::{
+    CatBond, CatBondResult, CatTrigger, CatLossModel, SeverityDistribution,
+    price_cat_bond, cat_bond_analytic_exponential,
 };

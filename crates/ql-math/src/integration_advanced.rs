@@ -265,14 +265,13 @@ where
     let g = |t: f64| f(center + half * t);
 
     let h0 = 1.0;
-    let mut h = h0;
     let mut prev_integral = 0.0;
     let mut integral = 0.0;
     let mut n_evals = 0usize;
     let mut converged = false;
 
     for level in 0..max_levels {
-        h = h0 / 2.0_f64.powi(level as i32);
+        let h = h0 / 2.0_f64.powi(level as i32);
         let mut sum = 0.0;
 
         // Range: k = 0, ±1, ±2, … until |t| ≥ 1
@@ -303,6 +302,93 @@ where
         n_evals,
         converged,
     }
+}
+
+// =========================================================================
+// Exp-Sinh Quadrature for semi-infinite integrals [0, ∞)
+// =========================================================================
+
+/// Exp-sinh (double exponential) quadrature over `[0, ∞)`.
+///
+/// Uses the substitution `x = exp(π/2 · sinh(t))` to map `[0,∞)` to `(−∞,∞)`,
+/// then truncates and sums.  Excellent for integrands that decay exponentially
+/// or algebraically at infinity.
+///
+/// # Arguments
+/// - `f`          — integrand on `[0, ∞)`
+/// - `tol`        — absolute tolerance
+/// - `max_levels` — maximum refinement levels
+pub fn exp_sinh<F>(
+    f: F,
+    tol: f64,
+    max_levels: usize,
+) -> TanhSinhResult
+where
+    F: Fn(f64) -> f64,
+{
+    use std::f64::consts::FRAC_PI_2;
+
+    let h0 = 1.0;
+    let mut prev_integral = 0.0;
+    let mut integral = 0.0;
+    let mut n_evals = 0usize;
+    let mut converged = false;
+
+    for level in 0..max_levels {
+        let h = h0 / 2.0_f64.powi(level as i32);
+        let mut sum = 0.0;
+
+        // Truncate when the nodes exceed ~e^20 (beyond this, contribution is negligible)
+        let n_max = (8.0 / h).ceil() as i64;
+        for k in -n_max..=n_max {
+            let t = k as f64 * h;
+            let sinh_t = t.sinh();
+            let cosh_t = t.cosh();
+            let x = (FRAC_PI_2 * sinh_t).exp();
+            if !x.is_finite() || x > 1e20 {
+                continue;
+            }
+            let dx_dt = FRAC_PI_2 * cosh_t * x;
+            if !dx_dt.is_finite() {
+                continue;
+            }
+            let fval = f(x);
+            if !fval.is_finite() {
+                continue;
+            }
+            sum += fval * dx_dt;
+            n_evals += 1;
+        }
+        integral = h * sum;
+
+        if level > 0 && (integral - prev_integral).abs() < tol {
+            converged = true;
+            break;
+        }
+        prev_integral = integral;
+    }
+
+    TanhSinhResult {
+        integral,
+        error: (integral - prev_integral).abs(),
+        n_evals,
+        converged,
+    }
+}
+
+/// Exp-sinh quadrature with a finite lower bound: ∫_a^∞ f(x) dx.
+///
+/// Shifts the integrand: g(t) = f(t + a), then applies `exp_sinh` on `[0, ∞)`.
+pub fn exp_sinh_shifted<F>(
+    f: F,
+    a: f64,
+    tol: f64,
+    max_levels: usize,
+) -> TanhSinhResult
+where
+    F: Fn(f64) -> f64,
+{
+    exp_sinh(move |t| f(t + a), tol, max_levels)
 }
 
 // =========================================================================
@@ -363,5 +449,28 @@ mod tests {
         );
         let exact = 1.0 / 6.0;
         assert!((res.integral - exact).abs() < 1e-8, "got {}", res.integral);
+    }
+
+    #[test]
+    fn exp_sinh_exponential_decay() {
+        // ∫₀^∞ exp(-x) dx = 1
+        let res = exp_sinh(|x: f64| (-x).exp(), 1e-8, 8);
+        assert!((res.integral - 1.0).abs() < 1e-4, "got {}", res.integral);
+    }
+
+    #[test]
+    fn exp_sinh_gaussian() {
+        // ∫₀^∞ exp(-x²) dx = √π/2
+        let exact = std::f64::consts::PI.sqrt() / 2.0;
+        let res = exp_sinh(|x: f64| (-x * x).exp(), 1e-6, 8);
+        assert!((res.integral - exact).abs() < 1e-3, "got {} vs {}", res.integral, exact);
+    }
+
+    #[test]
+    fn exp_sinh_shifted_from_one() {
+        // ∫₁^∞ exp(-x) dx = exp(-1)
+        let exact = (-1.0_f64).exp();
+        let res = exp_sinh_shifted(|x: f64| (-x).exp(), 1.0, 1e-8, 8);
+        assert!((res.integral - exact).abs() < 1e-4, "got {} vs {}", res.integral, exact);
     }
 }
