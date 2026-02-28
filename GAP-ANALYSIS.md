@@ -1,7 +1,7 @@
 # ql-rust vs QuantLib C++ — Gap Analysis
 
 **Date:** 2026-02-28  
-**ql-rust commit:** `3a27f8b` → current (1,904 tests passing)  
+**ql-rust commit:** `3a27f8b` → current (1,927 tests passing)  
 **QuantLib C++ reference:** `/mnt/c/cplusplus/quantlib/`
 
 ## Current Coverage Summary
@@ -91,7 +91,7 @@
 | L25 | Lattice2d / trinomial trees | 2-factor trinomial lattice with correlation | ✅ `ql-methods/src/lattice_2d.rs` |
 | L31 | Actual/366, Actual/364, One | Specialized day counter variants (done in H4) | ✅ done |
 | L32–L37 | Composite/derived/delta quotes | Extended quote types | ✅ already existed |
-| L38–L41 | Missing indexes/currencies | ~20 IBOR indexes, ~35 currencies, exchange rate manager | — |
+| L38–L41 | Missing indexes/currencies | ~70 IBOR indexes, 35 currencies, ExchangeRateManager | ✅ `ql-currencies`, `ql-indexes` |
 
 ---
 
@@ -121,6 +121,7 @@
 **Phase 4 — MEDIUM math (M27, M28, M30, M31, M34):** 5 items ✅ done  
 **Phase 5 — MEDIUM cashflows (M44, M45):** 2 items ✅ done  
 **Phase 6 — LOW priority (L1–L25):** 10 items ✅ done  
+**Phase 7 — LOW indexes/currencies (L38–L41):** 4 items ✅ done  
 
-**Total: 27 modules implemented** across 3 sessions.  
-**Remaining:** L38–L41 (missing indexes/currencies) — low value-add.
+**Total: 31 modules implemented** across 4 sessions.  
+**Remaining:** none — all identified gaps closed.

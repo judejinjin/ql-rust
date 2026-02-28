@@ -35,5 +35,5 @@ pub mod exchange_rate;
 pub mod money;
 
 pub use currency::Currency;
-pub use exchange_rate::ExchangeRate;
+pub use exchange_rate::{ExchangeRate, ExchangeRateManager, ExchangeRateType};
 pub use money::Money;
