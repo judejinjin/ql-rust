@@ -37,6 +37,10 @@ pub mod bates;
 pub mod interp;
 pub mod integrate;
 pub mod solvers;
+pub mod mc;
+pub mod curves;
+pub mod cashflows;
+pub mod portfolio;
 
 pub use number::Number;
 pub use dual::Dual;
@@ -49,3 +53,7 @@ pub use bates::{BatesGreeks, bates_price_generic, bates_greeks_ad};
 pub use interp::{LinearInterp, LogLinearInterp, CubicSplineInterp, MonotoneConvexInterp};
 pub use integrate::{gl_integrate, gl_integrate_f64_to_t, simpson_integrate, trapezoid_integrate};
 pub use solvers::{newton_1d, newton_ad, halley_1d, implicit_diff, solve_and_diff, SolverError};
+pub use mc::{McEuropeanGreeks, McHestonGreeks, mc_european_aad, mc_heston_aad, mc_european_forward};
+pub use curves::DiscountCurveAD;
+pub use cashflows::{Cashflow, npv, pv01, macaulay_duration, par_rate};
+pub use portfolio::{Portfolio, PortfolioGreeks};
