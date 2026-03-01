@@ -64,6 +64,8 @@ pub mod black_delta;
 pub mod ode;
 pub mod sparse;
 pub mod math_extended;
+pub mod math_phase22_a;
+pub mod math_phase22_b;
 
 // Re-exports from math_extended (G33-G38)
 pub use math_extended::{
@@ -73,4 +75,30 @@ pub use math_extended::{
     MultiCubicSpline2d,
     AbcdInterpolation,
     BackwardFlatLinearInterpolation,
+};
+
+// Re-exports from Phase 22 (G219-G237)
+pub use math_phase22_a::{
+    Interpolation2D, KernelInterpolation2D, Kernel2D, FlatExtrapolation2D,
+    GridInterpolation2D,
+    SteepestDescent, GradientOptResult, LineSearch, LineSearchResult,
+    ArmijoLineSearch, GoldsteinLineSearch,
+    SphereCylinderOptimizer, Projection, ProjectedCostFunction, ProjectedConstraint,
+    FiniteDifferenceNewtonSafe, GaussianStatistics,
+    KnuthUniformRng, LecuyerUniformRng, RanluxUniformRng, ranlux3_rng, ranlux4_rng,
+    Burley2020SobolRsg,
+    ZigguratGaussianRng, CentralLimitGaussianRng,
+    StochasticCollocationInvCDF,
+};
+pub use math_phase22_b::{
+    LatticeRsg, RandomizedLDS,
+    SymmetricSchurDecomposition,
+    get_covariance, CovarianceDecomposition, BasisIncompleteOrdered,
+    factor_reduction, TAPCorrelations,
+    PascalTriangle, PrimeNumbers, TransformedGrid,
+    beta_function, incomplete_beta, exponential_integral_ei, sine_integral, cosine_integral,
+    DiscreteTrapezoidIntegral, DiscreteSimpsonIntegral,
+    DiscreteTrapezoidIntegrator, DiscreteSimpsonIntegrator,
+    MomentBasedGaussianPolynomial,
+    GaussLaguerreCosinePolynomial, GaussLaguerreSinePolynomial,
 };
