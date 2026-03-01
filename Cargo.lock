@@ -1152,6 +1152,7 @@ dependencies = [
  "ql-math",
  "ql-time",
  "serde",
+ "serde_json",
  "tracing",
 ]
 

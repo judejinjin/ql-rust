@@ -65,6 +65,7 @@ pub mod piecewise_spread;
 pub mod interpolated_swaption_vol_cube;
 pub mod caplet_variance_curve;
 pub mod spreaded_swaption_vol;
+pub mod yield_curves_phase24;
 
 // Re-exports
 pub use term_structure::TermStructure;
@@ -142,6 +143,11 @@ pub use piecewise_spread::{
 pub use interpolated_swaption_vol_cube::InterpolatedSwaptionVolCube;
 pub use caplet_variance_curve::{CapletVarianceCurve, CapletVarInterp};
 pub use spreaded_swaption_vol::{SpreadedSwaptionVol, SpreadSpec};
+pub use yield_curves_phase24::{
+    CubicBSplinesFitting, SpreadFittingMethod,
+    InterpolatedSimpleZeroCurve, SpreadDiscountCurve,
+    OvernightIndexFutureRateHelper, FittingMethodExtended,
+};
 
 pub mod term_structure_extended;
 pub use term_structure_extended::{

@@ -59,6 +59,7 @@ pub mod cms_spread_coupon;
 pub mod multiple_resets_coupon;
 pub mod indexed_cashflow;
 pub mod cashflows_extended;
+pub mod cashflows_phase23;
 
 // Re-exports
 pub use cashflow::{CashFlow, Leg};
@@ -94,4 +95,8 @@ pub use cashflows_extended::{
     YoYInflationCoupon, ZeroInflationCashFlow, EquityCashFlow,
     DigitalIborCoupon, DigitalCmsCoupon,
     CapFlooredInflationCoupon, CpiCouponPricer,
+};
+pub use cashflows_phase23::{
+    AverageBMACoupon, OvernightIndexedCouponPricer, ObservationShift,
+    CashFlowVectors,
 };
