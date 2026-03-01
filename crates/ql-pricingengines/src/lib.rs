@@ -148,9 +148,17 @@ pub use gaussian1d_engine::{
     gaussian1d_swaption, gaussian1d_zcb_option, Gaussian1dResult,
 };
 pub mod lmm_products;
+pub mod lmm_multi_step;
 pub use lmm_products::{
     LmmProduct, ExerciseType, BermudanSwaption, CmsSpreadOption,
     CallableRangeAccrual, lmm_product_mc,
+};
+pub use lmm_multi_step::{
+    MultiStepSwap, MultiStepSwaption, MultiStepOptionlets, MultiStepForwards,
+    MultiStepCoterminalSwaps, MultiStepCoterminalSwaptions, MultiStepCoinitialSwaps,
+    MultiStepInverseFloater, MultiStepRatchet, MultiStepTarn, MultiStepNothing,
+    OneStepForwards, OneStepOptionlets, OneStepCoterminalSwaps, OneStepCoinitialSwaps,
+    CallSpecifiedMultiProduct, ExerciseAdapter, CashRebate,
 };
 pub use engine_adapters::{
     AnalyticEuropeanEngine, DiscountingSwapEngine, DiscountingBondEngine,
@@ -267,4 +275,17 @@ pub use engines_extended::{
     TreeSwapResult, tree_swap_engine,
     AnalyticPerformanceResult, analytic_performance,
     ForwardPerformanceResult, forward_performance,
+};
+
+pub mod credit_extensions;
+pub use credit_extensions::{
+    DefaultLossModel, LossModelResult,
+    GaussianLHPLossModel, BinomialLossModel, RecursiveLossModel,
+    SaddlepointLossModel, RandomDefaultLossModel,
+    OneFactorGaussianCopula, OneFactorStudentCopula, OneFactorAffineSurvival,
+    DefaultProbabilityLatentModel, ConstantLossLatentModel, SpotLossLatentModel,
+    RandomLossLatentModel, RandomDefaultLatentModel,
+    CorrelationStructure, BaseCorrelationStructure, BaseCorrelationLossModel,
+    integral_cdo_engine, midpoint_cdo_engine, integral_ntd_engine,
+    CdoEngineResult, NtdEngineResult,
 };

@@ -35,6 +35,7 @@ pub mod black_karasinski;
 pub mod g2_model;
 pub mod lmm;
 pub mod lmm_extensions;
+pub mod lmm_framework;
 pub mod gsr;
 pub mod ptd_heston_model;
 pub mod gjr_garch_model;
@@ -66,6 +67,8 @@ pub use variance_gamma_model::VarianceGammaModel;
 pub use vol_estimators::{
     GarchParams, garch_fit, garch_forecast,
     garman_klass_vol, rogers_satchell_vol, yang_zhang_vol,
+    VolatilityEstimator, GarchEstimator, GarmanKlassEstimator,
+    RogersSatchellEstimator, YangZhangEstimator, SimpleLocalEstimator,
 };
 pub use basis_model::{
     FraOisBasisModel, CrossCurrencyBasisModel, CcyPair,
@@ -74,4 +77,17 @@ pub use basis_model::{
 pub use models_extended::{
     HestonSlvFdmModel, HestonSlvMcModel, ExtendedCoxIngersollRoss,
     CapHelper, SwaptionHelper, SwaptionVolType, ConstantVolEstimator,
+};
+pub use lmm_framework::{
+    CurveState, LMMCurveState, CoterminalSwapCurveState, CMSwapCurveState,
+    LMMDriftCalculator, LMMNormalDriftCalculator, SMMDriftCalculator, CmSMMDriftCalculator,
+    Evolver, LogNormalFwdRateEuler, LogNormalFwdRatePC, LogNormalFwdRateBalland,
+    LogNormalFwdRateConstrainedEuler, LogNormalFwdRateIPC, LogNormalCotSwapRatePC,
+    NormalFwdRatePC, LogNormalCMSwapRatePC,
+    EvolutionDescription, BrownianGenerator, MTBrownianGenerator, SobolBrownianGenerator,
+    FlatVol, PiecewiseConstantVariance, AbcdVol,
+    ExponentialCorrelation, TimeHomogeneousForwardCorrelation,
+    SwapForwardMappings, ForwardForwardMappings,
+    AlphaForm, AlphaFormLinearHyperbolic,
+    AccountingEngine, AccountingResult, ProxyGreekEngine,
 };

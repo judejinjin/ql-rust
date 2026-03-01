@@ -82,6 +82,7 @@ pub mod perpetual_futures;
 pub mod commodity;
 pub mod cat_bond;
 pub mod instruments_extended;
+pub mod credit_portfolio_instruments;
 
 // Re-exports
 pub use payoff::{OptionType, Payoff, Exercise};
@@ -167,4 +168,11 @@ pub use instruments_extended::{
     FloatFloatSwaption, CmsRateBond, AmortizingCmsRateBond,
     Btp, DividendVanillaOption, DividendEntry, DividendBarrierOption,
     DividendBarrierType, StickyRatchet, StickyRatchetType,
+};
+pub use credit_portfolio_instruments::{
+    DefaultType, DefaultEvent, DefaultProbabilityKey, RecoveryRateModel, ClaimType,
+    Pool, HomogeneousPoolDef, InhomogeneousPoolDef,
+    SyntheticCDO, SyntheticCDOResult,
+    NthToDefault, NthToDefaultResult,
+    CdsOption, CdsOptionType, CdsOptionResult,
 };

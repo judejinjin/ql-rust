@@ -291,6 +291,248 @@ pub fn yang_zhang_vol(
     (daily_var.abs() * 252.0).sqrt()
 }
 
+// ===========================================================================
+// Struct-based volatility estimators (Phase 16 wrappers)
+// ===========================================================================
+
+/// Trait for historical volatility estimators.
+pub trait VolatilityEstimator {
+    /// Estimated annualised volatility.
+    fn vol(&self) -> f64;
+    /// Number of observations used.
+    fn n_obs(&self) -> usize;
+}
+
+/// GARCH(1,1) volatility estimator (struct-based wrapper around [`garch_fit`]).
+///
+/// Fits GARCH(1,1) to a return series and provides the long-run volatility
+/// estimate plus conditional volatility forecasts.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct GarchEstimator {
+    /// Fitted GARCH parameters.
+    pub params: GarchParams,
+    /// Number of observations.
+    pub n_obs: usize,
+    /// Last conditional variance from the fit.
+    pub last_sigma2: f64,
+}
+
+impl GarchEstimator {
+    /// Fit from a price series.
+    pub fn from_prices(prices: &[f64]) -> Self {
+        assert!(prices.len() >= 3, "Need at least 3 prices");
+        let log_returns: Vec<f64> = prices.windows(2).map(|w| (w[1] / w[0]).ln()).collect();
+        Self::from_returns(&log_returns)
+    }
+
+    /// Fit from a log-return series.
+    pub fn from_returns(log_returns: &[f64]) -> Self {
+        let params = garch_fit(log_returns, 500, 1e-8);
+        let n = log_returns.len();
+        // Compute last conditional variance
+        let sv = sample_variance(log_returns);
+        let mut sigma2 = sv;
+        for t in 1..n {
+            sigma2 = params.omega + params.alpha * log_returns[t - 1].powi(2) + params.beta * sigma2;
+            sigma2 = sigma2.max(1e-14);
+        }
+        Self {
+            params,
+            n_obs: n,
+            last_sigma2: sigma2,
+        }
+    }
+
+    /// Forecast conditional volatility for `horizon` steps ahead.
+    pub fn forecast(&self, horizon: u32) -> Vec<f64> {
+        garch_forecast(&self.params, self.last_sigma2, horizon)
+            .iter()
+            .map(|&v| (v * 252.0).sqrt())
+            .collect()
+    }
+}
+
+impl VolatilityEstimator for GarchEstimator {
+    fn vol(&self) -> f64 {
+        self.params.long_run_vol
+    }
+    fn n_obs(&self) -> usize {
+        self.n_obs
+    }
+}
+
+/// Garman-Klass (1980) OHLC volatility estimator (struct wrapper).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct GarmanKlassEstimator {
+    /// Estimated annualised volatility.
+    pub vol: f64,
+    /// Number of observations.
+    pub n_obs: usize,
+}
+
+impl GarmanKlassEstimator {
+    /// Estimate from OHLC price arrays.
+    pub fn new(open: &[f64], high: &[f64], low: &[f64], close: &[f64]) -> Self {
+        let n = open.len().min(high.len()).min(low.len()).min(close.len());
+        let vol = garman_klass_vol(open, high, low, close);
+        Self { vol, n_obs: n }
+    }
+}
+
+impl VolatilityEstimator for GarmanKlassEstimator {
+    fn vol(&self) -> f64 {
+        self.vol
+    }
+    fn n_obs(&self) -> usize {
+        self.n_obs
+    }
+}
+
+/// Rogers-Satchell (1991) volatility estimator (struct wrapper).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RogersSatchellEstimator {
+    /// Estimated annualised volatility.
+    pub vol: f64,
+    /// Number of observations.
+    pub n_obs: usize,
+}
+
+impl RogersSatchellEstimator {
+    /// Estimate from OHLC price arrays.
+    pub fn new(open: &[f64], high: &[f64], low: &[f64], close: &[f64]) -> Self {
+        let n = open.len().min(high.len()).min(low.len()).min(close.len());
+        let vol = rogers_satchell_vol(open, high, low, close);
+        Self { vol, n_obs: n }
+    }
+}
+
+impl VolatilityEstimator for RogersSatchellEstimator {
+    fn vol(&self) -> f64 {
+        self.vol
+    }
+    fn n_obs(&self) -> usize {
+        self.n_obs
+    }
+}
+
+/// Yang-Zhang (2000) drift-independent volatility estimator (struct wrapper).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct YangZhangEstimator {
+    /// Estimated annualised volatility.
+    pub vol: f64,
+    /// Number of observations.
+    pub n_obs: usize,
+}
+
+impl YangZhangEstimator {
+    /// Estimate from OHLC + previous close.
+    pub fn new(
+        open: &[f64],
+        high: &[f64],
+        low: &[f64],
+        close: &[f64],
+        prev_close: &[f64],
+    ) -> Self {
+        let n = open
+            .len()
+            .min(high.len())
+            .min(low.len())
+            .min(close.len())
+            .min(prev_close.len());
+        let vol = yang_zhang_vol(open, high, low, close, prev_close);
+        Self { vol, n_obs: n }
+    }
+}
+
+impl VolatilityEstimator for YangZhangEstimator {
+    fn vol(&self) -> f64 {
+        self.vol
+    }
+    fn n_obs(&self) -> usize {
+        self.n_obs
+    }
+}
+
+/// Simple local volatility estimator from a term structure of option
+/// implied vols.
+///
+/// The Dupire-style local variance is:
+///     σ_local²(T, K) ≈ dw/dT  (where w = σ²T is total variance)
+///
+/// This estimator uses finite differencing of total variance in the
+/// time dimension at a given strike (ATM).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SimpleLocalEstimator {
+    /// Expiry times (sorted ascending).
+    pub expiries: Vec<f64>,
+    /// Implied Black vols corresponding to each expiry.
+    pub implied_vols: Vec<f64>,
+    /// Estimated local vol at each expiry midpoint.
+    pub local_vols: Vec<f64>,
+}
+
+impl SimpleLocalEstimator {
+    /// Construct from ATM implied vol term structure.
+    ///
+    /// # Arguments
+    /// - `expiries` — option expiry times (years), sorted ascending
+    /// - `implied_vols` — ATM implied Black vols at each expiry
+    pub fn new(expiries: &[f64], implied_vols: &[f64]) -> Self {
+        assert_eq!(expiries.len(), implied_vols.len());
+        assert!(expiries.len() >= 2, "Need at least 2 expiries");
+
+        let n = expiries.len();
+        // Total variance: w(T) = σ²(T) × T
+        let total_var: Vec<f64> = expiries
+            .iter()
+            .zip(implied_vols.iter())
+            .map(|(&t, &v)| v * v * t)
+            .collect();
+
+        // Local variance via finite difference: σ²_loc(T_mid) ≈ Δw/ΔT
+        let mut local_vols = Vec::with_capacity(n - 1);
+        for i in 0..n - 1 {
+            let dt = expiries[i + 1] - expiries[i];
+            let dw = total_var[i + 1] - total_var[i];
+            let local_var = if dt > 1e-12 { (dw / dt).max(0.0) } else { 0.0 };
+            local_vols.push(local_var.sqrt());
+        }
+
+        Self {
+            expiries: expiries.to_vec(),
+            implied_vols: implied_vols.to_vec(),
+            local_vols,
+        }
+    }
+
+    /// Interpolate local vol at a given time.
+    pub fn local_vol_at(&self, t: f64) -> f64 {
+        if self.local_vols.is_empty() {
+            return 0.0;
+        }
+        // Expiry midpoints
+        let n = self.local_vols.len();
+        let midpoints: Vec<f64> = (0..n)
+            .map(|i| 0.5 * (self.expiries[i] + self.expiries[i + 1]))
+            .collect();
+
+        if t <= midpoints[0] {
+            return self.local_vols[0];
+        }
+        if t >= midpoints[n - 1] {
+            return self.local_vols[n - 1];
+        }
+        // Linear interpolation
+        for i in 0..n - 1 {
+            if t <= midpoints[i + 1] {
+                let frac = (t - midpoints[i]) / (midpoints[i + 1] - midpoints[i]);
+                return self.local_vols[i] + frac * (self.local_vols[i + 1] - self.local_vols[i]);
+            }
+        }
+        self.local_vols[n - 1]
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -368,5 +610,88 @@ mod tests {
         let prev_close: Vec<f64> = (0..n).map(|i| base + 0.01 * (i as f64 - 0.5)).collect();
         let vol = yang_zhang_vol(&open, &high, &low, &close, &prev_close);
         assert!(vol > 0.0 && vol < 2.0, "yz_vol={}", vol);
+    }
+
+    // ---------- Phase 16 struct estimator tests ----------
+
+    #[test]
+    fn test_garch_estimator_from_prices() {
+        let prices: Vec<f64> = (0..200).map(|i| 100.0 * (1.0 + 0.001 * (i as f64).sin())).collect();
+        let est = GarchEstimator::from_prices(&prices);
+        assert!(est.vol() > 0.0, "garch vol={}", est.vol());
+        assert_eq!(est.n_obs(), 199);
+        assert!(est.last_sigma2 > 0.0);
+    }
+
+    #[test]
+    fn test_garch_estimator_forecast() {
+        let returns = synthetic_returns(500, 0.01);
+        let est = GarchEstimator::from_returns(&returns);
+        let fcast = est.forecast(5);
+        assert_eq!(fcast.len(), 5);
+        for v in &fcast {
+            assert!(*v > 0.0 && *v < 2.0, "forecast vol={}", v);
+        }
+    }
+
+    #[test]
+    fn test_garman_klass_estimator() {
+        let n = 100;
+        let base = 100.0;
+        let open: Vec<f64> = (0..n).map(|i| base + 0.01 * i as f64).collect();
+        let high: Vec<f64> = open.iter().map(|o| o * 1.02).collect();
+        let low: Vec<f64> = open.iter().map(|o| o * 0.98).collect();
+        let close: Vec<f64> = open.iter().map(|o| o * 1.005).collect();
+        let est = GarmanKlassEstimator::new(&open, &high, &low, &close);
+        assert_eq!(est.n_obs(), n);
+        assert_abs_diff_eq!(est.vol(), garman_klass_vol(&open, &high, &low, &close), epsilon = 1e-14);
+    }
+
+    #[test]
+    fn test_rogers_satchell_estimator() {
+        let n = 80;
+        let base = 50.0;
+        let open: Vec<f64> = (0..n).map(|i| base + 0.02 * i as f64).collect();
+        let high: Vec<f64> = open.iter().map(|o| o * 1.01).collect();
+        let low: Vec<f64> = open.iter().map(|o| o * 0.99).collect();
+        let close: Vec<f64> = open.iter().map(|o| o * 1.002).collect();
+        let est = RogersSatchellEstimator::new(&open, &high, &low, &close);
+        assert_eq!(est.n_obs(), n);
+        assert!(est.vol() > 0.0);
+    }
+
+    #[test]
+    fn test_yang_zhang_estimator() {
+        let n = 100;
+        let base = 100.0;
+        let open: Vec<f64> = (0..n).map(|i| base + 0.01 * i as f64).collect();
+        let high: Vec<f64> = open.iter().map(|o| o * 1.02).collect();
+        let low: Vec<f64> = open.iter().map(|o| o * 0.98).collect();
+        let close: Vec<f64> = open.iter().map(|o| o * 1.005).collect();
+        let prev_close: Vec<f64> = (0..n).map(|i| base + 0.01 * (i as f64 - 0.5)).collect();
+        let est = YangZhangEstimator::new(&open, &high, &low, &close, &prev_close);
+        assert_eq!(est.n_obs(), n);
+        assert!(est.vol() > 0.0 && est.vol() < 2.0);
+    }
+
+    #[test]
+    fn test_simple_local_estimator() {
+        let expiries = vec![0.25, 0.5, 1.0, 2.0, 3.0, 5.0];
+        let vols = vec![0.22, 0.21, 0.20, 0.19, 0.185, 0.18];
+        let est = SimpleLocalEstimator::new(&expiries, &vols);
+        assert_eq!(est.local_vols.len(), 5);
+        for lv in &est.local_vols {
+            assert!(*lv > 0.0 && *lv < 1.0, "local vol={}", lv);
+        }
+        let lv_at_1 = est.local_vol_at(1.0);
+        assert!(lv_at_1 > 0.0 && lv_at_1 < 0.5, "interp local vol={}", lv_at_1);
+    }
+
+    #[test]
+    fn test_vol_estimator_trait() {
+        let returns = synthetic_returns(500, 0.01);
+        let garch: Box<dyn VolatilityEstimator> = Box::new(GarchEstimator::from_returns(&returns));
+        assert!(garch.vol() > 0.0);
+        assert_eq!(garch.n_obs(), 500);
     }
 }
