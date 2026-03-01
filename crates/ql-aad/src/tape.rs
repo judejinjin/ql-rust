@@ -532,6 +532,63 @@ impl Number for AReal {
     }
 
     #[inline]
+    fn tan(self) -> Self {
+        let c = self.val.cos();
+        push_tl(self.val.tan(), smallvec![(self.idx, 1.0 / (c * c))])
+    }
+
+    #[inline]
+    fn asin(self) -> Self {
+        push_tl(self.val.asin(), smallvec![(self.idx, 1.0 / (1.0 - self.val * self.val).sqrt())])
+    }
+
+    #[inline]
+    fn acos(self) -> Self {
+        push_tl(self.val.acos(), smallvec![(self.idx, -1.0 / (1.0 - self.val * self.val).sqrt())])
+    }
+
+    #[inline]
+    fn atan(self) -> Self {
+        push_tl(self.val.atan(), smallvec![(self.idx, 1.0 / (1.0 + self.val * self.val))])
+    }
+
+    #[inline]
+    fn sinh(self) -> Self {
+        push_tl(self.val.sinh(), smallvec![(self.idx, self.val.cosh())])
+    }
+
+    #[inline]
+    fn cosh(self) -> Self {
+        push_tl(self.val.cosh(), smallvec![(self.idx, self.val.sinh())])
+    }
+
+    #[inline]
+    fn tanh(self) -> Self {
+        let t = self.val.tanh();
+        push_tl(t, smallvec![(self.idx, 1.0 - t * t)])
+    }
+
+    #[inline]
+    fn log2(self) -> Self {
+        push_tl(self.val.log2(), smallvec![(self.idx, 1.0 / (self.val * std::f64::consts::LN_2))])
+    }
+
+    #[inline]
+    fn log10(self) -> Self {
+        push_tl(self.val.log10(), smallvec![(self.idx, 1.0 / (self.val * std::f64::consts::LN_10))])
+    }
+
+    #[inline]
+    fn floor(self) -> Self {
+        push_tl(self.val.floor(), SmallVec::new()) // not differentiable
+    }
+
+    #[inline]
+    fn ceil(self) -> Self {
+        push_tl(self.val.ceil(), SmallVec::new()) // not differentiable
+    }
+
+    #[inline]
     fn zero() -> Self { Self::from_f64(0.0) }
     #[inline]
     fn one() -> Self { Self::from_f64(1.0) }

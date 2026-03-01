@@ -54,6 +54,18 @@ pub trait Number:
     fn min(self, other: Self) -> Self;
     fn recip(self) -> Self;
     fn atan2(self, other: Self) -> Self;
+    fn tan(self) -> Self;
+    fn asin(self) -> Self;
+    fn acos(self) -> Self;
+    fn atan(self) -> Self;
+    fn sinh(self) -> Self;
+    fn cosh(self) -> Self;
+    fn tanh(self) -> Self;
+    fn log2(self) -> Self;
+    fn log10(self) -> Self;
+    fn floor(self) -> Self;
+    fn ceil(self) -> Self;
+    fn fma(self, a: Self, b: Self) -> Self { self * a + b }
 
     // --- Constants ---
 
@@ -105,6 +117,28 @@ impl Number for f64 {
     fn recip(self) -> Self { 1.0 / self }
     #[inline(always)]
     fn atan2(self, other: Self) -> Self { f64::atan2(self, other) }
+    #[inline(always)]
+    fn tan(self) -> Self { f64::tan(self) }
+    #[inline(always)]
+    fn asin(self) -> Self { f64::asin(self) }
+    #[inline(always)]
+    fn acos(self) -> Self { f64::acos(self) }
+    #[inline(always)]
+    fn atan(self) -> Self { f64::atan(self) }
+    #[inline(always)]
+    fn sinh(self) -> Self { f64::sinh(self) }
+    #[inline(always)]
+    fn cosh(self) -> Self { f64::cosh(self) }
+    #[inline(always)]
+    fn tanh(self) -> Self { f64::tanh(self) }
+    #[inline(always)]
+    fn log2(self) -> Self { f64::log2(self) }
+    #[inline(always)]
+    fn log10(self) -> Self { f64::log10(self) }
+    #[inline(always)]
+    fn floor(self) -> Self { f64::floor(self) }
+    #[inline(always)]
+    fn ceil(self) -> Self { f64::ceil(self) }
 
     #[inline(always)]
     fn zero() -> Self { 0.0 }

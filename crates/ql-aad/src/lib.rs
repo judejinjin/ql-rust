@@ -34,6 +34,9 @@ pub mod bs;
 pub mod complex;
 pub mod heston;
 pub mod bates;
+pub mod interp;
+pub mod integrate;
+pub mod solvers;
 
 pub use number::Number;
 pub use dual::Dual;
@@ -43,3 +46,6 @@ pub use bs::{OptionKind, BSGreeks, bs_price_generic, bs_greeks_forward_ad};
 pub use complex::Complex;
 pub use heston::{HestonGreeks, heston_price_generic, heston_greeks_ad};
 pub use bates::{BatesGreeks, bates_price_generic, bates_greeks_ad};
+pub use interp::{LinearInterp, LogLinearInterp, CubicSplineInterp, MonotoneConvexInterp};
+pub use integrate::{gl_integrate, gl_integrate_f64_to_t, simpson_integrate, trapezoid_integrate};
+pub use solvers::{newton_1d, newton_ad, halley_1d, implicit_diff, solve_and_diff, SolverError};

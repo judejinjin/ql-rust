@@ -279,6 +279,62 @@ impl<const N: usize> Number for DualVec<N> {
     }
 
     #[inline(always)]
+    fn tan(self) -> Self {
+        let c = self.val.cos();
+        Self { val: self.val.tan(), dot: dot_scale(&self.dot, 1.0 / (c * c)) }
+    }
+
+    #[inline(always)]
+    fn asin(self) -> Self {
+        let d = 1.0 / (1.0 - self.val * self.val).sqrt();
+        Self { val: self.val.asin(), dot: dot_scale(&self.dot, d) }
+    }
+
+    #[inline(always)]
+    fn acos(self) -> Self {
+        let d = -1.0 / (1.0 - self.val * self.val).sqrt();
+        Self { val: self.val.acos(), dot: dot_scale(&self.dot, d) }
+    }
+
+    #[inline(always)]
+    fn atan(self) -> Self {
+        let d = 1.0 / (1.0 + self.val * self.val);
+        Self { val: self.val.atan(), dot: dot_scale(&self.dot, d) }
+    }
+
+    #[inline(always)]
+    fn sinh(self) -> Self {
+        Self { val: self.val.sinh(), dot: dot_scale(&self.dot, self.val.cosh()) }
+    }
+
+    #[inline(always)]
+    fn cosh(self) -> Self {
+        Self { val: self.val.cosh(), dot: dot_scale(&self.dot, self.val.sinh()) }
+    }
+
+    #[inline(always)]
+    fn tanh(self) -> Self {
+        let t = self.val.tanh();
+        Self { val: t, dot: dot_scale(&self.dot, 1.0 - t * t) }
+    }
+
+    #[inline(always)]
+    fn log2(self) -> Self {
+        Self { val: self.val.log2(), dot: dot_scale(&self.dot, 1.0 / (self.val * std::f64::consts::LN_2)) }
+    }
+
+    #[inline(always)]
+    fn log10(self) -> Self {
+        Self { val: self.val.log10(), dot: dot_scale(&self.dot, 1.0 / (self.val * std::f64::consts::LN_10)) }
+    }
+
+    #[inline(always)]
+    fn floor(self) -> Self { Self { val: self.val.floor(), dot: [0.0; N] } }
+
+    #[inline(always)]
+    fn ceil(self) -> Self { Self { val: self.val.ceil(), dot: [0.0; N] } }
+
+    #[inline(always)]
     fn zero() -> Self { Self::constant(0.0) }
     #[inline(always)]
     fn one() -> Self { Self::constant(1.0) }
