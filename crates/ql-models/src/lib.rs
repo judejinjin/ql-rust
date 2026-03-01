@@ -91,3 +91,26 @@ pub use lmm_framework::{
     AlphaForm, AlphaFormLinearHyperbolic,
     AccountingEngine, AccountingResult, ProxyGreekEngine,
 };
+
+pub mod lmm_advanced;
+pub use lmm_advanced::{
+    PathwiseAccountingEngine, PathwiseAccountingResult, PathwiseDiscounter,
+    BumpInstrumentJacobian, RatePseudoRootJacobian, SwaptionPseudoJacobian,
+    VegaBumpCluster,
+    CapletCoterminalAlphaCalibration, CapletCoterminalMaxHomogeneity,
+    CapletCoterminalPeriodic, CapletCoterminalSwaptionCalibration,
+    CTSMMCapletCalibration, PseudoRootFacade,
+    CotSwapToFwdAdapter, FwdToCotSwapAdapter, FwdPeriodAdapter, CotSwapFromFwdCorrelation,
+    HistoricalForwardRatesAnalysis, HistoricalRatesAnalysis,
+    ExerciseValue, BermudanSwaptionExerciseValue, NothingExerciseValue,
+    LSStrategy, UpperBoundEngine,
+    MarketModelBasisSystem, MonomialBasis, MarketModelParametricExercise,
+    SwapBasisSystem, SwapForwardBasisSystem,
+    SwapRateTrigger, TriggeredSwapExercise,
+    NodeData, NodeDataProvider, DefaultNodeDataProvider,
+    ParametricExerciseAdapter, ExerciseIndicator,
+    SvdDFwdRatePC, LogNormalFwdRateIBalland, MultiStepPeriodCapletSwaptions,
+    MarketModelVolProcess, SquareRootAndersen,
+    PiecewiseConstantAbcdVariance, VolatilityInterpolationSpecifier,
+    MarketModelComposite,
+};
