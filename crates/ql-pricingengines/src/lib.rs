@@ -302,3 +302,9 @@ pub use credit_extensions::{
     integral_cdo_engine, midpoint_cdo_engine, integral_ntd_engine,
     CdoEngineResult, NtdEngineResult,
 };
+
+pub mod fd_engines_extended;
+pub use fd_engines_extended::{
+    fd_simple_bs_swing, FdSwingResult,
+    fd_multi_period, FdMultiPeriodResult, ExercisePeriod,
+};

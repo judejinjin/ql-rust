@@ -80,3 +80,33 @@ pub use fdm_meshers_extended::{
     ExponentialJump1DMesherParams, exponential_jump_1d_mesher,
     FdmCEV1DMesherParams, fdm_cev_1d_mesher,
 };
+
+pub mod fdm_operators_extended;
+pub use fdm_operators_extended::{
+    FdmLinearOp, FdmLinearOpComposite,
+    NinePointLinearOp, FirstDerivativeOp, SecondDerivativeOp,
+    SecondOrderMixedDerivativeOp, NthOrderDerivativeOp,
+    ModTripleBandLinearOp,
+    FdmBlackScholesOp, Fdm2dBlackScholesOp,
+    FdmHestonOp, FdmHestonFwdOp, FdmHestonHullWhiteOp,
+    FdmBatesOp, FdmBlackScholesFwdOp, FdmLocalVolFwdOp,
+    FdmSquareRootFwdOp, FdmOrnsteinUhlenbeckOp, FdmSABROp,
+};
+
+pub mod fdm_infrastructure;
+pub use fdm_infrastructure::{
+    FdmLinearOpLayout, FdmLinearOpIterator, FdmBackwardSolver,
+    FdmSolverDesc, Fdm1DimSolver, Fdm2DimSolver, FdmNDimSolver,
+    FdmQuantoHelper, FdmDividendHandler,
+    FdmInnerValueCalculator, VanillaInnerValue,
+    FdmAffineModelTermStructure, FdmMesherIntegral,
+    FdmIndicesOnBoundary, FdmHestonGreensFct,
+    FdmSimpleStorageCondition, FdmSimpleSwingCondition,
+    FdmSnapshotCondition, FdmStepConditionComposite,
+    FdmArithmeticAverageCondition,
+    RndCalculator, BSMRndCalculator, HestonRndCalculator,
+    LocalVolRndCalculator, CEVRndCalculator, GBSMRndCalculator,
+    SquareRootProcessRndCalculator,
+    FdmDiscountDirichletBoundary, FdmTimeDependentDirichletBoundary,
+    FdmBoundaryConditionSet,
+};

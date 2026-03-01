@@ -179,7 +179,7 @@ pub fn implicit_step(op: &TripleBandOp, v: &[f64], dt: f64) -> Vec<f64> {
 ///   ∂V/∂t + (r − q − v/2) ∂V/∂x + v/2 ∂²V/∂x²
 ///         + κ(θ−v) ∂V/∂v + σ²v/2 ∂²V/∂v²
 ///         + ρσv ∂²V/∂x∂v − rV = 0
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Heston2dOps {
     /// Operator in x-direction (for each v slice).
     pub x_ops: Vec<TripleBandOp>,
