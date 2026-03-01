@@ -21,6 +21,11 @@
 //! ```
 
 use smallvec::{smallvec, SmallVec};
+use std::cell::RefCell;
+use std::fmt;
+use std::ops::{Add, Sub, Mul, Div, Neg, AddAssign, SubAssign, MulAssign, DivAssign};
+
+use crate::number::Number;
 
 /// A node in the computation tape.
 #[derive(Clone, Debug)]
@@ -211,6 +216,14 @@ impl Tape {
         self.push(a.val * c, smallvec![(a.idx, c)])
     }
 
+    /// atan2(y, x): `atan2(a, b)`.
+    pub fn atan2(&mut self, a: AReal, b: AReal) -> AReal {
+        let denom = a.val * a.val + b.val * b.val;
+        let da = b.val / denom;    // ∂atan2/∂y = x / (x² + y²)
+        let db = -a.val / denom;   // ∂atan2/∂x = -y / (x² + y²)
+        self.push(a.val.atan2(b.val), SmallVec::from_buf([(a.idx, da), (b.idx, db)]))
+    }
+
     // --- Adjoint computation ---
 
     /// Compute the adjoint (gradient) from the given output node.
@@ -255,6 +268,282 @@ impl Tape {
 
 impl Default for Tape {
     fn default() -> Self { Self::new() }
+}
+
+// ===========================================================================
+// Thread-local tape for `Number`-based `AReal` arithmetic
+// ===========================================================================
+
+thread_local! {
+    static TAPE: RefCell<Tape> = RefCell::new(Tape::new());
+}
+
+/// Activate the thread-local tape, run the closure, and return the result.
+///
+/// The tape is cleared before the closure runs. After the closure returns,
+/// you can call [`adjoint_tl`] to compute gradients.
+///
+/// The closure receives a [`TapeHandle`] which supports `.input(val)` to
+/// register input variables. AReal arithmetic operations inside the closure
+/// automatically record onto the thread-local tape.
+///
+/// # Example
+///
+/// ```
+/// use ql_aad::tape::{with_tape, adjoint_tl, AReal};
+/// use ql_aad::Number;
+///
+/// let (z, x_idx, y_idx) = with_tape(|tape| {
+///     let x = tape.input(3.0);
+///     let y = tape.input(5.0);
+///     let z = x * y + x; // uses Number trait ops
+///     (z, x.idx, y.idx)
+/// });
+/// let grad = adjoint_tl(z);
+/// assert!((grad[x_idx] - 6.0).abs() < 1e-14);
+/// assert!((grad[y_idx] - 3.0).abs() < 1e-14);
+/// ```
+pub fn with_tape<F, R>(f: F) -> R
+where
+    F: FnOnce(&mut TapeHandle) -> R,
+{
+    // Clear the tape, releasing the borrow immediately so that AReal ops
+    // inside the closure can acquire their own short-lived borrows.
+    TAPE.with(|cell| {
+        cell.borrow_mut().clear();
+    });
+    f(&mut TapeHandle)
+}
+
+/// A handle passed to [`with_tape`] closures that safely delegates to
+/// the thread-local tape without holding a long-lived borrow.
+pub struct TapeHandle;
+
+impl TapeHandle {
+    /// Register an input variable on the thread-local tape.
+    pub fn input(&mut self, val: f64) -> AReal {
+        input_tl(val)
+    }
+}
+
+/// Compute adjoints on the thread-local tape from the given output.
+pub fn adjoint_tl(output: AReal) -> Vec<f64> {
+    TAPE.with(|cell| {
+        let tape = cell.borrow();
+        tape.adjoint(output)
+    })
+}
+
+/// Push an input onto the thread-local tape.
+pub fn input_tl(val: f64) -> AReal {
+    TAPE.with(|cell| {
+        cell.borrow_mut().input(val)
+    })
+}
+
+// Helper: push a node onto the thread-local tape.
+fn push_tl(value: f64, partials: SmallVec<[(usize, f64); 2]>) -> AReal {
+    TAPE.with(|cell| {
+        cell.borrow_mut().push(value, partials)
+    })
+}
+
+// ===========================================================================
+// AReal: Display, PartialEq, PartialOrd, Default
+// ===========================================================================
+
+impl fmt::Display for AReal {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.val)
+    }
+}
+
+impl PartialEq for AReal {
+    fn eq(&self, other: &Self) -> bool { self.val == other.val }
+}
+
+impl PartialOrd for AReal {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.val.partial_cmp(&other.val)
+    }
+}
+
+impl Default for AReal {
+    fn default() -> Self { Self { idx: 0, val: 0.0 } }
+}
+
+// ===========================================================================
+// AReal: std::ops for Number trait
+// ===========================================================================
+
+impl Add for AReal {
+    type Output = Self;
+    #[inline]
+    fn add(self, rhs: Self) -> Self {
+        push_tl(self.val + rhs.val, SmallVec::from_buf([(self.idx, 1.0), (rhs.idx, 1.0)]))
+    }
+}
+
+impl Sub for AReal {
+    type Output = Self;
+    #[inline]
+    fn sub(self, rhs: Self) -> Self {
+        push_tl(self.val - rhs.val, SmallVec::from_buf([(self.idx, 1.0), (rhs.idx, -1.0)]))
+    }
+}
+
+impl Mul for AReal {
+    type Output = Self;
+    #[inline]
+    fn mul(self, rhs: Self) -> Self {
+        push_tl(self.val * rhs.val, SmallVec::from_buf([(self.idx, rhs.val), (rhs.idx, self.val)]))
+    }
+}
+
+impl Div for AReal {
+    type Output = Self;
+    #[inline]
+    fn div(self, rhs: Self) -> Self {
+        let inv_b = 1.0 / rhs.val;
+        push_tl(
+            self.val * inv_b,
+            SmallVec::from_buf([(self.idx, inv_b), (rhs.idx, -self.val * inv_b * inv_b)]),
+        )
+    }
+}
+
+impl Neg for AReal {
+    type Output = Self;
+    #[inline]
+    fn neg(self) -> Self {
+        push_tl(-self.val, smallvec![(self.idx, -1.0)])
+    }
+}
+
+impl AddAssign for AReal {
+    #[inline]
+    fn add_assign(&mut self, rhs: Self) { *self = *self + rhs; }
+}
+impl SubAssign for AReal {
+    #[inline]
+    fn sub_assign(&mut self, rhs: Self) { *self = *self - rhs; }
+}
+impl MulAssign for AReal {
+    #[inline]
+    fn mul_assign(&mut self, rhs: Self) { *self = *self * rhs; }
+}
+impl DivAssign for AReal {
+    #[inline]
+    fn div_assign(&mut self, rhs: Self) { *self = *self / rhs; }
+}
+
+// ===========================================================================
+// Number trait for AReal
+// ===========================================================================
+
+impl Number for AReal {
+    #[inline]
+    fn from_f64(v: f64) -> Self {
+        // Constants don't need derivatives — push a node with no children
+        push_tl(v, SmallVec::new())
+    }
+
+    #[inline]
+    fn to_f64(self) -> f64 { self.val }
+
+    #[inline]
+    fn exp(self) -> Self {
+        let e = self.val.exp();
+        push_tl(e, smallvec![(self.idx, e)])
+    }
+
+    #[inline]
+    fn ln(self) -> Self {
+        push_tl(self.val.ln(), smallvec![(self.idx, 1.0 / self.val)])
+    }
+
+    #[inline]
+    fn sqrt(self) -> Self {
+        let s = self.val.sqrt();
+        push_tl(s, smallvec![(self.idx, 0.5 / s)])
+    }
+
+    #[inline]
+    fn abs(self) -> Self {
+        let d = if self.val >= 0.0 { 1.0 } else { -1.0 };
+        push_tl(self.val.abs(), smallvec![(self.idx, d)])
+    }
+
+    #[inline]
+    fn powf(self, n: Self) -> Self {
+        let val = self.val.powf(n.val);
+        let da = n.val * self.val.powf(n.val - 1.0);
+        let db = val * self.val.ln();
+        push_tl(val, SmallVec::from_buf([(self.idx, da), (n.idx, db)]))
+    }
+
+    #[inline]
+    fn powi(self, n: i32) -> Self {
+        let val = self.val.powi(n);
+        let d = n as f64 * self.val.powi(n - 1);
+        push_tl(val, smallvec![(self.idx, d)])
+    }
+
+    #[inline]
+    fn sin(self) -> Self {
+        push_tl(self.val.sin(), smallvec![(self.idx, self.val.cos())])
+    }
+
+    #[inline]
+    fn cos(self) -> Self {
+        push_tl(self.val.cos(), smallvec![(self.idx, -self.val.sin())])
+    }
+
+    #[inline]
+    fn max(self, other: Self) -> Self {
+        if self.val >= other.val {
+            push_tl(self.val, smallvec![(self.idx, 1.0)])
+        } else {
+            push_tl(other.val, smallvec![(other.idx, 1.0)])
+        }
+    }
+
+    #[inline]
+    fn min(self, other: Self) -> Self {
+        if self.val <= other.val {
+            push_tl(self.val, smallvec![(self.idx, 1.0)])
+        } else {
+            push_tl(other.val, smallvec![(other.idx, 1.0)])
+        }
+    }
+
+    #[inline]
+    fn recip(self) -> Self {
+        let inv = 1.0 / self.val;
+        push_tl(inv, smallvec![(self.idx, -inv * inv)])
+    }
+
+    #[inline]
+    fn atan2(self, other: Self) -> Self {
+        let denom = self.val * self.val + other.val * other.val;
+        let da = other.val / denom;
+        let db = -self.val / denom;
+        push_tl(self.val.atan2(other.val), SmallVec::from_buf([(self.idx, da), (other.idx, db)]))
+    }
+
+    #[inline]
+    fn zero() -> Self { Self::from_f64(0.0) }
+    #[inline]
+    fn one() -> Self { Self::from_f64(1.0) }
+    #[inline]
+    fn pi() -> Self { Self::from_f64(std::f64::consts::PI) }
+    #[inline]
+    fn epsilon() -> Self { Self::from_f64(f64::EPSILON) }
+
+    #[inline]
+    fn is_positive(self) -> bool { self.val > 0.0 }
+    #[inline]
+    fn is_negative(self) -> bool { self.val < 0.0 }
 }
 
 // ===========================================================================

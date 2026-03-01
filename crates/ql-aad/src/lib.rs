@@ -31,9 +31,15 @@ pub mod dual_vec;
 pub mod tape;
 pub mod math;
 pub mod bs;
+pub mod complex;
+pub mod heston;
+pub mod bates;
 
 pub use number::Number;
 pub use dual::Dual;
 pub use dual_vec::DualVec;
 pub use tape::{Tape, AReal};
 pub use bs::{OptionKind, BSGreeks, bs_price_generic, bs_greeks_forward_ad};
+pub use complex::Complex;
+pub use heston::{HestonGreeks, heston_price_generic, heston_greeks_ad};
+pub use bates::{BatesGreeks, bates_price_generic, bates_greeks_ad};

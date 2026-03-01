@@ -228,6 +228,16 @@ impl Number for Dual {
     }
 
     #[inline(always)]
+    fn atan2(self, other: Self) -> Self {
+        // d/d(y,x) atan2(y, x) = (x*dy - y*dx) / (x² + y²)
+        let denom = self.val * self.val + other.val * other.val;
+        Self {
+            val: self.val.atan2(other.val),
+            dot: (other.val * self.dot - self.val * other.dot) / denom,
+        }
+    }
+
+    #[inline(always)]
     fn zero() -> Self { Self::constant(0.0) }
     #[inline(always)]
     fn one() -> Self { Self::constant(1.0) }

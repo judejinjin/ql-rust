@@ -268,6 +268,17 @@ impl<const N: usize> Number for DualVec<N> {
     }
 
     #[inline(always)]
+    fn atan2(self, other: Self) -> Self {
+        // d/d(params) atan2(y, x) = (x*dy - y*dx) / (x² + y²)
+        let denom = self.val * self.val + other.val * other.val;
+        let mut dot = [0.0; N];
+        for i in 0..N {
+            dot[i] = (other.val * self.dot[i] - self.val * other.dot[i]) / denom;
+        }
+        Self { val: self.val.atan2(other.val), dot }
+    }
+
+    #[inline(always)]
     fn zero() -> Self { Self::constant(0.0) }
     #[inline(always)]
     fn one() -> Self { Self::constant(1.0) }

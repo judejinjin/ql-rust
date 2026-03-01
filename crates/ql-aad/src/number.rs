@@ -53,6 +53,7 @@ pub trait Number:
     fn max(self, other: Self) -> Self;
     fn min(self, other: Self) -> Self;
     fn recip(self) -> Self;
+    fn atan2(self, other: Self) -> Self;
 
     // --- Constants ---
 
@@ -102,6 +103,8 @@ impl Number for f64 {
     fn min(self, other: Self) -> Self { f64::min(self, other) }
     #[inline(always)]
     fn recip(self) -> Self { 1.0 / self }
+    #[inline(always)]
+    fn atan2(self, other: Self) -> Self { f64::atan2(self, other) }
 
     #[inline(always)]
     fn zero() -> Self { 0.0 }
