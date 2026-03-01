@@ -1,7 +1,7 @@
 # ql-rust vs QuantLib C++ — Gap Analysis
 
 **Date:** 2026-02-28  
-**ql-rust commit:** `3a27f8b` → current (1,927 tests passing)  
+**ql-rust commit:** `3911939` (2,216 tests passing)  
 **QuantLib C++ reference:** `/mnt/c/cplusplus/quantlib/`
 
 ## Current Coverage Summary
@@ -21,9 +21,11 @@
 | Day counters | 8 variants | 12 | ~67% |
 | Optimization methods | 6 | 13 | ~46% |
 | Math/interpolation | 15+ | 21 | ~71% |
-| Tests | 1,904 | — | — |
+| Tests | 2,216 | — | — |
 
-**Overall estimated coverage: ~58%** of QuantLib C++ production features.
+**Overall estimated coverage: ~72%** of QuantLib C++ production features.
+
+**Phases 0–16, 21, 23–24: Complete.** Remaining gaps in Phases 17–20, 22 (see G98–G237).
 
 ---
 
@@ -285,7 +287,240 @@ trait-based architecture.
 **Phase 6 — LOW priority (L1–L25):** 10 items ✅ done  
 **Phase 7 — LOW indexes/currencies (L38–L41):** 4 items ✅ done  
 
-**Phase 8 — Full parity (G1–G97):** 97 items — in progress  
+**Phase 8 — Full parity (G1–G97):** 97 items ✅ done  
+**Phase 9 — Phase 23/24 cashflow & yield curve gaps:** 8 items ✅ done  
 
-**Total previously implemented: 31 modules** across 4 sessions.  
-**Remaining: 97 items** for 100% QuantLib parity.
+**Total previously implemented: 31 + 97 + 8 = 136 modules.**  
+**Remaining: ~140 items** across Phases 17–20, 22 (see G98–G237 below).
+
+---
+
+## Remaining Gaps — Implementation Plan Audit (G98–G237)
+
+Comprehensive audit of implementation-plan.md Phases 17–20 & 22 against actual
+codebase. These are named types/traits/engines listed in the plan that have no
+matching implementation. Phases 0–16, 21, 23–24 are fully complete.
+
+### Phase 17 — Swaption & Cap/Floor Engines (G98–G105)
+
+| # | Gap | Description | Target Crate |
+|---|-----|-------------|--------------|
+| G98 | Gaussian1DCapFloorEngine | Standalone Gaussian1d cap/floor pricing engine | `ql-pricingengines` |
+| G99 | Gaussian1DFloatFloatSwaptionEngine | Float-float swaption under Gaussian 1d model | `ql-pricingengines` |
+| G100 | MCHullWhiteEngine | Monte Carlo Hull-White swaption engine | `ql-pricingengines` |
+| G101 | FdHullWhiteSwaptionEngine | FD Hull-White swaption engine | `ql-pricingengines` |
+| G102 | TreeCapFloorEngine | Tree-based cap/floor pricing engine | `ql-pricingengines` |
+| G103 | IrregularSwap / IrregularSwaption | Irregular (amortising/step-up) swap and swaption | `ql-instruments` |
+| G104 | HaganIrregularSwaptionEngine | Hagan's approximation for irregular swaptions | `ql-pricingengines` |
+| G105 | BasketGeneratingEngine / LatticeShortRateModelEngine | Basket-generating engine and generic lattice engine for short-rate models | `ql-pricingengines` |
+
+### Phase 18 — Vol Surfaces & Smile (G106–G116)
+
+| # | Gap | Description | Target Crate |
+|---|-----|-------------|--------------|
+| G106 | LocalVolCurve | Local vol as a function of time only (1D curve extraction) | `ql-termstructures` |
+| G107 | LocalConstantVol | Constant local volatility term structure | `ql-termstructures` |
+| G108 | NoExceptLocalVolSurface | Local vol surface with exception-safe evaluation | `ql-termstructures` |
+| G109 | InterpolatedSmileSection | Templated smile section with arbitrary interpolation | `ql-termstructures` |
+| G110 | AtmAdjustedSmileSection | Smile section adjusted to match a given ATM vol | `ql-termstructures` |
+| G111 | AtmSmileSection / FlatSmileSection | ATM-only and flat smile section wrappers | `ql-termstructures` |
+| G112 | CPIVolatilityStructure / ConstantCPIVolatility | CPI inflation option vol surface | `ql-termstructures` |
+| G113 | YoYInflationOptionletVolatilityStructure | Year-on-year inflation optionlet vol surface | `ql-termstructures` |
+| G114 | CmsMarket / CmsMarketCalibration | CMS market data container and calibration routines | `ql-termstructures` |
+| G115 | Gaussian1dSwaptionVolatility | Gaussian 1d model-implied swaption vol surface | `ql-termstructures` |
+| G116 | SwaptionVolDiscrete | Base class for discretely-sampled swaption vol | `ql-termstructures` |
+
+### Phase 19 — FD Framework (G117–G175)
+
+#### Meshers (G117–G122)
+
+| # | Gap | Description | Target Crate |
+|---|-----|-------------|--------------|
+| G117 | FdmBlackScholesMesher | Black-Scholes–adapted 1D mesher with concentration | `ql-methods` |
+| G118 | FdmBlackScholesMultiStrikeMesher | Multi-strike adapted BS mesher | `ql-methods` |
+| G119 | FdmHestonVarianceMesher | Variance-adapted mesher for Heston v-dimension | `ql-methods` |
+| G120 | FdmSimpleProcess1DMesher | Generic 1D mesher for arbitrary processes | `ql-methods` |
+| G121 | ExponentialJump1DMesher | Mesher for exponential jump processes | `ql-methods` |
+| G122 | FdmCEV1DMesher | CEV-adapted 1D mesher | `ql-methods` |
+
+#### Operators (G123–G139)
+
+| # | Gap | Description | Target Crate |
+|---|-----|-------------|--------------|
+| G123 | NinePointLinearOp | 9-point finite-difference operator (2D) | `ql-methods` |
+| G124 | FirstDerivativeOp | First spatial derivative operator | `ql-methods` |
+| G125 | SecondDerivativeOp | Second spatial derivative operator | `ql-methods` |
+| G126 | SecondOrderMixedDerivativeOp | Mixed ∂²/∂x∂y cross-derivative operator | `ql-methods` |
+| G127 | NthOrderDerivativeOp | N-th order derivative operator | `ql-methods` |
+| G128 | ModTripleBandLinearOp | Modified triple-band operator for boundary handling | `ql-methods` |
+| G129 | FdmBlackScholesOp | BS spatial operator (drift + diffusion + discounting) | `ql-methods` |
+| G130 | Fdm2dBlackScholesOp | 2D Black-Scholes operator for multi-asset | `ql-methods` |
+| G131 | FdmHestonOp | Heston spatial operator (S + v coupled) | `ql-methods` |
+| G132 | FdmHestonFwdOp | Heston forward equation operator (Fokker-Planck) | `ql-methods` |
+| G133 | FdmHestonHullWhiteOp | Hybrid Heston + Hull-White 3D operator | `ql-methods` |
+| G134 | FdmBatesOp | Bates (Heston + jumps) spatial operator | `ql-methods` |
+| G135 | FdmBlackScholesFwdOp / FdmLocalVolFwdOp | Forward BS/local-vol operators | `ql-methods` |
+| G136 | FdmSquareRootFwdOp | Square-root (CIR) forward operator | `ql-methods` |
+| G137 | FdmOrnsteinUhlenbeckOp | Ornstein-Uhlenbeck spatial operator | `ql-methods` |
+| G138 | FdmSABROp | SABR model spatial operator | `ql-methods` |
+| G139 | FdmLinearOp / FdmLinearOpComposite traits | Linear operator trait hierarchy for FDM | `ql-methods` |
+
+#### Infrastructure (G140–G150)
+
+| # | Gap | Description | Target Crate |
+|---|-----|-------------|--------------|
+| G140 | FdmLinearOpLayout / FdmLinearOpIterator | Grid layout and multi-index iterator | `ql-methods` |
+| G141 | FdmBackwardSolver | Generic backward-in-time FD solver | `ql-methods` |
+| G142 | FdmSolverDesc | Solver descriptor (grid + step conditions + BCs) | `ql-methods` |
+| G143 | Fdm1DimSolver / Fdm2DimSolver / FdmNDimSolver | Named dimension-specific solvers | `ql-methods` |
+| G144 | FdmQuantoHelper | Quanto adjustment handler for FDM | `ql-methods` |
+| G145 | FdmDividendHandler | Discrete dividend handling for FDM | `ql-methods` |
+| G146 | FdmInnerValueCalculator | Inner value calculator for exercise conditions | `ql-methods` |
+| G147 | FdmAffineModelTermStructure | Affine model adapter as term structure for FDM | `ql-methods` |
+| G148 | FdmMesherIntegral | Numerical integration over FDM mesh | `ql-methods` |
+| G149 | FdmIndicesOnBoundary | Boundary index identification | `ql-methods` |
+| G150 | FdmHestonGreensFct | Heston Green's function for calibration | `ql-methods` |
+
+#### Step Conditions (G151–G155)
+
+| # | Gap | Description | Target Crate |
+|---|-----|-------------|--------------|
+| G151 | FdmSimpleStorageCondition | Simple storage condition for gas/power valuation | `ql-methods` |
+| G152 | FdmSimpleSwingCondition | Swing option step condition | `ql-methods` |
+| G153 | FdmSnapshotCondition | Snapshot (value capture) condition | `ql-methods` |
+| G154 | FdmStepConditionComposite | Composite of multiple step conditions | `ql-methods` |
+| G155 | FdmArithmeticAverageCondition | Running arithmetic average condition (Asian) | `ql-methods` |
+
+#### RND Calculators (G156–G161)
+
+| # | Gap | Description | Target Crate |
+|---|-----|-------------|--------------|
+| G156 | BSMRndCalculator | Black-Scholes-Merton risk-neutral density | `ql-methods` |
+| G157 | HestonRndCalculator | Heston risk-neutral density calculator | `ql-methods` |
+| G158 | LocalVolRndCalculator | Local vol risk-neutral density | `ql-methods` |
+| G159 | CEVRndCalculator | CEV model risk-neutral density | `ql-methods` |
+| G160 | GBSMRndCalculator | Generalised BSM risk-neutral density | `ql-methods` |
+| G161 | SquareRootProcessRndCalculator | Square-root (CIR) risk-neutral density | `ql-methods` |
+
+#### Boundary Conditions (G162–G164)
+
+| # | Gap | Description | Target Crate |
+|---|-----|-------------|--------------|
+| G162 | FdmDiscountDirichletBoundary | Discounted Dirichlet boundary condition | `ql-methods` |
+| G163 | FdmTimeDependentDirichletBoundary | Time-dependent Dirichlet boundary | `ql-methods` |
+| G164 | FdmBoundaryConditionSet | Collection of boundary conditions | `ql-methods` |
+
+#### Named FD Engines (G165–G175)
+
+| # | Gap | Description | Target Crate |
+|---|-----|-------------|--------------|
+| G165 | FdCEVVanillaEngine | FD CEV vanilla option engine | `ql-pricingengines` |
+| G166 | FdCIRVanillaEngine | FD CIR/mean-reverting vanilla engine | `ql-pricingengines` |
+| G167 | FdSABRVanillaEngine | FD SABR vanilla option engine | `ql-pricingengines` |
+| G168 | FdSimpleBSSwingEngine | FD swing option engine under BS | `ql-pricingengines` |
+| G169 | FdMultiPeriodEngine | FD engine for multi-exercise products | `ql-pricingengines` |
+| G170 | FdHestonHullWhiteVanillaEngine | FD hybrid Heston + Hull-White equity engine | `ql-pricingengines` |
+| G171 | FdHestonBarrierEngine | FD Heston barrier option engine | `ql-pricingengines` |
+| G172 | FdHestonDoubleBarrierEngine | FD Heston double-barrier engine | `ql-pricingengines` |
+| G173 | FdBlackScholesBarrierEngine | FD BS barrier option engine | `ql-pricingengines` |
+| G174 | FdBlackScholesAsianEngine | FD BS Asian option engine | `ql-pricingengines` |
+| G175 | FdBlackScholesRebateEngine | FD BS rebate engine | `ql-pricingengines` |
+
+### Phase 20 — LIBOR Market Model (G176–G218)
+
+#### Pathwise Greeks (G176–G181)
+
+| # | Gap | Description | Target Crate |
+|---|-----|-------------|--------------|
+| G176 | PathwiseAccountingEngine | Accounting engine with pathwise Greeks | `ql-models` |
+| G177 | PathwiseDiscounter | Pathwise discounting for AAD | `ql-models` |
+| G178 | BumpInstrumentJacobian | Bumped instrument Jacobian for Greeks | `ql-models` |
+| G179 | RatePseudoRootJacobian | Pseudo-root Jacobian for rate sensitivities | `ql-models` |
+| G180 | SwaptionPseudoJacobian | Pseudo-root Jacobian for swaption calibration | `ql-models` |
+| G181 | VegaBumpCluster | Clustered vega bumps for LMM calibration | `ql-models` |
+
+#### Calibration (G182–G187)
+
+| # | Gap | Description | Target Crate |
+|---|-----|-------------|--------------|
+| G182 | CapletCoterminalAlphaCalibration | Caplet-coterminal-swap alpha calibration | `ql-models` |
+| G183 | CapletCoterminalMaxHomogeneity | Max homogeneity caplet-coterminal calibration | `ql-models` |
+| G184 | CapletCoterminalPeriodic | Periodic caplet-coterminal calibration | `ql-models` |
+| G185 | CapletCoterminalSwaptionCalibration | Joint caplet-coterminal swaption calibration | `ql-models` |
+| G186 | CTSMMCapletCalibration | Coterminal swap market model caplet calibration | `ql-models` |
+| G187 | PseudoRootFacade | Facade for pseudo-root manipulation | `ql-models` |
+
+#### Model Adapters (G188–G191)
+
+| # | Gap | Description | Target Crate |
+|---|-----|-------------|--------------|
+| G188 | CotSwapToFwdAdapter | Coterminal swap rate → forward rate adapter | `ql-models` |
+| G189 | FwdToCotSwapAdapter | Forward rate → coterminal swap rate adapter | `ql-models` |
+| G190 | FwdPeriodAdapter | Forward rate period adapter | `ql-models` |
+| G191 | CotSwapFromFwdCorrelation | Coterminal swap correlation from forward correlation | `ql-models` |
+
+#### Historical Analysis (G192–G193)
+
+| # | Gap | Description | Target Crate |
+|---|-----|-------------|--------------|
+| G192 | HistoricalForwardRatesAnalysis | Historical forward rate analysis for LMM | `ql-models` |
+| G193 | HistoricalRatesAnalysis | General historical rate analysis | `ql-models` |
+
+#### Bermudan Exercise (G194–G207)
+
+| # | Gap | Description | Target Crate |
+|---|-----|-------------|--------------|
+| G194 | ExerciseValue trait | Exercise value interface for LMM | `ql-models` |
+| G195 | BermudanSwaptionExerciseValue | Bermudan swaption exercise value evaluator | `ql-models` |
+| G196 | NothingExerciseValue | Null exercise value (no exercise) | `ql-models` |
+| G197 | LSStrategy | Longstaff-Schwartz exercise strategy | `ql-models` |
+| G198 | UpperBoundEngine | Andersen upper-bound engine for Bermudan pricing | `ql-models` |
+| G199 | MarketModelBasisSystem | Polynomial basis system for regression | `ql-models` |
+| G200 | MarketModelParametricExercise | Parametric exercise strategy | `ql-models` |
+| G201 | SwapBasisSystem | Swap-rate basis system for regression | `ql-models` |
+| G202 | SwapForwardBasisSystem | Swap-forward basis system | `ql-models` |
+| G203 | SwapRateTrigger | Swap-rate trigger for exercise decisions | `ql-models` |
+| G204 | TriggeredSwapExercise | Triggered swap exercise | `ql-models` |
+| G205 | CollectNodeData / NodeDataProvider | Node data collection for exercise tree | `ql-models` |
+| G206 | ParametricExerciseAdapter | Adapter for parametric exercise strategies | `ql-models` |
+| G207 | ExerciseIndicator | Exercise indicator function | `ql-models` |
+
+#### Additional LMM Types (G208–G218)
+
+| # | Gap | Description | Target Crate |
+|---|-----|-------------|--------------|
+| G208 | SvdDFwdRatePC | SVD-based predictor-corrector evolver | `ql-models` |
+| G209 | LogNormalFwdRateIBalland | iBalland log-normal evolver | `ql-models` |
+| G210 | MultiStepPeriodCapletSwaptions | Multi-step period caplet-swaption product | `ql-models` |
+| G211 | MarketModelVolProcess | Stochastic volatility process for market models | `ql-models` |
+| G212 | SquareRootAndersen | Square-root Andersen vol process | `ql-models` |
+| G213 | PiecewiseConstantAbcdVariance | Piecewise-constant ABCD variance model | `ql-models` |
+| G214 | VolatilityInterpolationSpecifier | Vol interpolation specifier for LMM | `ql-models` |
+| G215 | LMMDriftCalculator | Dedic ated LMM drift calculator interface | `ql-models` |
+| G216 | CMSwapCurveState | CMS curve state for coterminal models | `ql-models` |
+| G217 | CoterminalSwapCurveState | Coterminal swap curve state (distinct from LMMCurveState) | `ql-models` |
+| G218 | MarketModelComposite | Composite of multiple market model products | `ql-models` |
+
+### Phase 22 — Math Extensions (G219–G237)
+
+| # | Gap | Description | Target Crate |
+|---|-----|-------------|--------------|
+| G219 | KernelInterpolation2D | 2D kernel-based interpolation | `ql-math` |
+| G220 | FlatExtrapolation2D | 2D flat extrapolation wrapper | `ql-math` |
+| G221 | Interpolation2D trait | Generic 2D interpolation interface | `ql-math` |
+| G222 | SteepestDescent optimizer | Steepest descent optimisation method | `ql-math` |
+| G223 | ArmijoLineSearch / GoldsteinLineSearch | Line search methods for optimisation | `ql-math` |
+| G224 | SphereCylinder / ProjectedCostFunction / ProjectedConstraint | Projected optimization helpers | `ql-math` |
+| G225 | FiniteDifferenceNewtonSafe | FD Newton-safe root finder | `ql-math` |
+| G226 | GaussianStatistics | Gaussian statistics accumulator | `ql-math` |
+| G227 | KnuthUniformRng / LecuyerUniformRng / RanluxUniformRng | Additional uniform RNG variants | `ql-math` |
+| G228 | Burley2020SobolRsg | Burley 2020 scrambled Sobol QRNG | `ql-math` |
+| G229 | ZigguratGaussianRng / CentralLimitGaussianRng | Gaussian RNG acceleration methods | `ql-math` |
+| G230 | StochasticCollocationInvCDF | Stochastic collocation inverse CDF | `ql-math` |
+| G231 | LatticeRsg / RandomizedLDS | Lattice and randomised low-discrepancy sequences | `ql-math` |
+| G232 | SymmetricSchurDecomposition | Symmetric Schur eigendecomposition as named type | `ql-math` |
+| G233 | GetCovariance / BasisIncompleteOrdered / FactorReduction / TAPCorrelations | Matrix utility types | `ql-math` |
+| G234 | PascalTriangle / PrimeNumbers / TransformedGrid | Combinatorial/number-theoretic utilities | `ql-math` |
+| G235 | Beta function / ExponentialIntegral Ei(x) | Special functions | `ql-math` |
+| G236 | DiscreteIntegrals (Simpson, Trapezoid) | Discrete data integration methods | `ql-math` |
+| G237 | GaussLaguerreCosinePolynomial / MomentBasedGaussianPolynomial | Advanced Gaussian quadrature polynomials | `ql-math` |

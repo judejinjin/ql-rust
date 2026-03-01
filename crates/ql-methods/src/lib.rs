@@ -34,6 +34,7 @@ pub mod mc_control_variates;
 pub mod finite_differences;
 pub mod lattice;
 pub mod fdm_meshers;
+pub mod fdm_meshers_extended;
 pub mod fdm_operators;
 pub mod fdm_schemes;
 pub mod lattice_2d;
@@ -70,4 +71,12 @@ pub use fdm_extended::{
     build_cev_operator, build_cir_operator,
     build_hull_white_operator, build_g2_operators,
     craig_sneyd_step, trbdf2_step, method_of_lines_step,
+};
+pub use fdm_meshers_extended::{
+    FdmBlackScholesMesherParams, fdm_black_scholes_mesher,
+    FdmBlackScholesMultiStrikeMesherParams, fdm_black_scholes_multi_strike_mesher,
+    FdmHestonVarianceMesherParams, fdm_heston_variance_mesher,
+    FdmSimpleProcess1DMesherParams, fdm_simple_process_1d_mesher,
+    ExponentialJump1DMesherParams, exponential_jump_1d_mesher,
+    FdmCEV1DMesherParams, fdm_cev_1d_mesher,
 };

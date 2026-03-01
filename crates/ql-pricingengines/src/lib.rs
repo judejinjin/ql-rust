@@ -231,6 +231,7 @@ pub mod bsm_hull_white;
 pub mod gaussian1d_nonstd_swaption;
 pub mod mc_heston_hw;
 pub mod mountain_range;
+pub mod swaption_capfloor_extended;
 
 pub use heston_pdf_engine::{heston_pdf_price, HestonPdfResult, exponential_fitting_heston, ExpFitHestonResult};
 pub use qdfp_american::{qdfp_american, QdFpAmericanResult};
@@ -266,6 +267,18 @@ pub use gaussian1d_nonstd_swaption::{
 };
 pub use mc_heston_hw::{price_mc_heston_hw, McHestonHwResult, McHestonHwParams};
 pub use mountain_range::{mc_mountain_range, MountainRangeResult, MountainType};
+
+pub use swaption_capfloor_extended::{
+    gaussian1d_cap_floor, Gaussian1dCapFloorResult,
+    gaussian1d_float_float_swaption, Gaussian1dFloatFloatSwaptionResult, FloatFloatSwaptionParams,
+    mc_hw_swaption, McHwSwaptionResult,
+    fd_hw_swaption_gsr, FdHwSwaptionGsrResult,
+    TreeCapFloorEngine, TreeCapFloorEngineResult,
+    IrregularSwap, IrregularSwapResult, IrregularSwaption, IrregularSwaptionResult,
+    hagan_irregular_swaption, HaganIrregularSwaptionResult, StandardSwaptionSpec,
+    basket_generating_engine, BasketGeneratingResult, BasketComponent,
+    lattice_short_rate_engine, LatticeShortRateResult,
+};
 
 pub mod engines_extended;
 pub use engines_extended::{

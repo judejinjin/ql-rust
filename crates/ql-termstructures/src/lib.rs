@@ -158,3 +158,14 @@ pub use term_structure_extended::{
     ConstantOptionletVol, SpreadedOptionletVol,
     InterpolatedZeroInflationCurve, Gaussian1dSwaptionVol,
 };
+
+pub mod vol_surfaces_extended;
+pub use vol_surfaces_extended::{
+    LocalVolCurve, LocalConstantVol, NoExceptLocalVolSurface,
+    InterpolatedSmileSection, AtmAdjustedSmileSection,
+    AtmSmileSection, FlatSmileSection,
+    CPIVolatilityStructure, ConstantCPIVolatility,
+    YoYInflationOptionletVolatilityStructure, ConstantYoYInflationOptionletVol,
+    CmsMarket, CmsMarketQuote, CmsMarketCalibration, calibrate_cms_market,
+    Gaussian1dSwaptionVolatility, SwaptionVolDiscrete,
+};
