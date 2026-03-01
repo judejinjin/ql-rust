@@ -17,6 +17,7 @@ members = [
     "crates/ql-rust",
     "crates/ql-cli",
     "crates/ql-python",
+    "crates/ql-aad",
 ]
 
 [workspace.package]
@@ -65,3 +66,4 @@ ql-pricingengines = { path = "crates/ql-pricingengines" }
 ql-methods = { path = "crates/ql-methods" }
 ql-persistence = { path = "crates/ql-persistence" }
 ql-rust = { path = "crates/ql-rust" }
+ql-aad = { path = "crates/ql-aad" }

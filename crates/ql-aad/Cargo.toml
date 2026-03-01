@@ -1,0 +1,13 @@
+[package]
+name = "ql-aad"
+version = "0.1.0"
+edition = "2021"
+description = "Adjoint Algorithmic Differentiation (AAD) for ql-rust — forward-mode dual numbers, reverse-mode tape, and generic Number trait"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/jude-codebase/ql-rust"
+
+[dependencies]
+smallvec = "1"
+
+[dev-dependencies]
+approx = { workspace = true }
