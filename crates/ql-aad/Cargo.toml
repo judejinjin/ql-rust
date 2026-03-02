@@ -15,6 +15,12 @@ jit = [
     "dep:cranelift-module",
     "dep:cranelift-native",
 ]
+nalgebra = [
+    "dep:nalgebra",
+    "dep:simba",
+    "dep:num-traits",
+    "dep:approx",
+]
 
 [dependencies]
 smallvec = "1"
@@ -28,9 +34,16 @@ cranelift-jit = { version = "0.129", optional = true }
 cranelift-module = { version = "0.129", optional = true }
 cranelift-native = { version = "0.129", optional = true }
 
+# nalgebra integration (optional — enabled by `nalgebra` feature)
+nalgebra = { workspace = true, optional = true }
+simba = { version = "0.9", optional = true }
+num-traits = { version = "0.2", optional = true }
+approx = { workspace = true, optional = true }
+
 [dev-dependencies]
 approx = { workspace = true }
 criterion = { workspace = true }
+nalgebra = { workspace = true }
 
 [[bench]]
 name = "aad_benchmarks"

@@ -1137,8 +1137,11 @@ dependencies = [
  "cranelift-module",
  "cranelift-native",
  "criterion",
+ "nalgebra",
+ "num-traits",
  "rand 0.9.2",
  "rand_distr 0.5.1",
+ "simba",
  "smallvec",
 ]
 

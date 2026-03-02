@@ -44,6 +44,8 @@ pub mod portfolio;
 pub mod simd;
 pub mod checkpoint;
 pub mod lrm;
+#[cfg(feature = "nalgebra")]
+pub mod nalgebra_impl;
 #[cfg(feature = "jit")]
 pub mod jit;
 

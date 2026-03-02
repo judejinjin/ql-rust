@@ -342,7 +342,7 @@ pub fn input_tl(val: f64) -> AReal {
 }
 
 // Helper: push a node onto the thread-local tape.
-fn push_tl(value: f64, partials: SmallVec<[(usize, f64); 2]>) -> AReal {
+pub(crate) fn push_tl(value: f64, partials: SmallVec<[(usize, f64); 2]>) -> AReal {
     TAPE.with(|cell| {
         cell.borrow_mut().push(value, partials)
     })
