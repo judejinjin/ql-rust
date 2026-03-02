@@ -42,6 +42,7 @@ pub mod curves;
 pub mod cashflows;
 pub mod portfolio;
 pub mod simd;
+pub mod checkpoint;
 #[cfg(feature = "jit")]
 pub mod jit;
 
@@ -62,6 +63,7 @@ pub use cashflows::{Cashflow, npv, pv01, macaulay_duration, par_rate};
 pub use portfolio::{Portfolio, PortfolioGreeks};
 pub use simd::{Lanes, SimdTape, SimdReal, mc_european_simd, mc_heston_simd,
                mc_european_simd4, mc_heston_simd4};
+pub use checkpoint::{revolve, Action, CheckpointStore, mc_european_checkpointed, mc_heston_checkpointed};
 
 #[cfg(feature = "jit")]
 pub use jit::{JitTape, JitReal, Op, CompiledAdjoint, mc_european_jit, mc_heston_jit};
