@@ -1136,6 +1136,7 @@ dependencies = [
  "cranelift-jit",
  "cranelift-module",
  "cranelift-native",
+ "criterion",
  "rand 0.9.2",
  "rand_distr 0.5.1",
  "smallvec",

@@ -30,3 +30,8 @@ cranelift-native = { version = "0.129", optional = true }
 
 [dev-dependencies]
 approx = { workspace = true }
+criterion = { workspace = true }
+
+[[bench]]
+name = "aad_benchmarks"
+harness = false
