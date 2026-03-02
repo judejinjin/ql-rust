@@ -43,6 +43,7 @@ pub mod cashflows;
 pub mod portfolio;
 pub mod simd;
 pub mod checkpoint;
+pub mod lrm;
 #[cfg(feature = "jit")]
 pub mod jit;
 
@@ -64,6 +65,8 @@ pub use portfolio::{Portfolio, PortfolioGreeks};
 pub use simd::{Lanes, SimdTape, SimdReal, mc_european_simd, mc_heston_simd,
                mc_european_simd4, mc_heston_simd4};
 pub use checkpoint::{revolve, Action, CheckpointStore, mc_european_checkpointed, mc_heston_checkpointed};
+pub use lrm::{DigitalGreeks, BarrierGreeks, mc_digital_lrm, mc_barrier_do_lrm,
+              mc_barrier_uo_lrm, mc_barrier_vanilla_hybrid};
 
 #[cfg(feature = "jit")]
 pub use jit::{JitTape, JitReal, Op, CompiledAdjoint, mc_european_jit, mc_heston_jit};
