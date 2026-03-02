@@ -603,43 +603,38 @@ pub fn mc_barrier_vanilla_hybrid(
 }
 
 // ===========================================================================
-// Analytic references for test validation
-// ===========================================================================
-
-/// Normal CDF (Abramowitz-Stegun approximation).
-fn norm_cdf(x: f64) -> f64 {
-    crate::math::normal_cdf(x)
-}
-
-/// Normal PDF.
-fn norm_pdf(x: f64) -> f64 {
-    crate::math::normal_pdf(x)
-}
-
-/// Analytic digital call price: `e^{-rT} N(d₂)`.
-fn analytic_digital_call(
-    spot: f64, strike: f64, r: f64, q: f64, vol: f64, t: f64,
-) -> f64 {
-    let d2 = ((spot / strike).ln() + (r - q - 0.5 * vol * vol) * t) / (vol * t.sqrt());
-    (-r * t).exp() * norm_cdf(d2)
-}
-
-/// Analytic digital call delta: `e^{-rT} n(d₂) / (S σ √T)`.
-fn analytic_digital_call_delta(
-    spot: f64, strike: f64, r: f64, q: f64, vol: f64, t: f64,
-) -> f64 {
-    let sqrt_t = t.sqrt();
-    let d2 = ((spot / strike).ln() + (r - q - 0.5 * vol * vol) * t) / (vol * sqrt_t);
-    (-r * t).exp() * norm_pdf(d2) / (spot * vol * sqrt_t)
-}
-
-// ===========================================================================
 // Tests
 // ===========================================================================
 
 #[cfg(test)]
+mod test_helpers {
+    pub fn norm_cdf(x: f64) -> f64 {
+        crate::math::normal_cdf(x)
+    }
+    pub fn norm_pdf(x: f64) -> f64 {
+        crate::math::normal_pdf(x)
+    }
+    /// Analytic digital call price: `e^{-rT} N(d₂)`.
+    pub fn analytic_digital_call(
+        spot: f64, strike: f64, r: f64, q: f64, vol: f64, t: f64,
+    ) -> f64 {
+        let d2 = ((spot / strike).ln() + (r - q - 0.5 * vol * vol) * t) / (vol * t.sqrt());
+        (-r * t).exp() * norm_cdf(d2)
+    }
+    /// Analytic digital call delta: `e^{-rT} n(d₂) / (S σ √T)`.
+    pub fn analytic_digital_call_delta(
+        spot: f64, strike: f64, r: f64, q: f64, vol: f64, t: f64,
+    ) -> f64 {
+        let sqrt_t = t.sqrt();
+        let d2 = ((spot / strike).ln() + (r - q - 0.5 * vol * vol) * t) / (vol * sqrt_t);
+        (-r * t).exp() * norm_pdf(d2) / (spot * vol * sqrt_t)
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
+    use super::test_helpers::*;
 
     // ── Digital option tests ────────────────────────────────────────────
 

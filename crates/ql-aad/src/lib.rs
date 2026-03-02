@@ -46,6 +46,8 @@ pub mod checkpoint;
 pub mod lrm;
 #[cfg(feature = "nalgebra")]
 pub mod nalgebra_impl;
+#[cfg(feature = "reactive")]
+pub mod reactive;
 #[cfg(feature = "jit")]
 pub mod jit;
 
@@ -72,3 +74,6 @@ pub use lrm::{DigitalGreeks, BarrierGreeks, mc_digital_lrm, mc_barrier_do_lrm,
 
 #[cfg(feature = "jit")]
 pub use jit::{JitTape, JitReal, Op, CompiledAdjoint, mc_european_jit, mc_heston_jit};
+
+#[cfg(feature = "reactive")]
+pub use reactive::{GreeksProvider, AadInstrument, AadReactivePortfolio};
