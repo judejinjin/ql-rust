@@ -40,6 +40,7 @@
 pub mod copulas;
 pub mod distributions;
 pub mod fft;
+pub mod generic;
 pub mod integration;
 pub mod integration_advanced;
 pub mod integration_extended;

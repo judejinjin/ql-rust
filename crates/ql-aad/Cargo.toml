@@ -21,9 +21,10 @@ nalgebra = [
     "dep:num-traits",
     "dep:approx",
 ]
-reactive = ["dep:ql-core"]
+reactive = []
 
 [dependencies]
+ql-core = { path = "../ql-core" }
 smallvec = "1"
 rand = { workspace = true }
 rand_distr = { workspace = true }
@@ -42,7 +43,7 @@ num-traits = { version = "0.2", optional = true }
 approx = { workspace = true, optional = true }
 
 # Reactive portfolio bridge (optional — enabled by `reactive` feature)
-ql-core = { path = "../ql-core", optional = true }
+# ql-core is now always available (Number trait moved there)
 
 [dev-dependencies]
 approx = { workspace = true }

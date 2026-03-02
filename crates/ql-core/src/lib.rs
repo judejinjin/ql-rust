@@ -45,6 +45,7 @@ pub mod errors;
 pub mod handle;
 pub mod lazy;
 pub mod market_data;
+pub mod number;
 pub mod observable;
 pub mod portfolio;
 pub mod quote;
@@ -52,4 +53,5 @@ pub mod settings;
 pub mod types;
 
 pub use errors::{QLError, QLResult};
+pub use number::Number;
 pub use types::*;

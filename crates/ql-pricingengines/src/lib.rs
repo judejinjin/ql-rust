@@ -280,6 +280,8 @@ pub use swaption_capfloor_extended::{
     lattice_short_rate_engine, LatticeShortRateResult,
 };
 
+pub mod generic;
+
 pub mod engines_extended;
 pub use engines_extended::{
     BlackCalculator, BondFunctions,
