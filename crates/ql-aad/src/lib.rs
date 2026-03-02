@@ -41,6 +41,7 @@ pub mod mc;
 pub mod curves;
 pub mod cashflows;
 pub mod portfolio;
+pub mod simd;
 
 pub use number::Number;
 pub use dual::Dual;
@@ -57,3 +58,5 @@ pub use mc::{McEuropeanGreeks, McHestonGreeks, mc_european_aad, mc_heston_aad, m
 pub use curves::DiscountCurveAD;
 pub use cashflows::{Cashflow, npv, pv01, macaulay_duration, par_rate};
 pub use portfolio::{Portfolio, PortfolioGreeks};
+pub use simd::{Lanes, SimdTape, SimdReal, mc_european_simd, mc_heston_simd,
+               mc_european_simd4, mc_heston_simd4};
