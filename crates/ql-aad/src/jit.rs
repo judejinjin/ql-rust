@@ -114,7 +114,7 @@ pub enum Op {
 impl Op {
     /// Number of children this operation depends on.
     #[inline]
-    fn num_children(self) -> usize {
+    pub(crate) fn num_children(self) -> usize {
         match self {
             Op::Input | Op::ExtInput | Op::Const(_) => 0,
             Op::Neg | Op::Abs | Op::Exp | Op::Ln | Op::Sqrt | Op::Recip
@@ -153,14 +153,14 @@ pub struct JitReal {
 /// This enables topology-fixed replay: the same tape structure is re-evaluated
 /// with different input values (e.g. per MC path).
 pub struct JitTape {
-    ops: Vec<Op>,
-    children: Vec<[u32; 2]>,
+    pub(crate) ops: Vec<Op>,
+    pub(crate) children: Vec<[u32; 2]>,
     /// Forward values, populated during recording and `forward_eval`.
-    values: Vec<f64>,
+    pub(crate) values: Vec<f64>,
     /// Indices of `Op::Input` nodes.
-    input_indices: Vec<usize>,
+    pub(crate) input_indices: Vec<usize>,
     /// Indices of `Op::ExtInput` nodes.
-    ext_input_indices: Vec<usize>,
+    pub(crate) ext_input_indices: Vec<usize>,
 }
 
 impl JitTape {

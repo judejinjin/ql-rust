@@ -50,6 +50,8 @@ pub mod nalgebra_impl;
 pub mod reactive;
 #[cfg(feature = "jit")]
 pub mod jit;
+#[cfg(feature = "jit")]
+pub mod simd_jit;
 
 pub use number::Number;
 pub use dual::Dual;
@@ -74,6 +76,10 @@ pub use lrm::{DigitalGreeks, BarrierGreeks, mc_digital_lrm, mc_barrier_do_lrm,
 
 #[cfg(feature = "jit")]
 pub use jit::{JitTape, JitReal, Op, CompiledAdjoint, mc_european_jit, mc_heston_jit};
+#[cfg(feature = "jit")]
+pub use simd_jit::{SimdJitContext, CompiledAdjointSimd, compile_adjoint_simd,
+                   mc_european_simd_jit, mc_heston_simd_jit,
+                   mc_european_simd_jit4, mc_heston_simd_jit4};
 
 #[cfg(feature = "reactive")]
 pub use reactive::{GreeksProvider, AadInstrument, AadReactivePortfolio};
