@@ -9,7 +9,7 @@
 //! assertion failure in these tests.
 
 use ql_time::{Calendar, Date, Month};
-use ql_time::calendar::USMarket;
+use ql_time::calendar::{USMarket, UKMarket, JapanMarket, BrazilMarket};
 
 // ============================================================================
 //  Helper
@@ -181,7 +181,7 @@ fn us_nyse_holidays() {
 
 #[test]
 fn uk_holidays_multiyear() {
-    let cal = Calendar::UnitedKingdom;
+    let cal = Calendar::UnitedKingdom(UKMarket::Settlement);
 
     // New Year observed: 2023 Jan 1 is Sunday → observed Jan 2
     assert_holiday(&cal, 2023, Month::January, 2, "UK New Year observed 2023");
@@ -283,7 +283,7 @@ fn australia_holidays_multiyear() {
 
 #[test]
 fn japan_holidays_multiyear() {
-    let cal = Calendar::Japan;
+    let cal = Calendar::Japan(JapanMarket::Exchange);
 
     // New Year triple (Jan 1-3)
     for yr in 2023..=2025 {
@@ -339,7 +339,7 @@ fn japan_holidays_multiyear() {
 
 #[test]
 fn brazil_holidays_multiyear() {
-    let cal = Calendar::Brazil;
+    let cal = Calendar::Brazil(BrazilMarket::Exchange);
 
     // Carnival Monday & Tuesday (47 and 46 days before Easter Sunday)
     // 2025: Easter = Apr 20 → Carnival Mon = Mar 3, Tue = Mar 4
@@ -660,9 +660,9 @@ fn business_days_between_consistency() {
     let cals = [
         Calendar::Target,
         Calendar::UnitedStates(USMarket::Settlement),
-        Calendar::UnitedKingdom,
+        Calendar::UnitedKingdom(UKMarket::Settlement),
         Calendar::Canada,
-        Calendar::Japan,
+        Calendar::Japan(JapanMarket::Exchange),
     ];
 
     let start = Date::from_ymd(2025, Month::January, 1);

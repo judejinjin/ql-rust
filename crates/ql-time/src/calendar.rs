@@ -20,6 +20,35 @@ pub enum USMarket {
     FederalReserve,
 }
 
+/// Sub-market variants for the United Kingdom calendar.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum UKMarket {
+    /// London Stock Exchange (default).
+    Settlement,
+    /// London Stock Exchange sessions.
+    Exchange,
+    /// London Metals Exchange — no August bank holiday.
+    Metals,
+}
+
+/// Sub-market variants for the Japan calendar.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum JapanMarket {
+    /// Tokyo Stock Exchange (default).
+    Exchange,
+    /// Japan Securities Dealers Association — includes Dec 31.
+    JSDA,
+}
+
+/// Sub-market variants for the Brazil calendar.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum BrazilMarket {
+    /// B3 (Brasil Bolsa Balcão) — default.
+    Exchange,
+    /// Settlement calendar — adds Black Consciousness Day + Dec 31.
+    Settlement,
+}
+
 /// Enum-based calendar — no vtable overhead, no heap allocation.
 ///
 /// Use `Calendar::is_business_day()` for the core holiday check, and
@@ -34,18 +63,18 @@ pub enum Calendar {
     Target,
     /// United States calendar with a specific market variant.
     UnitedStates(USMarket),
-    /// United Kingdom (London Exchange / Settlement).
-    UnitedKingdom,
-    /// Japan (Tokyo Stock Exchange / Settlement).
-    Japan,
+    /// United Kingdom with sub-market variant.
+    UnitedKingdom(UKMarket),
+    /// Japan with sub-market variant.
+    Japan(JapanMarket),
     /// China (Shanghai Stock Exchange / IB).
     China,
     /// Canada (Toronto Stock Exchange / Settlement).
     Canada,
     /// Australia (Sydney / ASX).
     Australia,
-    /// Brazil (BM&F Bovespa / Settlement).
-    Brazil,
+    /// Brazil with sub-market variant.
+    Brazil(BrazilMarket),
     /// Germany (Frankfurt / Eurex / Settlement).
     Germany,
     /// France (Paris / Euronext).
@@ -112,6 +141,14 @@ pub enum Calendar {
     Turkey,
     /// Ukraine (PFTS / Ukrainian Exchange).
     Ukraine,
+    /// Colombia (Bolsa de Valores de Colombia — BVC).
+    Colombia,
+    /// Peru (Bolsa de Valores de Lima — BVL).
+    Peru,
+    /// Philippines (Philippine Stock Exchange — PSE).
+    Philippines,
+    /// Malaysia (Bursa Malaysia).
+    Malaysia,
     /// Joint calendar combining two calendars.
     Joint(JointRule, Box<Calendar>, Box<Calendar>),
 }
@@ -157,12 +194,12 @@ impl Calendar {
             Calendar::WeekendsOnly => !is_weekend(date),
             Calendar::Target => target_is_business_day(date),
             Calendar::UnitedStates(market) => us_is_business_day(date, *market),
-            Calendar::UnitedKingdom => uk_is_business_day(date),
-            Calendar::Japan => japan_is_business_day(date),
+            Calendar::UnitedKingdom(market) => uk_is_business_day(date, *market),
+            Calendar::Japan(market) => japan_is_business_day(date, *market),
             Calendar::China => china_is_business_day(date),
             Calendar::Canada => canada_is_business_day(date),
             Calendar::Australia => australia_is_business_day(date),
-            Calendar::Brazil => brazil_is_business_day(date),
+            Calendar::Brazil(market) => brazil_is_business_day(date, *market),
             Calendar::Germany => germany_is_business_day(date),
             Calendar::France => france_is_business_day(date),
             Calendar::Italy => italy_is_business_day(date),
@@ -196,6 +233,10 @@ impl Calendar {
             Calendar::Thailand => thailand_is_business_day(date),
             Calendar::Turkey => turkey_is_business_day(date),
             Calendar::Ukraine => ukraine_is_business_day(date),
+            Calendar::Colombia => colombia_is_business_day(date),
+            Calendar::Peru => peru_is_business_day(date),
+            Calendar::Philippines => philippines_is_business_day(date),
+            Calendar::Malaysia => malaysia_is_business_day(date),
             Calendar::Joint(rule, a, b) => match rule {
                 JointRule::JoinHolidays => a.is_business_day(date) && b.is_business_day(date),
                 JointRule::JoinBusinessDays => a.is_business_day(date) || b.is_business_day(date),
@@ -567,7 +608,7 @@ fn us_is_business_day(date: Date, market: USMarket) -> bool {
 //  United Kingdom calendar implementation
 // ============================================================================
 
-fn uk_is_business_day(date: Date) -> bool {
+fn uk_is_business_day(date: Date, market: UKMarket) -> bool {
     if is_weekend(date) {
         return false;
     }
@@ -602,8 +643,8 @@ fn uk_is_business_day(date: Date) -> bool {
         return false;
     }
 
-    // Summer Bank Holiday (last Monday of August)
-    if m == Month::August && wd == Weekday::Monday && d >= 25 {
+    // Summer Bank Holiday (last Monday of August) — not for Metals
+    if market != UKMarket::Metals && m == Month::August && wd == Weekday::Monday && d >= 25 {
         return false;
     }
 
@@ -672,7 +713,7 @@ fn easter_monday_impl(year: i32) -> (u32, u32) {
 //  Japan calendar implementation (Tokyo Stock Exchange)
 // ============================================================================
 
-fn japan_is_business_day(date: Date) -> bool {
+fn japan_is_business_day(date: Date, market: JapanMarket) -> bool {
     if is_weekend(date) {
         return false;
     }
@@ -770,6 +811,11 @@ fn japan_is_business_day(date: Date) -> bool {
         return false;
     }
 
+    // JSDA-specific: bank holiday on Dec 31
+    if market == JapanMarket::JSDA && m == Month::December && d == 31 {
+        return false;
+    }
+
     true
 }
 
@@ -830,6 +876,92 @@ fn japan_autumnal_equinox(y: i32) -> u32 {
     }
 }
 
+
+// ============================================================================
+//  Lunar calendar date tables (2020–2035)
+// ============================================================================
+
+/// Lunar New Year (Chinese New Year / Seollal) — 1st day of month 1.
+/// Returns (month, day) in the Gregorian calendar.
+fn lunar_new_year(year: i32) -> Option<(u32, u32)> {
+    match year {
+        2020 => Some((1, 25)), 2021 => Some((2, 12)), 2022 => Some((2, 1)),
+        2023 => Some((1, 22)), 2024 => Some((2, 10)), 2025 => Some((1, 29)),
+        2026 => Some((2, 17)), 2027 => Some((2, 6)),  2028 => Some((1, 26)),
+        2029 => Some((2, 13)), 2030 => Some((2, 3)),  2031 => Some((1, 23)),
+        2032 => Some((2, 11)), 2033 => Some((1, 31)), 2034 => Some((2, 19)),
+        2035 => Some((2, 8)),
+        _ => None,
+    }
+}
+
+/// Qingming / Ching Ming — typically Apr 4 or 5.
+fn qingming(year: i32) -> u32 {
+    match year {
+        2020 | 2024 | 2028 | 2032 => 4,
+        _ => 5,
+    }
+}
+
+/// Dragon Boat Festival — 5th day of month 5.
+fn dragon_boat(year: i32) -> Option<(u32, u32)> {
+    match year {
+        2020 => Some((6, 25)), 2021 => Some((6, 14)), 2022 => Some((6, 3)),
+        2023 => Some((6, 22)), 2024 => Some((6, 10)), 2025 => Some((5, 31)),
+        2026 => Some((6, 19)), 2027 => Some((6, 9)),  2028 => Some((5, 28)),
+        2029 => Some((6, 16)), 2030 => Some((6, 5)),  2031 => Some((5, 26)),
+        2032 => Some((6, 13)), 2033 => Some((6, 3)),  2034 => Some((6, 22)),
+        2035 => Some((6, 11)),
+        _ => None,
+    }
+}
+
+/// Mid-Autumn Festival — 15th day of month 8.
+fn mid_autumn(year: i32) -> Option<(u32, u32)> {
+    match year {
+        2020 => Some((10, 1)),  2021 => Some((9, 21)), 2022 => Some((9, 10)),
+        2023 => Some((9, 29)),  2024 => Some((9, 17)), 2025 => Some((10, 6)),
+        2026 => Some((9, 25)),  2027 => Some((9, 15)), 2028 => Some((10, 3)),
+        2029 => Some((9, 22)),  2030 => Some((9, 12)), 2031 => Some((10, 1)),
+        2032 => Some((9, 19)),  2033 => Some((9, 8)),  2034 => Some((9, 28)),
+        2035 => Some((9, 16)),
+        _ => None,
+    }
+}
+
+/// Korean Chuseok — same base date as Mid-Autumn.
+fn chuseok(year: i32) -> Option<(u32, u32)> {
+    mid_autumn(year)
+}
+
+/// Buddha's Birthday (Vesak) — 8th day of month 4.
+fn buddhas_birthday(year: i32) -> Option<(u32, u32)> {
+    match year {
+        2020 => Some((4, 30)),  2021 => Some((5, 19)), 2022 => Some((5, 8)),
+        2023 => Some((5, 27)),  2024 => Some((5, 15)), 2025 => Some((5, 5)),
+        2026 => Some((5, 24)),  2027 => Some((5, 13)), 2028 => Some((5, 2)),
+        2029 => Some((5, 20)),  2030 => Some((5, 9)),  2031 => Some((5, 28)),
+        2032 => Some((5, 16)),  2033 => Some((5, 6)),  2034 => Some((5, 25)),
+        2035 => Some((5, 15)),
+        _ => None,
+    }
+}
+
+/// Check if a given date matches a lunar holiday or its ± offset days.
+/// `offsets` is a list of day offsets from the lunar date (e.g., [-1, 0, 1]).
+fn is_lunar_holiday(date: Date, lunar_date: Option<(u32, u32)>, offsets: &[i32]) -> bool {
+    if let Some((lm, ld)) = lunar_date {
+        if let Some(base) = Date::from_ymd_opt(date.year(), lm, ld) {
+            for &off in offsets {
+                if date == base + off {
+                    return true;
+                }
+            }
+        }
+    }
+    false
+}
+
 // ============================================================================
 //  China calendar implementation (SSE)
 // ============================================================================
@@ -843,27 +975,31 @@ fn china_is_business_day(date: Date) -> bool {
     }
     let d = date.day_of_month();
     let m = date.month();
+    let y = date.year();
 
+    // ---- Fixed statutory holidays ----
     // New Year (Jan 1)
-    if m == Month::January && d == 1 {
-        return false;
-    }
-    // Spring Festival (approx Jan 29 - Feb 4, simplified as Jan 31 - Feb 6)
-    // This varies by year; we use a simplified rule
+    if m == Month::January && d == 1 { return false; }
     // Labour Day (May 1)
-    if m == Month::May && d == 1 {
+    if m == Month::May && d == 1 { return false; }
+    // National Day (Oct 1-3 base, often extended to 7 with workday swaps)
+    if m == Month::October && d >= 1 && d <= 3 { return false; }
+
+    // ---- Lunar holidays (2020–2035) ----
+    // Spring Festival / Chinese New Year (4 days: day of + 3)
+    if is_lunar_holiday(date, lunar_new_year(y), &[0, 1, 2, 3]) {
         return false;
     }
-    // National Day (Oct 1-3)
-    if m == Month::October && (1..=3).contains(&d) {
+    // Qingming (Tomb Sweeping Day)
+    if m == Month::April && d == qingming(y) { return false; }
+    // Dragon Boat Festival
+    if is_lunar_holiday(date, dragon_boat(y), &[0]) {
         return false;
     }
-    // Qingming Festival (Apr 5 approx)
-    if m == Month::April && d == 5 {
+    // Mid-Autumn Festival
+    if is_lunar_holiday(date, mid_autumn(y), &[0]) {
         return false;
     }
-    // Dragon Boat Festival (approx — varies)
-    // Mid-Autumn Festival (approx — varies)
 
     true
 }
@@ -1014,7 +1150,7 @@ fn australia_is_business_day(date: Date) -> bool {
 //  Brazil calendar implementation (BM&F Bovespa)
 // ============================================================================
 
-fn brazil_is_business_day(date: Date) -> bool {
+fn brazil_is_business_day(date: Date, market: BrazilMarket) -> bool {
     if is_weekend(date) {
         return false;
     }
@@ -1072,6 +1208,16 @@ fn brazil_is_business_day(date: Date) -> bool {
     let corpus_christi = Date::from_serial(easter_sunday_serial + 60);
 
     if date == carnival_mon || date == carnival_tue || date == gf || date == corpus_christi {
+        return false;
+    }
+
+    // Settlement-specific: Black Consciousness Day (Nov 20, since 2024)
+    if market == BrazilMarket::Settlement && y >= 2024 && m == Month::November && d == 20 {
+        return false;
+    }
+
+    // Settlement-specific: last business day of the year
+    if market == BrazilMarket::Settlement && m == Month::December && d == 31 {
         return false;
     }
 
@@ -1256,6 +1402,7 @@ fn south_korea_is_business_day(date: Date) -> bool {
     if is_weekend(date) { return false; }
     let d = date.day_of_month();
     let m = date.month();
+    let y = date.year();
 
     // New Year
     if m == Month::January && d == 1 { return false; }
@@ -1273,8 +1420,21 @@ fn south_korea_is_business_day(date: Date) -> bool {
     if m == Month::October && d == 9 { return false; }
     // Christmas
     if m == Month::December && d == 25 { return false; }
-    // Lunar holidays (Seollal, Chuseok, Buddha's birthday) vary yearly
-    // and are omitted here; would need a lunar calendar table.
+
+    // Lunar holidays (2020–2035)
+    // Seollal (3 days: day before, day of, day after)
+    if is_lunar_holiday(date, lunar_new_year(y), &[-1, 0, 1]) {
+        return false;
+    }
+    // Buddha's Birthday
+    if is_lunar_holiday(date, buddhas_birthday(y), &[0]) {
+        return false;
+    }
+    // Chuseok (3 days: day before, day of, day after)
+    if is_lunar_holiday(date, chuseok(y), &[-1, 0, 1]) {
+        return false;
+    }
+
     true
 }
 
@@ -1287,16 +1447,17 @@ fn hong_kong_is_business_day(date: Date) -> bool {
     let d = date.day_of_month();
     let m = date.month();
     let y = date.year();
+    let wd = date.weekday();
 
     // New Year
     if m == Month::January && d == 1 { return false; }
-    // Easter-based (Good Friday, Easter Saturday, Easter Monday)
+    // Easter (Good Friday + Easter Monday)
     let (em_month, em_day) = easter_monday(y);
     let em_serial = Date::from_ymd_opt(y, em_month, em_day).unwrap_or_else(|| unreachable!()).serial();
     let gf = Date::from_serial(em_serial - 3);
-    let es = Date::from_serial(em_serial - 2);
     let em = Date::from_serial(em_serial);
-    if date == gf || date == es || date == em { return false; }
+    let hs = Date::from_serial(em_serial - 2); // Holy Saturday
+    if date == gf || date == hs || date == em { return false; }
     // Labour Day (May 1)
     if m == Month::May && d == 1 { return false; }
     // SAR Establishment Day (Jul 1)
@@ -1305,7 +1466,27 @@ fn hong_kong_is_business_day(date: Date) -> bool {
     if m == Month::October && d == 1 { return false; }
     // Christmas + Boxing Day
     if m == Month::December && (d == 25 || d == 26) { return false; }
-    // Lunar holidays omitted (Chinese New Year, Ching Ming, etc.)
+
+    // Lunar holidays (2020–2035)
+    // Chinese New Year (3 days)
+    if is_lunar_holiday(date, lunar_new_year(y), &[0, 1, 2]) {
+        return false;
+    }
+    // Ching Ming (Qingming)
+    if m == Month::April && d == qingming(y) { return false; }
+    // Buddha's Birthday (Vesak)
+    if is_lunar_holiday(date, buddhas_birthday(y), &[0]) {
+        return false;
+    }
+    // Dragon Boat Festival (Tuen Ng)
+    if is_lunar_holiday(date, dragon_boat(y), &[0]) {
+        return false;
+    }
+    // Mid-Autumn Festival (day after — HK observes the day after)
+    if is_lunar_holiday(date, mid_autumn(y), &[1]) {
+        return false;
+    }
+
     true
 }
 
@@ -1321,7 +1502,7 @@ fn singapore_is_business_day(date: Date) -> bool {
 
     // New Year
     if m == Month::January && d == 1 { return false; }
-    // Easter-based (Good Friday)
+    // Easter (Good Friday)
     let (em_month, em_day) = easter_monday(y);
     let em_serial = Date::from_ymd_opt(y, em_month, em_day).unwrap_or_else(|| unreachable!()).serial();
     let gf = Date::from_serial(em_serial - 3);
@@ -1332,8 +1513,77 @@ fn singapore_is_business_day(date: Date) -> bool {
     if m == Month::August && d == 9 { return false; }
     // Christmas
     if m == Month::December && d == 25 { return false; }
-    // Lunar holidays (Chinese New Year, Vesak, Deepavali, Hari Raya) vary yearly
+
+    // Lunar holidays (2020–2035)
+    // Chinese New Year (2 days)
+    if is_lunar_holiday(date, lunar_new_year(y), &[0, 1]) {
+        return false;
+    }
+    // Vesak Day (Buddha's Birthday)
+    if is_lunar_holiday(date, buddhas_birthday(y), &[0]) {
+        return false;
+    }
+    // Deepavali: approximate as Nov 1 (actual date varies by Hindu calendar)
+    if m == Month::November && d == 1 { return false; }
+
+    // Hari Raya Puasa (Eid al-Fitr) and Hari Raya Haji (Eid al-Adha)
+    if is_hari_raya_puasa(date) || is_hari_raya_haji(date) {
+        return false;
+    }
+
     true
+}
+
+/// Hari Raya Puasa (Eid al-Fitr) dates for Singapore, 2020–2035.
+fn is_hari_raya_puasa(date: Date) -> bool {
+    let y = date.year();
+    let m = date.month() as u32;
+    let d = date.day_of_month();
+    match y {
+        2020 => m == 5 && d == 24,
+        2021 => m == 5 && d == 13,
+        2022 => m == 5 && d == 3,
+        2023 => m == 4 && d == 22,
+        2024 => m == 4 && d == 10,
+        2025 => m == 3 && d == 31,
+        2026 => m == 3 && d == 20,
+        2027 => m == 3 && d == 10,
+        2028 => m == 2 && d == 27,
+        2029 => m == 2 && d == 15,
+        2030 => m == 2 && d == 4,
+        2031 => m == 1 && d == 25,
+        2032 => m == 1 && d == 14,
+        2033 => m == 1 && d == 3,
+        2034 => m == 12 && d == 23,
+        2035 => m == 12 && d == 12,
+        _ => false,
+    }
+}
+
+/// Hari Raya Haji (Eid al-Adha) dates for Singapore, 2020–2035.
+fn is_hari_raya_haji(date: Date) -> bool {
+    let y = date.year();
+    let m = date.month() as u32;
+    let d = date.day_of_month();
+    match y {
+        2020 => m == 7 && d == 31,
+        2021 => m == 7 && d == 20,
+        2022 => m == 7 && d == 10,
+        2023 => m == 6 && d == 29,
+        2024 => m == 6 && d == 17,
+        2025 => m == 6 && d == 7,
+        2026 => m == 5 && d == 27,
+        2027 => m == 5 && d == 16,
+        2028 => m == 5 && d == 5,
+        2029 => m == 4 && d == 24,
+        2030 => m == 4 && d == 13,
+        2031 => m == 4 && d == 3,
+        2032 => m == 3 && d == 22,
+        2033 => m == 3 && d == 12,
+        2034 => m == 3 && d == 1,
+        2035 => m == 2 && d == 18,
+        _ => false,
+    }
 }
 
 // ============================================================================
@@ -2149,6 +2399,261 @@ fn ukraine_is_business_day(date: Date) -> bool {
     true
 }
 
+// ============================================================================
+//  Colombia calendar implementation (BVC)
+// ============================================================================
+
+/// Move a date to the following Monday (Ley Emiliani / Ley 51 de 1983).
+fn next_monday(month: u32, day: u32, y: i32) -> Date {
+    let d = Date::from_ymd_opt(y, month, day).unwrap_or_else(|| unreachable!());
+    match d.weekday() {
+        Weekday::Monday => d,
+        Weekday::Tuesday => d + 6,
+        Weekday::Wednesday => d + 5,
+        Weekday::Thursday => d + 4,
+        Weekday::Friday => d + 3,
+        Weekday::Saturday => d + 2,
+        Weekday::Sunday => d + 1,
+    }
+}
+
+fn colombia_is_business_day(date: Date) -> bool {
+    if is_weekend(date) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+
+    // New Year (Jan 1)
+    if m == Month::January && d == 1 { return false; }
+    // Epiphany (Jan 6 → next Mon)
+    if date == next_monday(1, 6, y) { return false; }
+    // Saint Joseph (Mar 19 → next Mon)
+    if date == next_monday(3, 19, y) { return false; }
+    // Easter: Holy Thursday + Good Friday
+    let (em_month, em_day) = easter_monday(y);
+    let em_serial = Date::from_ymd_opt(y, em_month, em_day)
+        .unwrap_or_else(|| unreachable!()).serial();
+    let holy_thu = Date::from_serial(em_serial - 4);
+    let gf = Date::from_serial(em_serial - 3);
+    if date == holy_thu || date == gf { return false; }
+    // Ascension (39 days after Easter Sunday → next Mon)
+    let ascension = Date::from_serial(em_serial - 1 + 39);
+    let ascension_mon = next_monday(ascension.month() as u32, ascension.day_of_month(), y);
+    if date == ascension_mon { return false; }
+    // Corpus Christi (60 days after Easter Sunday → next Mon)
+    let corpus = Date::from_serial(em_serial - 1 + 60);
+    let corpus_mon = next_monday(corpus.month() as u32, corpus.day_of_month(), y);
+    if date == corpus_mon { return false; }
+    // Sacred Heart (68 days after Easter Sunday → next Mon)
+    let sacred = Date::from_serial(em_serial - 1 + 68);
+    let sacred_mon = next_monday(sacred.month() as u32, sacred.day_of_month(), y);
+    if date == sacred_mon { return false; }
+    // Labour Day (May 1)
+    if m == Month::May && d == 1 { return false; }
+    // Saint Peter and Saint Paul (Jun 29 → next Mon)
+    if date == next_monday(6, 29, y) { return false; }
+    // Independence Day (Jul 20)
+    if m == Month::July && d == 20 { return false; }
+    // Battle of Boyacá (Aug 7)
+    if m == Month::August && d == 7 { return false; }
+    // Assumption (Aug 15 → next Mon)
+    if date == next_monday(8, 15, y) { return false; }
+    // Columbus Day / Día de la Raza (Oct 12 → next Mon)
+    if date == next_monday(10, 12, y) { return false; }
+    // All Saints (Nov 1 → next Mon)
+    if date == next_monday(11, 1, y) { return false; }
+    // Independence of Cartagena (Nov 11 → next Mon)
+    if date == next_monday(11, 11, y) { return false; }
+    // Immaculate Conception (Dec 8)
+    if m == Month::December && d == 8 { return false; }
+    // Christmas
+    if m == Month::December && d == 25 { return false; }
+
+    true
+}
+
+// ============================================================================
+//  Peru calendar implementation (BVL)
+// ============================================================================
+
+fn peru_is_business_day(date: Date) -> bool {
+    if is_weekend(date) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+
+    // New Year
+    if m == Month::January && d == 1 { return false; }
+    // Holy Thursday + Good Friday
+    let (em_month, em_day) = easter_monday(y);
+    let em_serial = Date::from_ymd_opt(y, em_month, em_day)
+        .unwrap_or_else(|| unreachable!()).serial();
+    let holy_thu = Date::from_serial(em_serial - 4);
+    let gf = Date::from_serial(em_serial - 3);
+    if date == holy_thu || date == gf { return false; }
+    // Labour Day (May 1)
+    if m == Month::May && d == 1 { return false; }
+    // Saints Peter and Paul (Jun 29)
+    if m == Month::June && d == 29 { return false; }
+    // Independence Day (Jul 28-29)
+    if m == Month::July && (d == 28 || d == 29) { return false; }
+    // Santa Rosa de Lima (Aug 30)
+    if m == Month::August && d == 30 { return false; }
+    // Battle of Angamos (Oct 8)
+    if m == Month::October && d == 8 { return false; }
+    // All Saints (Nov 1)
+    if m == Month::November && d == 1 { return false; }
+    // Immaculate Conception (Dec 8)
+    if m == Month::December && d == 8 { return false; }
+    // Christmas
+    if m == Month::December && d == 25 { return false; }
+
+    true
+}
+
+// ============================================================================
+//  Philippines calendar implementation (PSE)
+// ============================================================================
+
+fn philippines_is_business_day(date: Date) -> bool {
+    if is_weekend(date) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+
+    // New Year
+    if m == Month::January && d == 1 { return false; }
+    // Chinese New Year (public holiday since 2012)
+    if y >= 2012 {
+        if is_lunar_holiday(date, lunar_new_year(y), &[0]) {
+            return false;
+        }
+    }
+    // EDSA Revolution (Feb 25)
+    if m == Month::February && d == 25 { return false; }
+    // Easter: Holy Thursday + Good Friday + Black Saturday
+    let (em_month, em_day) = easter_monday(y);
+    let em_serial = Date::from_ymd_opt(y, em_month, em_day)
+        .unwrap_or_else(|| unreachable!()).serial();
+    let holy_thu = Date::from_serial(em_serial - 4);
+    let gf = Date::from_serial(em_serial - 3);
+    let bs = Date::from_serial(em_serial - 2); // Black Saturday
+    if date == holy_thu || date == gf || date == bs { return false; }
+    // Araw ng Kagitingan (Apr 9)
+    if m == Month::April && d == 9 { return false; }
+    // Labour Day (May 1)
+    if m == Month::May && d == 1 { return false; }
+    // Independence Day (Jun 12)
+    if m == Month::June && d == 12 { return false; }
+    // National Heroes Day (last Monday of August)
+    if m == Month::August && date.weekday() == Weekday::Monday && d >= 25 { return false; }
+    // Bonifacio Day (Nov 30)
+    if m == Month::November && d == 30 { return false; }
+    // Christmas (Dec 25)
+    if m == Month::December && d == 25 { return false; }
+    // Rizal Day (Dec 30)
+    if m == Month::December && d == 30 { return false; }
+    // Last day of year (Dec 31)
+    if m == Month::December && d == 31 { return false; }
+
+    true
+}
+
+// ============================================================================
+//  Malaysia calendar implementation (Bursa Malaysia)
+// ============================================================================
+
+/// Hari Raya Aidilfitri (Eid al-Fitr) dates for Malaysia, 2020–2035 (2 days).
+fn is_malaysia_hari_raya_aidilfitri(date: Date) -> bool {
+    let y = date.year();
+    let m = date.month() as u32;
+    let d = date.day_of_month();
+    match y {
+        2020 => (m == 5 && d == 24) || (m == 5 && d == 25),
+        2021 => (m == 5 && d == 13) || (m == 5 && d == 14),
+        2022 => (m == 5 && d == 2)  || (m == 5 && d == 3),
+        2023 => (m == 4 && d == 22) || (m == 4 && d == 23),
+        2024 => (m == 4 && d == 10) || (m == 4 && d == 11),
+        2025 => (m == 3 && d == 31) || (m == 4 && d == 1),
+        2026 => (m == 3 && d == 20) || (m == 3 && d == 21),
+        2027 => (m == 3 && d == 10) || (m == 3 && d == 11),
+        2028 => (m == 2 && d == 27) || (m == 2 && d == 28),
+        2029 => (m == 2 && d == 15) || (m == 2 && d == 16),
+        2030 => (m == 2 && d == 4)  || (m == 2 && d == 5),
+        2031 => (m == 1 && d == 24) || (m == 1 && d == 25),
+        2032 => (m == 1 && d == 14) || (m == 1 && d == 15),
+        2033 => (m == 1 && d == 2)  || (m == 1 && d == 3),
+        2034 => (m == 12 && d == 23) || (m == 12 && d == 24),
+        2035 => (m == 12 && d == 12) || (m == 12 && d == 13),
+        _ => false,
+    }
+}
+
+/// Hari Raya Haji (Eid al-Adha) dates for Malaysia, 2020–2035.
+fn is_malaysia_hari_raya_haji(date: Date) -> bool {
+    let y = date.year();
+    let m = date.month() as u32;
+    let d = date.day_of_month();
+    match y {
+        2020 => m == 7 && d == 31,
+        2021 => m == 7 && d == 20,
+        2022 => m == 7 && d == 10,
+        2023 => m == 6 && d == 29,
+        2024 => m == 6 && d == 17,
+        2025 => m == 6 && d == 7,
+        2026 => m == 5 && d == 27,
+        2027 => m == 5 && d == 16,
+        2028 => m == 5 && d == 5,
+        2029 => m == 4 && d == 24,
+        2030 => m == 4 && d == 13,
+        2031 => m == 4 && d == 2,
+        2032 => m == 3 && d == 22,
+        2033 => m == 3 && d == 11,
+        2034 => m == 3 && d == 1,
+        2035 => m == 2 && d == 18,
+        _ => false,
+    }
+}
+
+fn malaysia_is_business_day(date: Date) -> bool {
+    if is_weekend(date) { return false; }
+    let d = date.day_of_month();
+    let m = date.month();
+    let y = date.year();
+
+    // New Year
+    if m == Month::January && d == 1 { return false; }
+    // Federal Territory Day (Feb 1)
+    if m == Month::February && d == 1 { return false; }
+    // Labour Day (May 1)
+    if m == Month::May && d == 1 { return false; }
+    // Yang di-Pertuan Agong Birthday (1st Monday of June)
+    if m == Month::June && date.weekday() == Weekday::Monday && d <= 7 { return false; }
+    // Malaysia Day (Sep 16)
+    if m == Month::September && d == 16 { return false; }
+    // Deepavali: approximate as Nov 1
+    if m == Month::November && d == 1 { return false; }
+    // Christmas
+    if m == Month::December && d == 25 { return false; }
+    // Merdeka Day (Aug 31)
+    if m == Month::August && d == 31 { return false; }
+
+    // Chinese New Year (2 days)
+    if is_lunar_holiday(date, lunar_new_year(y), &[0, 1]) {
+        return false;
+    }
+    // Vesak Day
+    if is_lunar_holiday(date, buddhas_birthday(y), &[0]) {
+        return false;
+    }
+    // Islamic holidays
+    if is_malaysia_hari_raya_aidilfitri(date) || is_malaysia_hari_raya_haji(date) {
+        return false;
+    }
+
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2314,7 +2819,7 @@ mod tests {
 
     #[test]
     fn japan_new_years() {
-        let cal = Calendar::Japan;
+        let cal = Calendar::Japan(JapanMarket::Exchange);
         assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 1)));
         assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 2)));
         assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 3)));
@@ -2322,13 +2827,13 @@ mod tests {
 
     #[test]
     fn japan_showa_day() {
-        let cal = Calendar::Japan;
+        let cal = Calendar::Japan(JapanMarket::Exchange);
         assert!(!cal.is_business_day(Date::from_ymd(2025, Month::April, 29)));
     }
 
     #[test]
     fn japan_regular_business_day() {
-        let cal = Calendar::Japan;
+        let cal = Calendar::Japan(JapanMarket::Exchange);
         // 2025-06-16 is Monday, not a holiday
         assert!(cal.is_business_day(Date::from_ymd(2025, Month::June, 16)));
     }
@@ -2383,20 +2888,20 @@ mod tests {
 
     #[test]
     fn brazil_tiradentes() {
-        let cal = Calendar::Brazil;
+        let cal = Calendar::Brazil(BrazilMarket::Exchange);
         assert!(!cal.is_business_day(Date::from_ymd(2025, Month::April, 21)));
     }
 
     #[test]
     fn brazil_independence_day() {
-        let cal = Calendar::Brazil;
+        let cal = Calendar::Brazil(BrazilMarket::Exchange);
         // Sep 7 2025 is Sunday → not a business day anyway
         assert!(!cal.is_business_day(Date::from_ymd(2025, Month::September, 7)));
     }
 
     #[test]
     fn brazil_carnival_2025() {
-        let cal = Calendar::Brazil;
+        let cal = Calendar::Brazil(BrazilMarket::Exchange);
         // Easter Sunday 2025 is April 20, so Easter Monday is April 21
         // Carnival Monday = Easter Sunday - 48 = March 3
         // Carnival Tuesday = Easter Sunday - 47 = March 4
@@ -2406,7 +2911,7 @@ mod tests {
 
     #[test]
     fn brazil_regular_business_day() {
-        let cal = Calendar::Brazil;
+        let cal = Calendar::Brazil(BrazilMarket::Exchange);
         // 2025-06-16 Monday
         assert!(cal.is_business_day(Date::from_ymd(2025, Month::June, 16)));
     }
@@ -2667,7 +3172,7 @@ mod tests {
     #[test]
     fn joint_holidays_both_must_be_biz_day() {
         // UK + Germany: intersection of business days
-        let joint = Calendar::join_holidays(Calendar::UnitedKingdom, Calendar::Germany);
+        let joint = Calendar::join_holidays(Calendar::UnitedKingdom(UKMarket::Settlement), Calendar::Germany);
         // German Unity Day Oct 3, 2025 (Friday): UK biz day, DE holiday → not biz day
         assert!(!joint.is_business_day(Date::from_ymd(2025, Month::October, 3)));
         // UK August bank holiday: last Monday Aug → Aug 25, 2025: UK holiday, DE biz day → not biz day
@@ -2679,10 +3184,255 @@ mod tests {
     #[test]
     fn joint_business_days_either_is_biz_day() {
         // UK + Germany: union of business days
-        let joint = Calendar::join_business_days(Calendar::UnitedKingdom, Calendar::Germany);
+        let joint = Calendar::join_business_days(Calendar::UnitedKingdom(UKMarket::Settlement), Calendar::Germany);
         // German Unity Day Oct 3, 2025: UK open → biz day
         assert!(joint.is_business_day(Date::from_ymd(2025, Month::October, 3)));
         // Christmas Dec 25: both closed → not biz day
         assert!(!joint.is_business_day(Date::from_ymd(2025, Month::December, 25)));
+    }
+
+    // ============================================================
+    //  UK sub-market tests
+    // ============================================================
+
+    #[test]
+    fn uk_metals_no_august_bank_holiday() {
+        // LME does NOT observe the August Bank Holiday
+        let metals = Calendar::UnitedKingdom(UKMarket::Metals);
+        let settlement = Calendar::UnitedKingdom(UKMarket::Settlement);
+        // Last Monday of August 2025 = Aug 25
+        let aug_bank = Date::from_ymd(2025, Month::August, 25);
+        assert!(metals.is_business_day(aug_bank));        // Metals: open
+        assert!(!settlement.is_business_day(aug_bank));   // Settlement: closed
+    }
+
+    #[test]
+    fn uk_exchange_christmas() {
+        let exchange = Calendar::UnitedKingdom(UKMarket::Exchange);
+        assert!(!exchange.is_business_day(Date::from_ymd(2025, Month::December, 25)));
+        assert!(!exchange.is_business_day(Date::from_ymd(2025, Month::December, 26)));
+    }
+
+    // ============================================================
+    //  Japan JSDA tests
+    // ============================================================
+
+    #[test]
+    fn japan_jsda_dec31_holiday() {
+        let jsda = Calendar::Japan(JapanMarket::JSDA);
+        let tse = Calendar::Japan(JapanMarket::Exchange);
+        let dec31 = Date::from_ymd(2025, Month::December, 31);
+        assert!(!jsda.is_business_day(dec31));   // JSDA: closed Dec31
+        assert!(tse.is_business_day(dec31));     // TSE: open Dec31 (it's Wednesday)
+    }
+
+    #[test]
+    fn japan_common_holidays_both_markets() {
+        let jsda = Calendar::Japan(JapanMarket::JSDA);
+        let tse = Calendar::Japan(JapanMarket::Exchange);
+        // New Year (Jan 1) — closed on both
+        assert!(!jsda.is_business_day(Date::from_ymd(2025, Month::January, 1)));
+        assert!(!tse.is_business_day(Date::from_ymd(2025, Month::January, 1)));
+    }
+
+    // ============================================================
+    //  Brazil sub-market tests  
+    // ============================================================
+
+    #[test]
+    fn brazil_settlement_black_consciousness_day() {
+        let settlement = Calendar::Brazil(BrazilMarket::Settlement);
+        let exchange = Calendar::Brazil(BrazilMarket::Exchange);
+        // Nov 20, 2024 (Wednesday) — Black Consciousness Day since 2024
+        let bcd = Date::from_ymd(2024, Month::November, 20);
+        assert!(!settlement.is_business_day(bcd)); // Settlement: closed
+        assert!(exchange.is_business_day(bcd));    // Exchange: open
+    }
+
+    #[test]
+    fn brazil_settlement_dec31() {
+        let settlement = Calendar::Brazil(BrazilMarket::Settlement);
+        let exchange = Calendar::Brazil(BrazilMarket::Exchange);
+        // Dec 31, 2025 (Wednesday)
+        let dec31 = Date::from_ymd(2025, Month::December, 31);
+        assert!(!settlement.is_business_day(dec31)); // Settlement: closed
+        assert!(exchange.is_business_day(dec31));     // Exchange: open
+    }
+
+    // ============================================================
+    //  Lunar calendar infrastructure tests
+    // ============================================================
+
+    #[test]
+    fn lunar_new_year_dates() {
+        assert_eq!(lunar_new_year(2025), Some((1, 29)));
+        assert_eq!(lunar_new_year(2024), Some((2, 10)));
+        assert_eq!(lunar_new_year(2023), Some((1, 22)));
+    }
+
+    #[test]
+    fn china_spring_festival_2025() {
+        let cal = Calendar::China;
+        // CNY 2025 = Jan 29; Spring Festival covers Jan 29-Feb 1
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 29)));
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 30)));
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 31)));
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::February, 1)));
+    }
+
+    #[test]
+    fn china_dragon_boat_2025() {
+        let cal = Calendar::China;
+        // Dragon Boat 2025 = May 31
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::May, 31)));
+    }
+
+    #[test]
+    fn south_korea_seollal_2025() {
+        let cal = Calendar::SouthKorea;
+        // CNY 2025 = Jan 29; Seollal = Jan 28-30 (day before, day of, day after)
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 28)));
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 29)));
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 30)));
+    }
+
+    #[test]
+    fn south_korea_chuseok_2025() {
+        let cal = Calendar::SouthKorea;
+        // Mid-Autumn 2025 = Oct 6; Chuseok = Oct 5-7
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::October, 5)));
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::October, 6)));
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::October, 7)));
+    }
+
+    #[test]
+    fn hong_kong_cny_2025() {
+        let cal = Calendar::HongKong;
+        // CNY 2025 = Jan 29; HK observes 3 days: Jan 29, 30, 31
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 29)));
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 30)));
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 31)));
+    }
+
+    #[test]
+    fn hong_kong_mid_autumn_day_after_2025() {
+        let cal = Calendar::HongKong;
+        // Mid-Autumn 2025 = Oct 6; HK observes day after = Oct 7
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::October, 7)));
+    }
+
+    #[test]
+    fn singapore_hari_raya_2025() {
+        let cal = Calendar::Singapore;
+        // Hari Raya Puasa 2025 = Mar 31
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::March, 31)));
+        // Hari Raya Haji 2025 = Jun 7 (Saturday, so no business day effect)
+        // But Jun 7 is already a weekend
+    }
+
+    #[test]
+    fn singapore_cny_2025() {
+        let cal = Calendar::Singapore;
+        // CNY 2025 = Jan 29; SG observes 2 days: Jan 29-30
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 29)));
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 30)));
+    }
+
+    // ============================================================
+    //  Colombia tests
+    // ============================================================
+
+    #[test]
+    fn colombia_independence_day() {
+        let cal = Calendar::Colombia;
+        // Jul 20, 2025 is a Sunday → still a holiday (fixed)
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::July, 20)));
+    }
+
+    #[test]
+    fn colombia_epiphany_moved_to_monday() {
+        let cal = Calendar::Colombia;
+        // Jan 6, 2025 is Monday → Epiphany observed on Jan 6
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 6)));
+    }
+
+    #[test]
+    fn colombia_regular_weekday() {
+        let cal = Calendar::Colombia;
+        // Jun 16, 2025 is Monday — regular business day
+        assert!(cal.is_business_day(Date::from_ymd(2025, Month::June, 16)));
+    }
+
+    // ============================================================
+    //  Peru tests
+    // ============================================================
+
+    #[test]
+    fn peru_independence_days() {
+        let cal = Calendar::Peru;
+        // Jul 28-29 Independence Days
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::July, 28)));
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::July, 29)));
+    }
+
+    #[test]
+    fn peru_labour_day() {
+        let cal = Calendar::Peru;
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::May, 1)));
+    }
+
+    // ============================================================
+    //  Philippines tests
+    // ============================================================
+
+    #[test]
+    fn philippines_independence_day() {
+        let cal = Calendar::Philippines;
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::June, 12)));
+    }
+
+    #[test]
+    fn philippines_rizal_day() {
+        let cal = Calendar::Philippines;
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::December, 30)));
+    }
+
+    #[test]
+    fn philippines_cny_2025() {
+        let cal = Calendar::Philippines;
+        // CNY 2025 = Jan 29 (Wednesday) — public holiday since 2012
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 29)));
+    }
+
+    // ============================================================
+    //  Malaysia tests
+    // ============================================================
+
+    #[test]
+    fn malaysia_merdeka_day() {
+        let cal = Calendar::Malaysia;
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::August, 31)));
+    }
+
+    #[test]
+    fn malaysia_cny_2025() {
+        let cal = Calendar::Malaysia;
+        // CNY 2025 = Jan 29; MY observes 2 days: Jan 29-30
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 29)));
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::January, 30)));
+    }
+
+    #[test]
+    fn malaysia_regular_weekday() {
+        let cal = Calendar::Malaysia;
+        assert!(cal.is_business_day(Date::from_ymd(2025, Month::June, 16)));
+    }
+
+    #[test]
+    fn malaysia_hari_raya_aidilfitri_2025() {
+        let cal = Calendar::Malaysia;
+        // Hari Raya Aidilfitri 2025 = Mar 31 + Apr 1
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::March, 31)));
+        assert!(!cal.is_business_day(Date::from_ymd(2025, Month::April, 1)));
     }
 }

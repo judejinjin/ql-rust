@@ -6,6 +6,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::date::{Date, Month};
+use crate::calendar::BrazilMarket;
 use ql_core::Real;
 
 /// Thirty/360 sub-conventions.
@@ -70,7 +71,7 @@ impl DayCounter {
             }
             DayCounter::Thirty360(convention) => thirty360_day_count(d1, d2, *convention),
             DayCounter::Business252 => {
-                crate::calendar::Calendar::Brazil.business_days_between(d1, d2)
+                crate::calendar::Calendar::Brazil(BrazilMarket::Exchange).business_days_between(d1, d2)
             }
             DayCounter::One => {
                 if d1 == d2 { 0 } else { 1 }

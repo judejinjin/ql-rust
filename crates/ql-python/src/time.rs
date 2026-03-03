@@ -4,7 +4,7 @@ use pyo3::prelude::*;
 use pyo3::exceptions::PyValueError;
 
 use ql_time::date::Date;
-use ql_time::calendar::Calendar;
+use ql_time::calendar::{Calendar, UKMarket, JapanMarket, BrazilMarket};
 use ql_time::BusinessDayConvention;
 use ql_time::day_counter::DayCounter;
 use ql_time::period::{Period, TimeUnit};
@@ -284,15 +284,24 @@ pub(crate) fn parse_calendar(name: &str) -> PyResult<Calendar> {
         "US-Settlement" | "US" => Ok(Calendar::UnitedStates(USMarket::Settlement)),
         "US-NYSE" | "NYSE" => Ok(Calendar::UnitedStates(USMarket::NYSE)),
         "US-FederalReserve" | "FED" => Ok(Calendar::UnitedStates(USMarket::FederalReserve)),
-        "UK" => Ok(Calendar::UnitedKingdom),
-        "Japan" | "JP" => Ok(Calendar::Japan),
+        "UK" | "UK-Settlement" => Ok(Calendar::UnitedKingdom(UKMarket::Settlement)),
+        "UK-Exchange" | "LSE" => Ok(Calendar::UnitedKingdom(UKMarket::Exchange)),
+        "UK-Metals" | "LME" => Ok(Calendar::UnitedKingdom(UKMarket::Metals)),
+        "Japan" | "JP" | "JP-Exchange" | "TSE" => Ok(Calendar::Japan(JapanMarket::Exchange)),
+        "JP-JSDA" | "JSDA" => Ok(Calendar::Japan(JapanMarket::JSDA)),
         "China" | "CN" => Ok(Calendar::China),
         "Germany" | "DE" => Ok(Calendar::Germany),
         "France" | "FR" => Ok(Calendar::France),
         "Italy" | "IT" => Ok(Calendar::Italy),
         "Canada" | "CA" => Ok(Calendar::Canada),
         "Australia" | "AU" => Ok(Calendar::Australia),
+        "Brazil" | "BR" | "BR-Exchange" | "B3" => Ok(Calendar::Brazil(BrazilMarket::Exchange)),
+        "BR-Settlement" => Ok(Calendar::Brazil(BrazilMarket::Settlement)),
         "Switzerland" | "CH" => Ok(Calendar::Switzerland),
+        "Colombia" | "CO" => Ok(Calendar::Colombia),
+        "Peru" | "PE" => Ok(Calendar::Peru),
+        "Philippines" | "PH" => Ok(Calendar::Philippines),
+        "Malaysia" | "MY" => Ok(Calendar::Malaysia),
         _ => Err(PyValueError::new_err(format!("unknown calendar: {name}"))),
     }
 }

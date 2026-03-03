@@ -69,6 +69,7 @@ pub mod spreaded_swaption_vol;
 pub mod yield_curves_phase24;
 pub mod inflation_helpers;
 pub mod smile_delta_surface;
+pub mod ibor_ibor_basis_helper;
 
 // Re-exports
 pub use term_structure::TermStructure;
@@ -156,6 +157,7 @@ pub use inflation_helpers::{
     PiecewiseYoYInflationCurve, bootstrap_zc_inflation_curve,
 };
 pub use smile_delta_surface::{SmileDeltaSection, SmileDeltaTermStructure};
+pub use ibor_ibor_basis_helper::IborIborBasisSwapHelper;
 
 pub mod term_structure_extended;
 pub use term_structure_extended::{

@@ -14,7 +14,7 @@ use serde_json::Value;
 mod golden_calendar {
     use super::*;
     use ql_time::{Calendar, Date, DayCounter, Frequency, Month, Schedule};
-    use ql_time::calendar::USMarket;
+    use ql_time::calendar::{USMarket, UKMarket};
     use ql_time::day_counter::Thirty360Convention;
     use ql_time::schedule::DateGenerationRule;
 
@@ -103,7 +103,7 @@ mod golden_calendar {
     fn uk_holidays_2025() {
         let golden = load_golden();
         let case = &golden["test_cases"]["uk_holidays_2025"];
-        let cal = Calendar::UnitedKingdom;
+        let cal = Calendar::UnitedKingdom(UKMarket::Settlement);
 
         let expected_holidays: Vec<Date> = case["holidays"]
             .as_array()

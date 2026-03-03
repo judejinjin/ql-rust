@@ -56,7 +56,7 @@ pub mod time_extended;
 pub mod cds_schedule;
 
 pub use business_day_convention::BusinessDayConvention;
-pub use calendar::{Calendar, JointRule};
+pub use calendar::{Calendar, JointRule, USMarket, UKMarket, JapanMarket, BrazilMarket};
 pub use date::{Date, Month, Weekday};
 pub use day_counter::DayCounter;
 pub use period::{Frequency, Period, TimeUnit};

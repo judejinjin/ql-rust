@@ -6,6 +6,7 @@ use ql_core::errors::{QLError, QLResult};
 use ql_currencies::Currency;
 use ql_time::{
     BusinessDayConvention, Calendar, Date, DayCounter, Period, TimeUnit,
+    UKMarket, JapanMarket,
 };
 
 use crate::index::{Index, IndexManager};
@@ -201,14 +202,14 @@ impl IborIndex {
     /// GBP LIBOR 3-Month (legacy).
     pub fn gbp_libor_3m() -> Self {
         Self::new("GBPLibor3M", Period { length: 3, unit: TimeUnit::Months }, 0,
-            Currency::gbp(), Calendar::UnitedKingdom,
+            Currency::gbp(), Calendar::UnitedKingdom(UKMarket::Settlement),
             BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual365Fixed)
     }
 
     /// GBP LIBOR 6-Month (legacy).
     pub fn gbp_libor_6m() -> Self {
         Self::new("GBPLibor6M", Period { length: 6, unit: TimeUnit::Months }, 0,
-            Currency::gbp(), Calendar::UnitedKingdom,
+            Currency::gbp(), Calendar::UnitedKingdom(UKMarket::Settlement),
             BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual365Fixed)
     }
 
@@ -230,14 +231,14 @@ impl IborIndex {
     /// JPY LIBOR 3-Month (legacy).
     pub fn jpy_libor_3m() -> Self {
         Self::new("JPYLibor3M", Period { length: 3, unit: TimeUnit::Months }, 2,
-            Currency::jpy(), Calendar::Japan,
+            Currency::jpy(), Calendar::Japan(JapanMarket::Exchange),
             BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual360)
     }
 
     /// JPY LIBOR 6-Month (legacy).
     pub fn jpy_libor_6m() -> Self {
         Self::new("JPYLibor6M", Period { length: 6, unit: TimeUnit::Months }, 2,
-            Currency::jpy(), Calendar::Japan,
+            Currency::jpy(), Calendar::Japan(JapanMarket::Exchange),
             BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual360)
     }
 
@@ -266,14 +267,14 @@ impl IborIndex {
     /// TIBOR 3-Month (Domestic Japanese Yen TIBOR).
     pub fn tibor_3m() -> Self {
         Self::new("TIBOR3M", Period { length: 3, unit: TimeUnit::Months }, 2,
-            Currency::jpy(), Calendar::Japan,
+            Currency::jpy(), Calendar::Japan(JapanMarket::Exchange),
             BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual365Fixed)
     }
 
     /// TIBOR 6-Month.
     pub fn tibor_6m() -> Self {
         Self::new("TIBOR6M", Period { length: 6, unit: TimeUnit::Months }, 2,
-            Currency::jpy(), Calendar::Japan,
+            Currency::jpy(), Calendar::Japan(JapanMarket::Exchange),
             BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual365Fixed)
     }
 
@@ -495,35 +496,35 @@ impl IborIndex {
     /// GBP LIBOR Overnight (legacy).
     pub fn gbp_libor_on() -> Self {
         Self::new("GBPLiborON", Period { length: 1, unit: TimeUnit::Days }, 0,
-            Currency::gbp(), Calendar::UnitedKingdom,
+            Currency::gbp(), Calendar::UnitedKingdom(UKMarket::Settlement),
             BusinessDayConvention::Following, false, DayCounter::Actual365Fixed)
     }
 
     /// GBP LIBOR 1-Week (legacy).
     pub fn gbp_libor_1w() -> Self {
         Self::new("GBPLibor1W", Period { length: 1, unit: TimeUnit::Weeks }, 0,
-            Currency::gbp(), Calendar::UnitedKingdom,
+            Currency::gbp(), Calendar::UnitedKingdom(UKMarket::Settlement),
             BusinessDayConvention::ModifiedFollowing, false, DayCounter::Actual365Fixed)
     }
 
     /// GBP LIBOR 1-Month (legacy).
     pub fn gbp_libor_1m() -> Self {
         Self::new("GBPLibor1M", Period { length: 1, unit: TimeUnit::Months }, 0,
-            Currency::gbp(), Calendar::UnitedKingdom,
+            Currency::gbp(), Calendar::UnitedKingdom(UKMarket::Settlement),
             BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual365Fixed)
     }
 
     /// GBP LIBOR 2-Month (legacy).
     pub fn gbp_libor_2m() -> Self {
         Self::new("GBPLibor2M", Period { length: 2, unit: TimeUnit::Months }, 0,
-            Currency::gbp(), Calendar::UnitedKingdom,
+            Currency::gbp(), Calendar::UnitedKingdom(UKMarket::Settlement),
             BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual365Fixed)
     }
 
     /// GBP LIBOR 12-Month (legacy).
     pub fn gbp_libor_12m() -> Self {
         Self::new("GBPLibor12M", Period { length: 12, unit: TimeUnit::Months }, 0,
-            Currency::gbp(), Calendar::UnitedKingdom,
+            Currency::gbp(), Calendar::UnitedKingdom(UKMarket::Settlement),
             BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual365Fixed)
     }
 
@@ -573,21 +574,21 @@ impl IborIndex {
     /// JPY LIBOR Overnight (legacy).
     pub fn jpy_libor_on() -> Self {
         Self::new("JPYLiborON", Period { length: 1, unit: TimeUnit::Days }, 0,
-            Currency::jpy(), Calendar::Japan,
+            Currency::jpy(), Calendar::Japan(JapanMarket::Exchange),
             BusinessDayConvention::Following, false, DayCounter::Actual360)
     }
 
     /// JPY LIBOR 1-Month (legacy).
     pub fn jpy_libor_1m() -> Self {
         Self::new("JPYLibor1M", Period { length: 1, unit: TimeUnit::Months }, 2,
-            Currency::jpy(), Calendar::Japan,
+            Currency::jpy(), Calendar::Japan(JapanMarket::Exchange),
             BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual360)
     }
 
     /// JPY LIBOR 12-Month (legacy).
     pub fn jpy_libor_12m() -> Self {
         Self::new("JPYLibor12M", Period { length: 12, unit: TimeUnit::Months }, 2,
-            Currency::jpy(), Calendar::Japan,
+            Currency::jpy(), Calendar::Japan(JapanMarket::Exchange),
             BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual360)
     }
 
@@ -630,28 +631,28 @@ impl IborIndex {
     /// TIBOR 1-Week.
     pub fn tibor_1w() -> Self {
         Self::new("TIBOR1W", Period { length: 1, unit: TimeUnit::Weeks }, 2,
-            Currency::jpy(), Calendar::Japan,
+            Currency::jpy(), Calendar::Japan(JapanMarket::Exchange),
             BusinessDayConvention::ModifiedFollowing, false, DayCounter::Actual365Fixed)
     }
 
     /// TIBOR 1-Month.
     pub fn tibor_1m() -> Self {
         Self::new("TIBOR1M", Period { length: 1, unit: TimeUnit::Months }, 2,
-            Currency::jpy(), Calendar::Japan,
+            Currency::jpy(), Calendar::Japan(JapanMarket::Exchange),
             BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual365Fixed)
     }
 
     /// TIBOR 2-Month.
     pub fn tibor_2m() -> Self {
         Self::new("TIBOR2M", Period { length: 2, unit: TimeUnit::Months }, 2,
-            Currency::jpy(), Calendar::Japan,
+            Currency::jpy(), Calendar::Japan(JapanMarket::Exchange),
             BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual365Fixed)
     }
 
     /// TIBOR 12-Month.
     pub fn tibor_12m() -> Self {
         Self::new("TIBOR12M", Period { length: 12, unit: TimeUnit::Months }, 2,
-            Currency::jpy(), Calendar::Japan,
+            Currency::jpy(), Calendar::Japan(JapanMarket::Exchange),
             BusinessDayConvention::ModifiedFollowing, true, DayCounter::Actual365Fixed)
     }
 
