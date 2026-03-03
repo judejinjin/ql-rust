@@ -53,6 +53,7 @@ pub mod imm;
 pub mod period;
 pub mod schedule;
 pub mod time_extended;
+pub mod cds_schedule;
 
 pub use business_day_convention::BusinessDayConvention;
 pub use calendar::{Calendar, JointRule};
@@ -61,3 +62,8 @@ pub use day_counter::DayCounter;
 pub use period::{Frequency, Period, TimeUnit};
 pub use schedule::Schedule;
 pub use time_extended::{asx, ecb, thirty365_day_count, thirty365_year_fraction};
+pub use cds_schedule::{
+    Thirty360Extended, thirty360_extended_day_count, thirty360_extended_year_fraction,
+    CdsDateRule, generate_cds_schedule, french_amortization,
+    cds_upfront_to_spread, cds_spread_to_upfront,
+};

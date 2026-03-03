@@ -47,6 +47,7 @@ pub mod bond;
 pub mod floating_rate_bond;
 pub mod zero_coupon_bond;
 pub mod amortizing_bond;
+pub mod amortizing_floating_rate_bond;
 pub mod ois_swap;
 pub mod fra;
 pub mod basis_swap;
@@ -83,6 +84,8 @@ pub mod commodity;
 pub mod cat_bond;
 pub mod instruments_extended;
 pub mod credit_portfolio_instruments;
+pub mod fx_forward;
+pub mod cds_index;
 
 // Re-exports
 pub use payoff::{OptionType, Payoff, Exercise};
@@ -97,6 +100,7 @@ pub use bond::FixedRateBond;
 pub use floating_rate_bond::FloatingRateBond;
 pub use zero_coupon_bond::ZeroCouponBond;
 pub use amortizing_bond::AmortizingBond;
+pub use amortizing_floating_rate_bond::AmortizingFloatingRateBond;
 pub use ois_swap::OISSwap;
 pub use fra::ForwardRateAgreement;
 pub use basis_swap::BasisSwap;
@@ -176,3 +180,5 @@ pub use credit_portfolio_instruments::{
     NthToDefault, NthToDefaultResult,
     CdsOption, CdsOptionType, CdsOptionResult,
 };
+pub use fx_forward::{FxForward, FxForwardType};
+pub use cds_index::{CdsIndex, CdsIndexFamily};

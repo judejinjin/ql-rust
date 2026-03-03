@@ -233,6 +233,12 @@ pub mod mc_heston_hw;
 pub mod mountain_range;
 pub mod swaption_capfloor_extended;
 
+pub mod xccy_swap_engine;
+pub mod fx_forward_engine;
+pub mod cds_index_engine;
+pub mod tf_convertible_engine;
+pub mod quanto_barrier_engine;
+
 pub use heston_pdf_engine::{heston_pdf_price, HestonPdfResult, exponential_fitting_heston, ExpFitHestonResult};
 pub use qdfp_american::{qdfp_american, QdFpAmericanResult};
 pub use digital_american::{digital_american, DigitalAmericanResult, DigitalAmericanType};
@@ -267,6 +273,14 @@ pub use gaussian1d_nonstd_swaption::{
 };
 pub use mc_heston_hw::{price_mc_heston_hw, McHestonHwResult, McHestonHwParams};
 pub use mountain_range::{mc_mountain_range, MountainRangeResult, MountainType};
+
+pub use xccy_swap_engine::{price_xccy_swap, XccySwapResult};
+pub use fx_forward_engine::{price_fx_forward, fx_forward_rate, FxForwardResult};
+pub use cds_index_engine::{price_cds_index, cds_index_upfront_to_spread, cds_index_spread_to_upfront, CdsIndexResult};
+pub use tf_convertible_engine::{
+    price_tf_convertible, TFConvertibleResult, CallabilityEntry, CallPutType,
+};
+pub use quanto_barrier_engine::{price_quanto_barrier, QuantoBarrierOption, QuantoBarrierResult};
 
 pub use swaption_capfloor_extended::{
     gaussian1d_cap_floor, Gaussian1dCapFloorResult,

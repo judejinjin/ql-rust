@@ -67,6 +67,8 @@ pub mod interpolated_swaption_vol_cube;
 pub mod caplet_variance_curve;
 pub mod spreaded_swaption_vol;
 pub mod yield_curves_phase24;
+pub mod inflation_helpers;
+pub mod smile_delta_surface;
 
 // Re-exports
 pub use term_structure::TermStructure;
@@ -149,6 +151,11 @@ pub use yield_curves_phase24::{
     InterpolatedSimpleZeroCurve, SpreadDiscountCurve,
     OvernightIndexFutureRateHelper, FittingMethodExtended,
 };
+pub use inflation_helpers::{
+    ZeroCouponInflationSwapHelper, YoYInflationSwapHelper,
+    PiecewiseYoYInflationCurve, bootstrap_zc_inflation_curve,
+};
+pub use smile_delta_surface::{SmileDeltaSection, SmileDeltaTermStructure};
 
 pub mod term_structure_extended;
 pub use term_structure_extended::{
