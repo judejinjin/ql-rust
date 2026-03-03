@@ -153,7 +153,7 @@ pub fn barone_adesi_whaley(
 }
 
 /// Newton iteration to find the BAW critical stock price S*.
-fn baw_critical_price(
+pub fn baw_critical_price(
     strike: f64,
     r: f64,
     q: f64,

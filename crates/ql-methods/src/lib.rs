@@ -33,6 +33,7 @@ pub mod mc_engines;
 pub mod mc_control_variates;
 pub mod finite_differences;
 pub mod lattice;
+pub mod generic;
 pub mod fdm_meshers;
 pub mod fdm_meshers_extended;
 pub mod fdm_operators;

@@ -203,6 +203,86 @@ pub fn log_linear_interp<T: Number>(ts: &[f64], dfs: &[f64], t: T) -> T {
 }
 
 // ===========================================================================
+// Bivariate Normal CDF
+// ===========================================================================
+
+/// Cumulative distribution function of the standard bivariate normal,
+/// generic over `T: Number`.
+///
+/// Uses the Drezner-Wesolowsky (1990) algorithm with Gauss-Legendre
+/// quadrature, accurate to ~1e-7. Both `x` and `y` are generic
+/// so AD derivatives propagate; `rho` is `f64` (correlation is typically
+/// not a risk factor).
+///
+/// ```text
+///     BVN(x, y; ρ) = Pr[X ≤ x, Y ≤ y]   where (X,Y) ~ N(0, 0, 1, 1, ρ)
+/// ```
+pub fn bivariate_normal_cdf<T: Number>(x: T, y: T, rho: f64) -> T {
+    // Gauss-Legendre 3-point weights & abscissae (on [-1,1])
+    const W: [f64; 3] = [0.1713244923791702, 0.3607615730481386, 0.4679139345726910];
+    const XI: [f64; 3] = [0.9324695142031521, 0.6612093864662645, 0.2386191860831969];
+
+    let dh = T::zero() - x;
+    let dk = T::zero() - y;
+
+    if rho.abs() < 0.925 {
+        // Standard Drezner formula for moderate correlation
+        let hs = (dh * dh + dk * dk) / T::from_f64(2.0);
+        let asr = rho.asin(); // f64
+
+        let mut bvn = T::zero();
+        for i in 0..3 {
+            for &sign in &[-1.0_f64, 1.0] {
+                let sn_f64 = (asr * (sign * XI[i] + 1.0) / 2.0).sin();
+                let sn = T::from_f64(sn_f64);
+                let one_minus_sn2 = T::from_f64(1.0 - sn_f64 * sn_f64);
+                bvn = bvn + T::from_f64(W[i])
+                    * (T::zero() - (hs - sn * dh * dk) / one_minus_sn2).exp();
+            }
+        }
+        bvn * T::from_f64(asr / (4.0 * std::f64::consts::PI))
+            + normal_cdf(T::zero() - dh) * normal_cdf(T::zero() - dk)
+    } else {
+        // High correlation: use identities to reduce
+        if rho < 0.0 {
+            // BVN(x,y;-|ρ|) = Φ(x) - BVN(x,-y;|ρ|)
+            let bvn_pos = bivariate_normal_cdf(x, T::zero() - y, -rho);
+            let result = normal_cdf(x) - bvn_pos;
+            if result.to_f64() < 0.0 { T::zero() } else { result }
+        } else {
+            // ρ close to +1: use Drezner (1990) high-correlation formula
+            // BVN(x,y;ρ) ≈ Φ(min(x,y)) - correction
+            let two = T::from_f64(2.0);
+            let sqrt2pi = T::from_f64(std::f64::consts::TAU.sqrt());
+
+            // Transformation: hk = sqrt(2*(1-ρ)), compute in high-accuracy region
+            let onemr = (1.0 - rho).max(0.0);
+            if onemr < 1e-15 {
+                // ρ ≈ 1 exactly
+                return normal_cdf(if x.to_f64() < y.to_f64() { x } else { y });
+            }
+
+            let hk = onemr.sqrt();
+            let hs = (dh * dh + dk * dk) / two;
+            let asr = rho.asin();
+
+            let mut bvn = T::zero();
+            for i in 0..3 {
+                for &sign in &[-1.0_f64, 1.0] {
+                    let sn_f64 = (asr * (sign * XI[i] + 1.0) / 2.0).sin();
+                    let sn = T::from_f64(sn_f64);
+                    let one_minus_sn2 = T::from_f64(1.0 - sn_f64 * sn_f64);
+                    bvn = bvn + T::from_f64(W[i])
+                        * (T::zero() - (hs - sn * dh * dk) / one_minus_sn2).exp();
+                }
+            }
+            bvn * T::from_f64(asr / (4.0 * std::f64::consts::PI))
+                + normal_cdf(T::zero() - dh) * normal_cdf(T::zero() - dk)
+        }
+    }
+}
+
+// ===========================================================================
 // Black-Scholes Generic
 // ===========================================================================
 

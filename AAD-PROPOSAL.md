@@ -781,7 +781,242 @@ Implementing Cranelift-based tape JIT would be **novel in the Rust ecosystem**.
 
 ---
 
-## 12. References
+## 12. Instrument-Level AD Gap Analysis
+
+**Date of audit:** 2026-03-03
+
+The `ql-aad` crate provides a mature AD infrastructure (forward-mode `Dual`/`DualVec`,
+reverse-mode `AReal` with tape, SIMD vectorization, Griewank checkpointing, LRM for
+non-smooth payoffs, Cranelift JIT compilation). However, coverage is concentrated on a
+narrow set of instruments. This section catalogues every instrument type in
+`ql-instruments`, its pricing engine(s) in `ql-pricingengines`, and its current AD status.
+
+### 12.1 Current AD coverage
+
+| Instrument | Engine / AD Module | AD Mode | Greeks |
+|------------|-------------------|---------|--------|
+| European vanilla (BS) | `bs_price_generic<T>` | Forward `DualVec<5>` | Δ, Γ, ν, θ, ρ |
+| European vanilla (Heston) | `heston_price_generic<T>` | Forward `DualVec<8>` / Reverse | Δ, Γ, ν₀, ∂κ, ∂θ, ∂σ, ∂ρ, ρ_rate |
+| European vanilla (Bates) | `bates_price_generic<T>` | Forward `DualVec<11>` / Reverse | All Heston + ∂λ, ∂ν, ∂δⱼ |
+| European vanilla (MC GBM) | `mc_european_aad` | Reverse (tape) | Δ, ν, ρ, div_ρ |
+| European vanilla (MC Heston) | `mc_heston_aad` | Reverse (tape) | 8 first-order Greeks |
+| Forward-start option (MC) | `mc_european_forward` | Forward `DualVec<4>` | Δ, ν, ρ, div_ρ |
+| Digital option | `mc_digital_lrm` | LRM | Δ, ν, ρ, div_ρ |
+| Barrier (DO/UO, MC) | `mc_barrier_do_lrm`, `mc_barrier_uo_lrm` | LRM | Δ, ν, ρ, div_ρ |
+| Barrier + vanilla (hybrid) | `mc_barrier_vanilla_hybrid` | AAD + LRM | Δ, ν, ρ, div_ρ |
+| Fixed-rate bond (cashflows) | `cashflows::npv<T>` + `DiscountCurveAD` | Reverse | ∂NPV/∂pillar |
+| Vanilla swap (fixed leg) | `cashflows::npv<T>` + `DiscountCurveAD` | Reverse | ∂NPV/∂pillar |
+| Portfolio (bonds/swaps) | `Portfolio::compute()` | Reverse | All KRDs in one pass |
+
+**Total: 12 instrument/engine combinations** out of **60+ instrument types** and
+**100+ pricing engines**.
+
+### 12.2 Instruments with NO AD support — full gap list
+
+The gaps are organized by difficulty tier, which determines the recommended
+conversion order.
+
+#### Tier 1 — Easy (pure arithmetic, no distribution dependency)
+
+These engines use only basic arithmetic (`+`, `−`, `×`, `÷`, `exp`, `sqrt`, `powf`)
+already available in the `Number` trait. Can be converted immediately.
+
+| ID | Instrument | Engine | LOC | Blocker | Priority |
+|----|-----------|--------|-----|---------|----------|
+| **AD-1** | Variance swap | `price_variance_swap` | ~60 | None | **High** |
+| **AD-2** | Quanto adjustment | `quanto_adjustment` | ~40 | None | **High** |
+| **AD-3** | BSM + Hull-White | `price_bsm_hull_white` | ~100 | Needs generic `cumulative_normal` (inline A-S approx available) | High |
+| **AD-4** | Digital American | `digital_american` | ~200 | Needs generic `cumulative_normal` | High |
+
+#### Tier 2 — Medium (need generic `cumulative_normal<T>` / `cumulative_normal_pdf<T>`)
+
+All are analytic closed-form engines whose only blocker is that `NormalDistribution::cdf`
+wraps `statrs` (f64-only). Once a generic Abramowitz-Stegun or rational-approximation
+`cumulative_normal<T: Number>` exists, conversion is mechanical.
+
+| ID | Instrument | Engine | LOC | Notes | Priority |
+|----|-----------|--------|-----|-------|----------|
+| **AD-5** | European vanilla (main engine) | `price_european` | ~150 | Duplicates `bs_price_generic` but produces `AnalyticEuropeanResults` with all Greeks | High |
+| **AD-6** | Swaption (Black) | `black_swaption` | ~100 | Pure BS-style formula | **High** |
+| **AD-7** | Swaption (Bachelier) | `bachelier_swaption` | ~80 | Normal-model formula | High |
+| **AD-8** | Cap/floor (Black) | `black_cap_floor` | ~120 | Loop over caplets, each is BS formula | **High** |
+| **AD-9** | Cap/floor (Bachelier) | `bachelier_cap_floor` | ~100 | Loop over caplets, normal-model | High |
+| **AD-10** | Asian (geometric, continuous) | `asian_geometric_continuous_avg_price` | ~60 | Kemna-Vorst closed-form | Medium |
+| **AD-11** | Asian (geometric, discrete) | `asian_geometric_discrete_avg_price` | ~80 | Closed-form | Medium |
+| **AD-12** | Asian (Turnbull-Wakeman) | `asian_turnbull_wakeman` | ~80 | Closed-form approximation | Medium |
+| **AD-13** | Asian (Levy) | `asian_levy` | ~60 | Log-normal approximation | Medium |
+| **AD-14** | Lookback (floating/fixed) | `analytic_lookback` | ~200 | Goldman-Sosin-Gatto; minor `b ≈ 0` branch | Medium |
+| **AD-15** | Chooser option | `chooser_price` | ~60 | Rubinstein (1991) closed-form | Medium |
+| **AD-16** | Spread option (Kirk) | `kirk_spread_call/put` | ~80 | BS-style with effective vol | Medium |
+| **AD-17** | Spread option (operator-splitting) | `operator_splitting_spread` | ~120 | Fixed 5-iteration loop (AD-friendly) | Medium |
+| **AD-18** | Exchange option (Margrabe) | `margrabe_exchange` | ~60 | Closed-form BS variant | Medium |
+| **AD-19** | Max/min call (Stulz) | `stulz_max_call`, `stulz_min_call` | ~120 | Bivariate normal CDF needed | Medium |
+| **AD-20** | Double barrier | `double_barrier_knockout/knockin` | ~150 | Eigenfunction series + `sin`/`PI` | Medium |
+| **AD-21** | Binary barrier (Reiner-Rubinstein) | `analytic_binary_barrier` | ~200 | CDF + `powf` heavy | Medium |
+| **AD-22** | Double binary barrier | `double_binary_barrier` | ~100 | CDF + `powf` | Medium |
+| **AD-23** | Partial-time barrier | `partial_time_barrier` | ~120 | Bivariate normal CDF | Medium |
+| **AD-24** | Vanna-Volga barrier | `vanna_volga_barrier` | ~150 | Internal BS helpers + CDF | Medium |
+| **AD-25** | HW bond option | `hw_bond_option` | ~80 | CDF | Medium |
+| **AD-26** | HW caplet/floorlet | `hw_caplet`, `hw_floorlet` | ~60 | CDF | Medium |
+| **AD-27** | HW Jamshidian swaption | `hw_jamshidian_swaption` | ~120 | CDF + root-find for critical rate | Medium–Hard |
+| **AD-28** | Merton jump-diffusion | `merton_jump_diffusion` | ~100 | Truncated series (fast convergence) | Medium |
+| **AD-29** | Inflation cap/floor (Black) | `black_yoy_inflation_cap_floor`, `black_zc_inflation_cap_floor` | ~120 | BS formula; instrument struct is f64 | Medium |
+| **AD-30** | Inflation cap/floor (Bachelier) | `bachelier_yoy_inflation_cap_floor`, `bachelier_zc_inflation_cap_floor` | ~100 | Normal-model | Medium |
+| **AD-31** | Quanto European | `quanto_european` | ~80 | CDF + quanto adjustment | Medium |
+| **AD-32** | Power option | `power_option` | ~60 | `powf(alpha)` (in `Number`) + CDF | Medium |
+| **AD-33** | Forward-start option (analytic) | `forward_start_option` | ~60 | BS-style + CDF | Medium |
+| **AD-34** | Digital barrier | `digital_barrier` | ~80 | CDF + `powf` | Medium |
+| **AD-35** | GJR-GARCH option | `gjr_garch_option` | ~100 | Recursive variance loop + CDF | Medium |
+| **AD-36** | Vasicek bond option | `vasicek_bond_option` | ~80 | Analytic CDF | Medium |
+| **AD-37** | Vasicek European equity | `vasicek_european_equity` | ~60 | Analytic CDF | Medium |
+| **AD-38** | CDS option (Black) | `cds_option_black` | ~60 | BS-style on CDS spread | Medium |
+| **AD-39** | CDO tranche (Gaussian copula LHP) | `price_cdo_tranche` / `loss_distribution_lhp` | ~200 | Gauss-Hermite integration + `cumulative_normal` | Medium |
+| **AD-40** | Cliquet option | `cliquet_price` | ~100 | Calls `analytic_european` per period | Medium |
+| **AD-41** | Replicating variance swap | `replicating_variance_swap` | ~100 | Numerical integration over strike grid | Medium |
+| **AD-42** | Holder/writer extensible | `holder_extensible`, `writer_extensible` | ~80 | CDF | Medium |
+| **AD-43** | Soft barrier | `price_soft_barrier` | ~80 | CDF | Medium |
+
+#### Tier 3 — Hard (structural barriers)
+
+These engines have fundamental obstacles: iterative root-finding with value-dependent
+termination, RNG in MC paths, `Arc<dyn Trait>` term-structure objects, FD grids,
+or non-differentiable algorithms (sorting, regression, early-exercise decisions).
+
+| ID | Instrument | Engine | Blocker | Strategy |
+|----|-----------|--------|---------|----------|
+| **AD-44** | American (BAW) | `barone_adesi_whaley` | Newton iteration for critical S* | Implicit-function-theorem adjoint (IFT): differentiate through converged root without taping the iterations |
+| **AD-45** | American (Bjerksund-Stensland) | `bjerksund_stensland` | Conditional branching on exercise regions | Forward-mode `Dual` feasible; reverse needs IFT |
+| **AD-46** | American (QD+/QDFP) | `qd_plus_american`, `qdfp_american` | Fixed-point iteration | IFT at convergence; forward `Dual` for small param sets |
+| **AD-47** | American (LSM MC) | `mc_american_longstaff_schwartz` | MC + regression + backward exercise | Pathwise: freeze regression coefficients, AD through payoff conditional on frozen boundary (Leclerc et al. 2009) |
+| **AD-48** | Compound option | `analytic_compound_option` | Root-find for critical underlying price + bivariate normal | IFT for root; generic bivariate normal needed |
+| **AD-49** | Vanilla swap (engine-level) | `price_swap`, `price_swap_multicurve` | `&dyn YieldTermStructure` returns f64 | Build `GenericYieldTermStructure<T>` trait or adapter around `DiscountCurveAD` |
+| **AD-50** | OIS swap | `price_ois` | `&dyn YieldTermStructure` | Same as AD-49 |
+| **AD-51** | Fixed-rate bond (engine) | `price_bond` | `&dyn YieldTermStructure` + `Date` scheduling | Same as AD-49; `Date` ops produce f64 year fractions (OK — those aren't risk factors) |
+| **AD-52** | Floating-rate bond | `price_floating_bond` | `&dyn YieldTermStructure` × 2 (discount + forecast) | Same as AD-49 + forecast curve dependency |
+| **AD-53** | Zero-coupon bond | | `&dyn YieldTermStructure` | Same |
+| **AD-54** | Amortizing bond/FRN | | Scheduling + `&dyn YieldTermStructure` | Same |
+| **AD-55** | Inflation-linked bond | | Inflation term structure (`f64`) | Needs generic inflation curve |
+| **AD-56** | Callable bond | `price_callable_bond` | Short-rate tree + exercise decisions | Treat call schedule as non-differentiable; AD through tree node values |
+| **AD-57** | Convertible bond | `price_convertible_bond` | Binomial tree + conversion/call/put exercise | Same as callable + equity dependency |
+| **AD-58** | CDS (mid-point & ISDA) | `midpoint_cds_engine`, `isda_cds_engine` | `Arc<dyn DefaultProbabilityTermStructure>` + `Arc<dyn YieldTermStructure>` | Generic curve traits; IFT for ISDA settlement-lag adjustment |
+| **AD-59** | CDS index | `price_cds_index` | `Arc<dyn>` curves + Date scheduling | Same as AD-58 |
+| **AD-60** | Cross-currency swap | `price_xccy_swap` | Two yield curves + FX spot + `leg_npv` | Generic dual-curve framework |
+| **AD-61** | FX forward | `price_fx_forward` | Two yield curves + `Date` | Generic yield curves |
+| **AD-62** | BMA swap | `price_bma_swap` | `&dyn YieldTermStructure` | Same |
+| **AD-63** | Zero-coupon swap | `price_zero_coupon_swap` | `&dyn YieldTermStructure` | Same |
+| **AD-64** | Basis swap | `price_basis_swap` | Dual curves | Same |
+| **AD-65** | CPI swap | `price_cpi_swap` | Inflation curve | Generic inflation curve |
+| **AD-66** | FRA | `price_fra` | `&dyn YieldTermStructure` | Same |
+| **AD-67** | Cat bond | `price_cat_bond` | Catastrophe model + `&dyn YieldTermStructure` | Partial: curve part can be AD; cat model is external |
+| **AD-68** | Bond forward | `price_bond_forward` | `&dyn YieldTermStructure` | Same |
+| **AD-69** | Asian (MC arithmetic) | `mc_asian_arithmetic_*` | RNG + path averaging | Pathwise AD through GBM path; arithmetic mean is smooth |
+| **AD-70** | Asian (MC Heston) | `mc_asian_heston_price` | RNG + 2-factor SDE | Pathwise AD; same architecture as `mc_heston_aad` |
+| **AD-71** | Basket (MC) | `mc_basket`, `mc_european_basket`, `mc_american_basket` | RNG + Cholesky + multi-asset | Multi-asset pathwise AD; Cholesky is differentiable |
+| **AD-72** | Quanto barrier | `price_quanto_barrier` | Barrier + quanto adjustment | Combine AD-2 (quanto) + LRM (barrier) |
+| **AD-73** | Two-asset barrier/correlation | `two_asset_correlation` | Bivariate normal + multi-asset | Generic bivariate normal; 2-asset `Number` |
+| **AD-74** | Swing/storage option | `fd_swing_option`, `fd_simple_bs_swing` | FD grid + multi-exercise | Generic FD infrastructure |
+| **AD-75** | Shout option | `fd_shout_option` | FD grid + exercise decision | Same |
+| **AD-76** | Mountain range (Himalaya etc.) | `mc_mountain_range` | MC + sorting/selection (non-diff.) | LRM for selection; pathwise for remainder |
+| **AD-77** | Heston barrier (FD) | `fd_heston_barrier` | 2D FD grid | Generic 2D PDE solver |
+| **AD-78** | COS-method Heston | `cos_heston_price` | Hardcoded complex `C` struct | Replace with `Complex<T: Number>` (already in `ql-aad`) |
+| **AD-79** | Stochastic local vol (MC) | `mc_slv` | Calibration + MC SDE + kernel regression | Freeze local-vol surface, AD through MC paths only |
+| **AD-80** | MC Heston + Hull-White | `price_mc_heston_hw` | 3-factor RNG + SDE | Extend `mc_heston_aad` to 3 factors |
+| **AD-81** | Binomial barrier | `binomial_barrier` | Tree + knockout logic | Forward-mode through tree; LRM for barrier |
+| **AD-82** | MC barrier | `mc_barrier` (with Brownian bridge) | RNG + barrier monitoring | Pathwise AD + LRM (extends existing `lrm.rs`) |
+| **AD-83** | MC variance swap | `mc_variance_swap` | RNG + log-returns | Pathwise AD; log-return is differentiable |
+| **AD-84** | MC digital | `mc_digital` | RNG + indicator | LRM (already exists for 1-step; extend to multi-step) |
+| **AD-85** | nth-to-default (MC) | `nth_to_default_mc` | RNG + copula + sorting | LRM for default ordering |
+| **AD-86** | CDO (integral engine) | `integral_cdo_engine`, `midpoint_cdo_engine` | Loss model abstraction + copula integration | Generic copula + integration |
+| **AD-87** | FD American | Various FD engines | FD grid | Generic 1D/2D FD solver |
+| **AD-88** | Tree swaption/cap | `tree_swaption`, `tree_cap_floor` | Short-rate tree + exercise | Forward-mode through tree; IFT for exercise |
+| **AD-89** | Gaussian1d engines | `gaussian1d_swaption`, `gaussian1d_cap_floor` | Short-rate model + numerical integral | Generic numerical integration (already in `ql-aad`) |
+| **AD-90** | FD G2 swaption | `fd_g2_swaption` | 2D FD grid (2-factor) | Generic 2D FD |
+| **AD-91** | LMM products (MC) | `lmm_product_mc` | High-dimensional MC + calibration | Pathwise AD through LMM SDE |
+| **AD-92** | Variance Gamma (COS) | `vg_cos_price` | COS method with VG char. function | Replace inline complex with `Complex<T>` |
+| **AD-93** | Commodity forward/swap | `price_commodity_forward`, `price_commodity_swap` | Commodity curves (f64) | Generic commodity curve |
+| **AD-94** | Asset swap / equity TRS | `price_asset_swap` | Bond + swap + `&dyn YieldTermStructure` | Same as AD-49 |
+
+### 12.3 Cross-cutting infrastructure gaps
+
+Before the Tier 2 and Tier 3 gaps can be addressed, these shared infrastructure
+pieces must be built:
+
+| ID | Component | Status | Impact |
+|----|-----------|--------|--------|
+| **INFRA-1** | `cumulative_normal<T: Number>(x: T) -> T` | **Missing** from `ql-pricingengines` (exists as `ql_aad::math::normal_cdf` but not re-exported to engines) | Blocks AD-5 through AD-43 (39 gaps) |
+| **INFRA-2** | `bivariate_normal_cdf<T: Number>(x: T, y: T, rho: f64) -> T` | **Missing** | Blocks AD-19, AD-23, AD-42, AD-48, AD-73 |
+| **INFRA-3** | `GenericYieldTermStructure<T: Number>` (or adapter from `DiscountCurveAD<T>` to `YieldTermStructure` trait) | **Missing** in `ql-termstructures` | Blocks all Tier 3 discounting engines (AD-49 through AD-68) |
+| **INFRA-4** | `GenericDefaultProbabilityTermStructure<T>` | **Missing** | Blocks AD-58, AD-59, AD-85, AD-86 |
+| **INFRA-5** | `leg_npv<T: Number>()` — generic cashflow valuation in `ql-cashflows` | **Missing** (current `ql_cashflows::npv` is f64; `ql_aad::cashflows::npv<T>` exists but is not wired into `ql-cashflows`) | Blocks AD-49 through AD-68 |
+| **INFRA-6** | `Complex<T: Number>` integration with `ql-pricingengines` | **Exists** in `ql-aad` but not used by `cos_heston` or other COS-method engines | Blocks AD-78, AD-92 |
+| **INFRA-7** | Generic 1D FD grid / Crank-Nicolson step | **Missing** (all in `ql-methods` as f64) | Blocks AD-74, AD-75, AD-87 |
+| **INFRA-8** | Generic 2D FD grid / ADI step | **Missing** | Blocks AD-77, AD-90 |
+| **INFRA-9** | Generic short-rate tree builder | **Missing** | Blocks AD-56, AD-57, AD-88 |
+| **INFRA-10** | IFT adjoint for iterative solvers (`solve_and_diff` integration with engines) | **Exists** in `ql-aad::solvers` but not wired into American engines or HW Jamshidian | Blocks AD-44 through AD-48 |
+
+### 12.4 Recommended conversion roadmap
+
+```
+Phase A: Infrastructure (INFRA-1, INFRA-2)
+  └─ Wire `ql_aad::math::normal_cdf` into `ql-pricingengines` via ql-core re-export
+  └─ Implement generic bivariate normal CDF
+
+Phase B: Tier 1 (AD-1 to AD-4)                          ~4 engines, ~400 LOC
+  └─ Immediate wins, no blockers
+
+Phase C: Tier 2 — IR derivatives (AD-6 to AD-9)          ~4 engines, ~400 LOC
+  └─ Black/Bachelier swaptions & cap/floors — highest business value
+
+Phase D: Tier 2 — Exotics (AD-10 to AD-43)              ~34 engines, ~3,000 LOC
+  └─ All closed-form analytic exotic engines
+
+Phase E: INFRA-3, INFRA-5 (generic curves + cashflows)
+  └─ Build GenericYieldTermStructure<T> adapter
+
+Phase F: Tier 3 — Discounting engines (AD-49 to AD-68)   ~20 engines, ~2,000 LOC
+  └─ All swap/bond engines using generic curves
+
+Phase G: Tier 3 — American + iterative (AD-44 to AD-48)  ~5 engines, ~500 LOC
+  └─ Wire IFT adjoint solvers into American approximations
+
+Phase H: Tier 3 — MC exotics (AD-69 to AD-85)            ~17 engines, ~3,000 LOC
+  └─ Pathwise AD through MC SDEs (extends existing mc.rs / lrm.rs)
+
+Phase I: INFRA-7, INFRA-8, INFRA-9 (generic FD/tree)
+  └─ Build generic 1D/2D FD and tree infrastructure
+
+Phase J: Tier 3 — FD/tree engines (AD-56, AD-57, AD-74, AD-75, AD-77, AD-87–AD-90)
+  └─ All FD and tree engines using generic grid/tree
+
+Phase K: Tier 3 — Remaining (AD-86, AD-91–AD-94)
+  └─ Credit portfolio, LMM, commodity, asset swap
+```
+
+### 12.5 Coverage summary
+
+| Category | Total instruments | AD-enabled | Gap count | Coverage |
+|----------|------------------|------------|-----------|----------|
+| European vanilla (equity) | 5 engines | 5 | 0 | **100%** |
+| Exotic options (analytic) | ~20 engines | 0 | 20 | **0%** |
+| Exotic options (MC/FD) | ~15 engines | 3 (barrier LRM, digital LRM, fwd-start) | 12 | **20%** |
+| IR derivatives (linear) | ~12 instruments | 2 (bond/swap via cashflows) | 10 | **17%** |
+| IR derivatives (non-linear) | ~8 instruments | 0 | 8 | **0%** |
+| Credit | ~5 instruments | 0 | 5 | **0%** |
+| FX / commodity | ~4 instruments | 0 | 4 | **0%** |
+| Multi-asset | ~6 engines | 0 | 6 | **0%** |
+| **Overall** | **~60+ instruments** | **~10** | **94** | **~14%** |
+
+The `ql-aad` infrastructure is production-quality — the gap is in **lifting the
+pricing engines** to be generic over `T: Number`. The biggest leverage points are:
+
+1. **INFRA-1** (generic normal CDF) — unblocks 39 analytic engines in one shot
+2. **AD-6/AD-8** (swaptions, cap/floors) — highest business value IR derivatives
+3. **INFRA-3** (generic yield curves) — unblocks all 20 discounting engines
+4. **AD-44–AD-46** (American approximations) — the most-requested missing Greeks
+
+---
+
+## 13. References
 
 1. A. Savine, *Modern Computational Finance: AAD and Parallel Simulations*, Wiley, 2018
 2. L. Capriotti, "Fast Greeks by Algorithmic Differentiation", *J. Computational Finance*, 2011
@@ -791,3 +1026,5 @@ Implementing Cranelift-based tape JIT would be **novel in the Rust ecosystem**.
 6. Savine & Huge, "Differential Machine Learning", *Risk*, 2020
 7. B. Bell, "CppAD: A Package for C++ Algorithmic Differentiation", *Comp. Infrastructure for Operations Research*, 2012
 8. Baydin et al., "Automatic Differentiation in Machine Learning: a Survey", *JMLR*, 2018
+9. Giles & Glasserman, "Smoking Adjoints: fast computation of Greeks in Monte Carlo", *Risk*, 2006
+10. Capriotti & Giles, "Algorithmic Differentiation: Adjoint Greeks Made Easy", *SSRN*, 2012
