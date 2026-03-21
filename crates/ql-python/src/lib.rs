@@ -72,6 +72,10 @@ fn ql_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<types::PyPartialBarrierResult>()?;
     m.add_class::<types::PyTwoAssetCorrelationResult>()?;
     m.add_class::<types::PyExtensibleOptionResult>()?;
+    // Phase 34 result types
+    m.add_class::<types::PyMertonJdResult>()?;
+    m.add_class::<types::PyVarianceSwapResult>()?;
+    m.add_class::<types::PyMcAsianArithResult>()?;
 
     // Pricing functions — analytic
     m.add_function(wrap_pyfunction!(pricing::price_european_bs, m)?)?;
@@ -121,6 +125,29 @@ fn ql_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(pricing::two_asset_correlation_py, m)?)?;
     m.add_function(wrap_pyfunction!(pricing::holder_extensible_py, m)?)?;
     m.add_function(wrap_pyfunction!(pricing::writer_extensible_py, m)?)?;
+
+    // Phase 34: Expanded pricing functions
+    m.add_function(wrap_pyfunction!(pricing::black76_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::bachelier_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::qd_plus_american_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::merton_jd_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::chooser_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::compound_option_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::lookback_floating_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::forward_start_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::power_option_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::digital_american_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::digital_barrier_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::double_barrier_knockout_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::margrabe_exchange_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::stulz_max_call_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::stulz_min_call_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::variance_swap_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::black_swaption_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::bachelier_swaption_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::black_caplet_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::mc_american_lsm_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::mc_asian_arithmetic_py, m)?)?;
 
     // Term structure bootstrapping
     m.add_function(wrap_pyfunction!(termstructures::bootstrap_yield_curve, m)?)?;

@@ -819,3 +819,393 @@ class TestExoticOptions:
         r = ql.holder_extensible_py(100, 100, 105, 0.05, 0.02, 0.20, 0.5, 1.0)
         assert "ExtensibleOptionResult" in repr(r)
 
+
+# ===========================================================================
+# Phase 34: Tests for 21 new pricing engines
+# ===========================================================================
+
+
+class TestBlack76:
+    """Black-76 forward/futures pricing."""
+
+    def test_atm_call(self):
+        p = ql.black76_py(forward=100, strike=100, r=0.05, vol=0.20, t=1.0, is_call=True)
+        assert 6.0 < p < 12.0, f"ATM Black76 call price {p} out of range"
+
+    def test_put_call_parity(self):
+        """Forward version: C - P = (F - K) * exp(-r*t)."""
+        import math
+        F, K, r, vol, t = 100.0, 100.0, 0.05, 0.20, 1.0
+        c = ql.black76_py(F, K, r, vol, t, is_call=True)
+        p = ql.black76_py(F, K, r, vol, t, is_call=False)
+        parity = (F - K) * math.exp(-r * t)
+        assert abs((c - p) - parity) < 1e-10
+
+    def test_deep_itm(self):
+        p = ql.black76_py(forward=150, strike=100, r=0.05, vol=0.20, t=1.0, is_call=True)
+        assert p > 40.0
+
+
+class TestBachelier:
+    """Bachelier (normal model) pricing."""
+
+    def test_atm_call(self):
+        p = ql.bachelier_py(spot=100, strike=100, r=0.05, q=0.0, vol=20.0, t=1.0, is_call=True)
+        assert p > 0
+
+    def test_put_positive(self):
+        p = ql.bachelier_py(spot=100, strike=110, r=0.05, q=0.0, vol=20.0, t=1.0, is_call=False)
+        assert p > 0
+
+    def test_call_put_symmetry(self):
+        """Bachelier: C - P = (S - K) * exp(-r*t) approximately."""
+        import math
+        S, K, r, q, vol, t = 100.0, 100.0, 0.05, 0.0, 20.0, 1.0
+        c = ql.bachelier_py(S, K, r, q, vol, t, is_call=True)
+        p = ql.bachelier_py(S, K, r, q, vol, t, is_call=False)
+        expected = (S - K) * math.exp(-(r - q) * t)
+        assert abs((c - p) - expected) < 0.1
+
+
+class TestQDPlusAmerican:
+    """QD+ (Andersen-Lake-Offengelden 2016) American option approximation."""
+
+    def test_put_exceeds_european(self):
+        res = ql.qd_plus_american_py(spot=100, strike=100, r=0.05, q=0.02, vol=0.20, t=1.0, is_call=False)
+        euro = ql.price_european_bs(spot=100, strike=100, r=0.05, q=0.02, vol=0.20, t=1.0, is_call=False)
+        assert res.npv >= euro.npv - 0.01  # American ≥ European
+
+    def test_early_exercise_premium_positive(self):
+        res = ql.qd_plus_american_py(100, 100, 0.08, 0.0, 0.25, 1.0, is_call=False)
+        assert res.early_exercise_premium >= 0
+
+    def test_close_to_baw(self):
+        """QD+ and BAW should produce similar results."""
+        qd = ql.qd_plus_american_py(100, 100, 0.05, 0.02, 0.20, 1.0, is_call=False)
+        baw = ql.barone_adesi_whaley_py(100, 100, 0.05, 0.02, 0.20, 1.0, is_call=False)
+        assert abs(qd.npv - baw.npv) < 0.5  # Should be close
+
+
+class TestMertonJD:
+    """Merton jump-diffusion model."""
+
+    def test_call_positive(self):
+        res = ql.merton_jd_py(
+            spot=100, strike=100, r=0.05, q=0.02, vol=0.2, t=1.0,
+            lambda_=1.0, nu=-0.1, delta=0.2, is_call=True,
+        )
+        assert res.npv > 0
+
+    def test_reduces_to_bs_no_jumps(self):
+        """With lambda=0, Merton JD should be close to Black-Scholes."""
+        res = ql.merton_jd_py(100, 100, 0.05, 0.02, 0.20, 1.0,
+                               lambda_=0.0, nu=0.0, delta=0.0, is_call=True)
+        bs = ql.price_european_bs(100, 100, 0.05, 0.02, 0.20, 1.0, is_call=True)
+        assert abs(res.npv - bs.npv) < 0.5
+
+    def test_repr(self):
+        res = ql.merton_jd_py(100, 100, 0.05, 0.02, 0.20, 1.0, 1.0, -0.1, 0.2)
+        assert "MertonJdResult" in repr(res)
+
+
+class TestChooser:
+    """Simple chooser option."""
+
+    def test_price_positive(self):
+        p = ql.chooser_py(spot=100, strike=100, r=0.05, q=0.02, vol=0.20,
+                          t_choose=0.5, t_expiry=1.0)
+        assert p > 0
+
+    def test_exceeds_call_or_put(self):
+        """Chooser should be worth at least max(call, put)."""
+        c = ql.price_european_bs(100, 100, 0.05, 0.02, 0.20, 1.0, is_call=True).npv
+        p = ql.price_european_bs(100, 100, 0.05, 0.02, 0.20, 1.0, is_call=False).npv
+        ch = ql.chooser_py(100, 100, 0.05, 0.02, 0.20, 0.5, 1.0)
+        assert ch >= max(c, p) - 0.1
+
+
+class TestCompoundOption:
+    """Compound option (option on option)."""
+
+    def test_call_on_call(self):
+        p = ql.compound_option_py(
+            spot=100, mother_strike=5.0, daughter_strike=100,
+            r=0.05, q=0.02, vol=0.20,
+            mother_expiry=0.5, daughter_expiry=1.0,
+        )
+        assert p > 0
+
+    def test_put_on_call(self):
+        p = ql.compound_option_py(
+            spot=100, mother_strike=5.0, daughter_strike=100,
+            r=0.05, q=0.02, vol=0.20,
+            mother_expiry=0.5, daughter_expiry=1.0,
+            is_call_mother=False, is_call_daughter=True,
+        )
+        assert p > 0
+
+
+class TestLookbackFloating:
+    """Lookback floating-strike option."""
+
+    def test_call_positive(self):
+        p = ql.lookback_floating_py(spot=100, s_min_or_max=95, r=0.05, q=0.02,
+                                     vol=0.20, t=1.0, is_call=True)
+        assert p > 0
+
+    def test_put_positive(self):
+        p = ql.lookback_floating_py(spot=100, s_min_or_max=110, r=0.05, q=0.02,
+                                     vol=0.20, t=1.0, is_call=False)
+        assert p > 0
+
+
+class TestForwardStart:
+    """Forward-start option."""
+
+    def test_atm_call(self):
+        p = ql.forward_start_py(spot=100, r=0.05, q=0.02, vol=0.20,
+                                t1=0.25, t2=1.0, alpha=1.0, is_call=True)
+        assert p > 0
+
+    def test_otm_put(self):
+        p = ql.forward_start_py(spot=100, r=0.05, q=0.02, vol=0.20,
+                                t1=0.25, t2=1.0, alpha=0.9, is_call=False)
+        assert p > 0
+
+
+class TestPowerOption:
+    """Power option with payoff max(S^alpha - K, 0)."""
+
+    def test_squared_call(self):
+        p = ql.power_option_py(spot=100, strike=10000, r=0.05, q=0.02,
+                               vol=0.20, t=1.0, alpha=2.0, is_call=True)
+        assert p > 0
+
+    def test_unit_power_close_to_vanilla(self):
+        """With alpha=1, should approximate vanilla option price."""
+        p = ql.power_option_py(spot=100, strike=100, r=0.05, q=0.02,
+                               vol=0.20, t=1.0, alpha=1.0, is_call=True)
+        bs = ql.price_european_bs(100, 100, 0.05, 0.02, 0.20, 1.0, is_call=True)
+        assert abs(p - bs.npv) < 1.0
+
+
+class TestDigitalAmerican:
+    """Digital (binary) American option."""
+
+    def test_cash_or_nothing_call(self):
+        p = ql.digital_american_py(spot=100, strike=100, r=0.05, q=0.02,
+                                    sigma=0.20, t=1.0, cash=1.0,
+                                    payoff_type="CashOrNothingCall")
+        assert 0 < p <= 1.0
+
+    def test_cash_or_nothing_put(self):
+        p = ql.digital_american_py(100, 100, 0.05, 0.02, 0.20, 1.0, 1.0,
+                                    "CashOrNothingPut")
+        assert 0 < p <= 1.0
+
+    def test_asset_or_nothing(self):
+        p = ql.digital_american_py(100, 100, 0.05, 0.02, 0.20, 1.0, 1.0,
+                                    "AssetOrNothingCall")
+        assert p > 0
+
+    def test_invalid_type_raises(self):
+        import pytest
+        with pytest.raises(ValueError):
+            ql.digital_american_py(100, 100, 0.05, 0.02, 0.20, 1.0, 1.0, "Invalid")
+
+
+class TestDigitalBarrier:
+    """Digital barrier (one-touch / no-touch) option."""
+
+    def test_one_touch_upper(self):
+        p = ql.digital_barrier_py(spot=100, barrier=110, rebate=1.0, r=0.05,
+                                   q=0.02, vol=0.20, t=1.0,
+                                   is_one_touch=True, is_upper=True)
+        assert 0 < p <= 1.0
+
+    def test_no_touch_lower(self):
+        p = ql.digital_barrier_py(100, 80, 1.0, 0.05, 0.02, 0.20, 1.0,
+                                   is_one_touch=False, is_upper=False)
+        assert 0 < p <= 1.0
+
+
+class TestDoubleBarrierKnockout:
+    """Double barrier knock-out option."""
+
+    def test_call_positive(self):
+        p = ql.double_barrier_knockout_py(spot=100, strike=100, r=0.05, q=0.02,
+                                           vol=0.15, t=1.0, lower=80, upper=120)
+        assert p > 0
+
+    def test_less_than_vanilla(self):
+        """Knock-out should be worth less than vanilla."""
+        ko = ql.double_barrier_knockout_py(100, 100, 0.05, 0.02, 0.15, 1.0, 80, 120)
+        bs = ql.price_european_bs(100, 100, 0.05, 0.02, 0.15, 1.0, is_call=True)
+        assert ko < bs.npv
+
+
+class TestMargrabeExchange:
+    """Margrabe exchange option."""
+
+    def test_price_positive(self):
+        p = ql.margrabe_exchange_py(s1=100, s2=90, q1=0.02, q2=0.03,
+                                     vol1=0.20, vol2=0.25, rho=0.5, t=1.0)
+        assert p > 0
+
+    def test_symmetry(self):
+        """If S1 == S2 and identical params, exchange option is still positive
+        due to optionality."""
+        p = ql.margrabe_exchange_py(100, 100, 0.02, 0.02, 0.20, 0.20, 0.5, 1.0)
+        assert p > 0
+
+
+class TestStulzOptions:
+    """Stulz max/min of two assets call."""
+
+    def test_max_call_positive(self):
+        p = ql.stulz_max_call_py(s1=100, s2=100, strike=100, r=0.05,
+                                  q1=0.02, q2=0.02, vol1=0.20, vol2=0.25,
+                                  rho=0.5, t=1.0)
+        assert p > 0
+
+    def test_min_call_positive(self):
+        p = ql.stulz_min_call_py(s1=100, s2=100, strike=100, r=0.05,
+                                  q1=0.02, q2=0.02, vol1=0.20, vol2=0.25,
+                                  rho=0.5, t=1.0)
+        assert p > 0
+
+    def test_max_exceeds_min(self):
+        """Call on max should be worth more than call on min."""
+        mx = ql.stulz_max_call_py(100, 100, 100, 0.05, 0.02, 0.02, 0.20, 0.25, 0.5, 1.0)
+        mn = ql.stulz_min_call_py(100, 100, 100, 0.05, 0.02, 0.02, 0.20, 0.25, 0.5, 1.0)
+        assert mx >= mn - 0.01
+
+
+class TestVarianceSwap:
+    """Variance swap pricing."""
+
+    def test_atm_var_swap(self):
+        res = ql.variance_swap_py(implied_vol=0.20, r=0.05, t=1.0,
+                                   notional=100.0, strike_var=0.04)
+        assert "VarianceSwapResult" in repr(res)
+        assert isinstance(res.fair_variance, float)
+        assert isinstance(res.fair_volatility, float)
+
+    def test_fair_vol_close_to_implied(self):
+        """Fair vol should be close to the implied vol input."""
+        res = ql.variance_swap_py(0.20, 0.05, 1.0, 100.0, 0.04)
+        assert abs(res.fair_volatility - 0.20) < 0.05
+
+
+class TestBlackSwaption:
+    """Black swaption pricing."""
+
+    def test_payer_positive(self):
+        p = ql.black_swaption_py(annuity=4.5, swap_rate=0.03, strike=0.03,
+                                  vol=0.20, t=1.0, is_payer=True)
+        assert p > 0
+
+    def test_receiver_positive(self):
+        p = ql.black_swaption_py(4.5, 0.03, 0.03, 0.20, 1.0, is_payer=False)
+        assert p > 0
+
+    def test_payer_receiver_parity(self):
+        """Payer - Receiver ≈ Annuity * (Forward - Strike)."""
+        A, F, K, vol, t = 4.5, 0.035, 0.030, 0.20, 1.0
+        pay = ql.black_swaption_py(A, F, K, vol, t, is_payer=True)
+        rec = ql.black_swaption_py(A, F, K, vol, t, is_payer=False)
+        assert abs((pay - rec) - A * (F - K)) < 1e-8
+
+
+class TestBachelierSwaption:
+    """Bachelier swaption pricing."""
+
+    def test_payer_positive(self):
+        p = ql.bachelier_swaption_py(annuity=4.5, swap_rate=0.03, strike=0.03,
+                                      vol=0.005, t=1.0, is_payer=True)
+        assert p > 0
+
+    def test_parity(self):
+        A, F, K, vol, t = 4.5, 0.035, 0.030, 0.005, 1.0
+        pay = ql.bachelier_swaption_py(A, F, K, vol, t, is_payer=True)
+        rec = ql.bachelier_swaption_py(A, F, K, vol, t, is_payer=False)
+        assert abs((pay - rec) - A * (F - K)) < 1e-8
+
+
+class TestBlackCaplet:
+    """Black caplet/floorlet."""
+
+    def test_caplet_positive(self):
+        p = ql.black_caplet_py(df=0.95, forward=0.03, strike=0.03, vol=0.20,
+                                tau=0.25, t_fixing=0.25, is_cap=True)
+        assert p > 0
+
+    def test_floorlet_positive(self):
+        p = ql.black_caplet_py(0.95, 0.03, 0.03, 0.20, 0.25, 0.25, is_cap=False)
+        assert p > 0
+
+    def test_cap_floor_parity(self):
+        """Caplet - Floorlet = df * tau * (forward - strike)."""
+        df, fwd, K, vol, tau, tf = 0.95, 0.035, 0.030, 0.20, 0.25, 0.25
+        cap = ql.black_caplet_py(df, fwd, K, vol, tau, tf, is_cap=True)
+        flr = ql.black_caplet_py(df, fwd, K, vol, tau, tf, is_cap=False)
+        assert abs((cap - flr) - df * tau * (fwd - K)) < 1e-10
+
+
+class TestMcAmericanLSM:
+    """Monte Carlo American option via Longstaff-Schwartz."""
+
+    def test_put_positive(self):
+        res = ql.mc_american_lsm_py(spot=100, strike=100, r=0.05, q=0.0,
+                                     vol=0.20, t=1.0, is_call=False,
+                                     num_paths=10000, num_steps=50)
+        assert res.npv > 0
+
+    def test_exceeds_european(self):
+        """American put ≥ European put."""
+        mc = ql.mc_american_lsm_py(100, 110, 0.05, 0.0, 0.20, 1.0,
+                                    is_call=False, num_paths=20000, num_steps=50)
+        euro = ql.price_european_bs(100, 110, 0.05, 0.0, 0.20, 1.0, is_call=False)
+        assert mc.npv >= euro.npv - 1.5  # MC has noise, allow small tolerance
+
+    def test_monomial_basis(self):
+        res = ql.mc_american_lsm_py(100, 100, 0.05, 0.0, 0.20, 1.0,
+                                     is_call=False, num_paths=10000,
+                                     basis="Monomial")
+        assert res.npv > 0
+
+
+class TestMcAsianArithmetic:
+    """Monte Carlo arithmetic Asian option."""
+
+    def test_call_positive(self):
+        res = ql.mc_asian_arithmetic_py(spot=100, strike=100, r=0.05, q=0.02,
+                                         sigma=0.20, t=1.0, n_fixings=12,
+                                         n_paths=50000, is_call=True)
+        assert res.price > 0
+        assert res.std_error > 0
+
+    def test_repr(self):
+        res = ql.mc_asian_arithmetic_py(100, 100, 0.05, 0.02, 0.20, 1.0)
+        assert "McAsianArithResult" in repr(res)
+
+
+class TestPhase34Repr:
+    """Smoke-test __repr__ for all Phase 34 result types."""
+
+    def test_merton_jd_repr(self):
+        r = ql.merton_jd_py(100, 100, 0.05, 0.02, 0.20, 1.0, 1.0, -0.1, 0.2)
+        assert "MertonJdResult" in repr(r)
+
+    def test_variance_swap_repr(self):
+        r = ql.variance_swap_py(0.20, 0.05, 1.0, 100.0, 0.04)
+        assert "VarianceSwapResult" in repr(r)
+
+    def test_mc_asian_arith_repr(self):
+        r = ql.mc_asian_arithmetic_py(100, 100, 0.05, 0.02, 0.20, 1.0)
+        assert "McAsianArithResult" in repr(r)
+
+    def test_american_result_repr(self):
+        r = ql.qd_plus_american_py(100, 100, 0.05, 0.02, 0.20, 1.0, is_call=False)
+        assert "AmericanResult" in repr(r)
+

@@ -534,3 +534,69 @@ impl PyExtensibleOptionResult {
         format!("ExtensibleOptionResult(npv={:.6})", self.npv)
     }
 }
+
+// ---------------------------------------------------------------------------
+// Phase 34: Expanded Python bindings — new result types
+// ---------------------------------------------------------------------------
+
+/// Merton jump-diffusion pricing result.
+#[pyclass(name = "MertonJdResult")]
+#[derive(Clone)]
+pub struct PyMertonJdResult {
+    /// Net present value.
+    #[pyo3(get)]
+    pub npv: f64,
+    /// Number of Poisson series terms used.
+    #[pyo3(get)]
+    pub num_terms: usize,
+}
+
+#[pymethods]
+impl PyMertonJdResult {
+    fn __repr__(&self) -> String {
+        format!("MertonJdResult(npv={:.6}, num_terms={})", self.npv, self.num_terms)
+    }
+}
+
+/// Variance swap pricing result.
+#[pyclass(name = "VarianceSwapResult")]
+#[derive(Clone)]
+pub struct PyVarianceSwapResult {
+    /// Net present value.
+    #[pyo3(get)]
+    pub npv: f64,
+    /// Fair variance.
+    #[pyo3(get)]
+    pub fair_variance: f64,
+    /// Fair volatility (sqrt of fair variance).
+    #[pyo3(get)]
+    pub fair_volatility: f64,
+}
+
+#[pymethods]
+impl PyVarianceSwapResult {
+    fn __repr__(&self) -> String {
+        format!("VarianceSwapResult(npv={:.6}, fair_var={:.6}, fair_vol={:.6})",
+            self.npv, self.fair_variance, self.fair_volatility)
+    }
+}
+
+/// Monte Carlo Asian arithmetic pricing result.
+#[pyclass(name = "McAsianArithResult")]
+#[derive(Clone)]
+pub struct PyMcAsianArithResult {
+    /// Net present value (price).
+    #[pyo3(get)]
+    pub price: f64,
+    /// Standard error.
+    #[pyo3(get)]
+    pub std_error: f64,
+}
+
+#[pymethods]
+impl PyMcAsianArithResult {
+    fn __repr__(&self) -> String {
+        format!("McAsianArithResult(price={:.6}, std_error={:.6})",
+            self.price, self.std_error)
+    }
+}

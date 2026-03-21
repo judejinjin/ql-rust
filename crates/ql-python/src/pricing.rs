@@ -4,10 +4,13 @@ use pyo3::prelude::*;
 use pyo3::exceptions::PyValueError;
 
 use ql_instruments::{OptionType, Payoff, Exercise, VanillaOption};
+use ql_instruments::compound_option::CompoundOption;
+use ql_instruments::lookback_option::{LookbackOption, LookbackType};
+use ql_instruments::variance_swap::VarianceSwap;
 use ql_pricingengines::analytic_european::{price_european, implied_volatility};
-use ql_pricingengines::american_engines::{barone_adesi_whaley, bjerksund_stensland};
+use ql_pricingengines::american_engines::{barone_adesi_whaley, bjerksund_stensland, qd_plus_american};
 use ql_pricingengines::analytic_heston::heston_price;
-use ql_pricingengines::multi_asset::{kirk_spread_call, kirk_spread_put};
+use ql_pricingengines::multi_asset::{kirk_spread_call, kirk_spread_put, margrabe_exchange, stulz_max_call, stulz_min_call};
 use ql_pricingengines::variance_gamma_engine::vg_cos_price;
 use ql_pricingengines::cos_heston::cos_heston_price;
 use ql_pricingengines::analytic_binary_barrier::{
@@ -17,6 +20,17 @@ use ql_pricingengines::analytic_vanilla_extra::{analytic_cev_price};
 use ql_pricingengines::fd_heston_barrier::{fd_heston_barrier, FdBarrierType, FdHestonGridParams};
 use ql_pricingengines::heston_hull_white_engine::heston_hull_white_price;
 use ql_pricingengines::portfolio_credit::{bilateral_cva, cdo_spread_ladder};
+use ql_pricingengines::merton_jump_diffusion::merton_jump_diffusion;
+use ql_pricingengines::chooser_engine::chooser_price;
+use ql_pricingengines::compound_engine::analytic_compound_option;
+use ql_pricingengines::lookback_engine::analytic_lookback;
+use ql_pricingengines::advanced_exotics::{forward_start_option, power_option, digital_barrier, DigitalBarrierType};
+use ql_pricingengines::digital_american::{digital_american, DigitalAmericanType};
+use ql_pricingengines::double_barrier_engine::double_barrier_knockout;
+use ql_pricingengines::variance_swap_engine::price_variance_swap;
+use ql_pricingengines::longstaff_schwartz::{mc_american_longstaff_schwartz, LSMBasis};
+use ql_pricingengines::mc_asian::mc_asian_arithmetic_price;
+use ql_pricingengines::generic::{black76_generic, bachelier_generic, black_swaption_generic, bachelier_swaption_generic, black_caplet_generic};
 use ql_instruments::quanto_option::{QuantoVanillaOption, price_quanto_vanilla};
 use ql_methods::mc_engines::{mc_european, mc_barrier};
 use ql_methods::finite_differences::fd_black_scholes;
@@ -46,10 +60,12 @@ use crate::types::{
     PyVgResult, PyQuantoResult, PyCvaResult,
     PyCosHestonResult, PyBinaryBarrierResult, PyCevResult,
     PyFdHestonBarrierResult, PyHhwResult, PyCdoTranche,
-    // New result types
+    // Phase 33 result types
     PyAsianResult, PyJuAmericanResult, PyIntegralResult,
     PyBasketSpreadResult, PyPartialBarrierResult,
     PyTwoAssetCorrelationResult, PyExtensibleOptionResult,
+    // Phase 34 result types
+    PyMertonJdResult, PyVarianceSwapResult, PyMcAsianArithResult,
 };
 
 // ---------------------------------------------------------------------------
@@ -1184,4 +1200,577 @@ pub fn writer_extensible_py(
 ) -> PyExtensibleOptionResult {
     let res = writer_extensible(spot, k1, k2, r, q, sigma, t1, t2, is_call);
     PyExtensibleOptionResult { npv: res.npv }
+}
+
+// ===========================================================================
+// Phase 34: Expanded Python bindings — 21 new pricing engines
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// Black-76 forward pricing
+// ---------------------------------------------------------------------------
+
+/// Price a European option on a forward/futures using the Black-76 formula.
+///
+/// Parameters:
+///   forward — forward or futures price
+///   strike  — strike price
+///   r       — risk-free rate (continuous)
+///   vol     — implied volatility
+///   t       — time to expiry in years
+///   is_call — True for call, False for put
+///
+/// Returns the option price as a float.
+#[pyfunction]
+#[pyo3(signature = (forward, strike, r, vol, t, is_call=true))]
+pub fn black76_py(
+    forward: f64, strike: f64, r: f64, vol: f64, t: f64, is_call: bool,
+) -> f64 {
+    black76_generic(forward, strike, r, vol, t, is_call)
+}
+
+// ---------------------------------------------------------------------------
+// Bachelier (normal) model
+// ---------------------------------------------------------------------------
+
+/// Price a European option using the Bachelier (normal) model.
+///
+/// Parameters:
+///   spot    — underlying price
+///   strike  — strike price
+///   r       — risk-free rate
+///   q       — dividend yield
+///   vol     — normal volatility (in price units)
+///   t       — time to expiry
+///   is_call — True for call, False for put
+///
+/// Returns the option price as a float.
+#[pyfunction]
+#[pyo3(signature = (spot, strike, r, q, vol, t, is_call=true))]
+pub fn bachelier_py(
+    spot: f64, strike: f64, r: f64, q: f64, vol: f64, t: f64, is_call: bool,
+) -> f64 {
+    bachelier_generic(spot, strike, r, q, vol, t, is_call)
+}
+
+// ---------------------------------------------------------------------------
+// QD+ American (high-accuracy)
+// ---------------------------------------------------------------------------
+
+/// Price an American option using the QD+ (Andersen-Lake-Offengelden 2016) method.
+///
+/// The most accurate analytic American option approximation available.
+///
+/// Parameters:
+///   spot, strike, r, q, vol, t — standard Black-Scholes inputs
+///   is_call — True for call, False for put
+///
+/// Returns an ``AmericanResult`` with npv, early_exercise_premium, critical_price.
+#[pyfunction]
+#[pyo3(signature = (spot, strike, r, q, vol, t, is_call=true))]
+pub fn qd_plus_american_py(
+    spot: f64, strike: f64, r: f64, q: f64, vol: f64, t: f64, is_call: bool,
+) -> PyAmericanResult {
+    let res = qd_plus_american(spot, strike, r, q, vol, t, is_call);
+    PyAmericanResult {
+        npv: res.npv,
+        early_exercise_premium: res.early_exercise_premium,
+        critical_price: res.critical_price,
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Merton jump-diffusion
+// ---------------------------------------------------------------------------
+
+/// Price a European option under Merton's jump-diffusion model.
+///
+/// Parameters:
+///   spot, strike, r, q, vol, t — standard BS inputs
+///   lambda — jump intensity (expected jumps per year)
+///   nu     — mean of log-jump size
+///   delta  — volatility of log-jump size
+///   is_call — True for call, False for put
+///
+/// Returns a ``MertonJdResult`` with npv, num_terms.
+#[pyfunction]
+#[pyo3(signature = (spot, strike, r, q, vol, t, lambda_=1.0, nu=-0.1, delta=0.2, is_call=true))]
+#[allow(clippy::too_many_arguments)]
+pub fn merton_jd_py(
+    spot: f64, strike: f64, r: f64, q: f64, vol: f64, t: f64,
+    lambda_: f64, nu: f64, delta: f64, is_call: bool,
+) -> PyMertonJdResult {
+    let res = merton_jump_diffusion(spot, strike, r, q, vol, t, lambda_, nu, delta, is_call);
+    PyMertonJdResult { npv: res.npv, num_terms: res.num_terms }
+}
+
+// ---------------------------------------------------------------------------
+// Chooser option
+// ---------------------------------------------------------------------------
+
+/// Price a **simple chooser** option (holder chooses call or put at t_choose).
+///
+/// Parameters:
+///   spot, strike, r, q, vol — standard BS inputs
+///   t_choose — time at which holder chooses call or put
+///   t_expiry — time to expiry (≥ t_choose)
+///
+/// Returns the chooser option price as a float.
+#[pyfunction]
+#[pyo3(signature = (spot, strike, r, q, vol, t_choose, t_expiry))]
+pub fn chooser_py(
+    spot: f64, strike: f64, r: f64, q: f64, vol: f64,
+    t_choose: f64, t_expiry: f64,
+) -> f64 {
+    let res = chooser_price(spot, strike, r, q, vol, t_choose, t_expiry);
+    res.npv
+}
+
+// ---------------------------------------------------------------------------
+// Compound option
+// ---------------------------------------------------------------------------
+
+/// Price a **compound option** (option on an option).
+///
+/// Parameters:
+///   spot                — underlying asset price
+///   mother_strike       — strike of the outer (mother) option
+///   daughter_strike     — strike of the inner (daughter) option
+///   r, q, vol           — market parameters
+///   mother_expiry       — expiry of the mother option
+///   daughter_expiry     — expiry of the daughter option (> mother_expiry)
+///   is_call_mother      — True if mother is a call
+///   is_call_daughter    — True if daughter is a call
+///
+/// Returns the compound option price as a float.
+#[pyfunction]
+#[pyo3(signature = (spot, mother_strike, daughter_strike, r, q, vol, mother_expiry, daughter_expiry, is_call_mother=true, is_call_daughter=true))]
+#[allow(clippy::too_many_arguments)]
+pub fn compound_option_py(
+    spot: f64,
+    mother_strike: f64,
+    daughter_strike: f64,
+    r: f64, q: f64, vol: f64,
+    mother_expiry: f64,
+    daughter_expiry: f64,
+    is_call_mother: bool,
+    is_call_daughter: bool,
+) -> f64 {
+    let mother_type = if is_call_mother { OptionType::Call } else { OptionType::Put };
+    let daughter_type = if is_call_daughter { OptionType::Call } else { OptionType::Put };
+    let opt = CompoundOption {
+        mother_type,
+        daughter_type,
+        mother_strike,
+        mother_expiry,
+        daughter_strike,
+        daughter_expiry,
+    };
+    let res = analytic_compound_option(&opt, spot, r, q, vol);
+    res.npv
+}
+
+// ---------------------------------------------------------------------------
+// Lookback floating-strike option
+// ---------------------------------------------------------------------------
+
+/// Price a **lookback floating-strike** option.
+///
+/// Call payoff: S_T − S_min; Put payoff: S_max − S_T.
+///
+/// Parameters:
+///   spot           — current underlying price
+///   s_min_or_max   — minimum (call) or maximum (put) observed so far
+///   r, q, vol, t   — market parameters
+///   is_call        — True for call (floating-strike call), False for put
+///
+/// Returns the lookback option price as a float.
+#[pyfunction]
+#[pyo3(signature = (spot, s_min_or_max, r, q, vol, t, is_call=true))]
+pub fn lookback_floating_py(
+    spot: f64, s_min_or_max: f64, r: f64, q: f64, vol: f64, t: f64, is_call: bool,
+) -> f64 {
+    let opt_type = if is_call { OptionType::Call } else { OptionType::Put };
+    let (min_sf, max_sf) = if is_call { (s_min_or_max, spot) } else { (spot, s_min_or_max) };
+    let opt = LookbackOption {
+        option_type: opt_type,
+        lookback_type: LookbackType::FloatingStrike,
+        strike: 0.0,
+        min_so_far: min_sf,
+        max_so_far: max_sf,
+        time_to_expiry: t,
+    };
+    let res = analytic_lookback(&opt, spot, r, q, vol);
+    res.npv
+}
+
+// ---------------------------------------------------------------------------
+// Forward-start option
+// ---------------------------------------------------------------------------
+
+/// Price a **forward-start** option (strike set as alpha × S(t1) at t1).
+///
+/// Parameters:
+///   spot        — current underlying price
+///   r, q, vol   — market parameters
+///   t1          — time at which the option starts (strike is set)
+///   t2          — time to expiry (> t1)
+///   alpha       — strike multiplier (e.g. 1.0 = ATM)
+///   is_call     — True for call, False for put
+///
+/// Returns the forward-start option price as a float.
+#[pyfunction]
+#[pyo3(signature = (spot, r, q, vol, t1, t2, alpha=1.0, is_call=true))]
+pub fn forward_start_py(
+    spot: f64, r: f64, q: f64, vol: f64,
+    t1: f64, t2: f64, alpha: f64, is_call: bool,
+) -> f64 {
+    let res = forward_start_option(spot, r, q, vol, t1, t2, alpha, is_call);
+    res.price
+}
+
+// ---------------------------------------------------------------------------
+// Power option
+// ---------------------------------------------------------------------------
+
+/// Price a **power option** with payoff max(S^alpha − K, 0).
+///
+/// Parameters:
+///   spot, strike, r, q, vol, t — standard BS inputs
+///   alpha — power exponent (e.g. 2.0 for squared payoff)
+///   is_call — True for call, False for put
+///
+/// Returns the power option price as a float.
+#[pyfunction]
+#[pyo3(signature = (spot, strike, r, q, vol, t, alpha=2.0, is_call=true))]
+pub fn power_option_py(
+    spot: f64, strike: f64, r: f64, q: f64, vol: f64, t: f64,
+    alpha: f64, is_call: bool,
+) -> f64 {
+    let res = power_option(spot, strike, r, q, vol, t, alpha, is_call);
+    res.price
+}
+
+// ---------------------------------------------------------------------------
+// Digital American option
+// ---------------------------------------------------------------------------
+
+/// Price a **digital (binary) American** option.
+///
+/// Parameters:
+///   spot, strike, r, q, sigma, t — standard BS inputs
+///   cash — cash payout amount (for cash-or-nothing types)
+///   payoff_type — ``"CashOrNothingCall"``, ``"CashOrNothingPut"``,
+///                 ``"AssetOrNothingCall"``, ``"AssetOrNothingPut"``
+///
+/// Returns the digital American option price as a float.
+///
+/// Raises ValueError on unknown payoff_type.
+#[pyfunction]
+#[pyo3(signature = (spot, strike, r, q, sigma, t, cash=1.0, payoff_type="CashOrNothingCall"))]
+pub fn digital_american_py(
+    spot: f64, strike: f64, r: f64, q: f64, sigma: f64, t: f64,
+    cash: f64, payoff_type: &str,
+) -> PyResult<f64> {
+    let dt = match payoff_type {
+        "CashOrNothingCall"  => DigitalAmericanType::CashOrNothingCall,
+        "CashOrNothingPut"   => DigitalAmericanType::CashOrNothingPut,
+        "AssetOrNothingCall"  => DigitalAmericanType::AssetOrNothingCall,
+        "AssetOrNothingPut"   => DigitalAmericanType::AssetOrNothingPut,
+        other => return Err(PyValueError::new_err(format!(
+            "Unknown payoff_type '{}'; use CashOrNothingCall/CashOrNothingPut/AssetOrNothingCall/AssetOrNothingPut",
+            other
+        ))),
+    };
+    let res = digital_american(spot, strike, r, q, sigma, t, cash, dt);
+    Ok(res.price)
+}
+
+// ---------------------------------------------------------------------------
+// Digital barrier (one-touch / no-touch)
+// ---------------------------------------------------------------------------
+
+/// Price a **digital barrier** (one-touch or no-touch) option.
+///
+/// Parameters:
+///   spot, barrier, rebate, r, q, vol, t — market inputs
+///   is_one_touch — True for one-touch (pays on hit), False for no-touch (pays if not hit)
+///   is_upper     — True for upper barrier, False for lower barrier
+///
+/// Returns the digital barrier option price as a float.
+#[pyfunction]
+#[pyo3(signature = (spot, barrier, rebate, r, q, vol, t, is_one_touch=true, is_upper=true))]
+pub fn digital_barrier_py(
+    spot: f64, barrier: f64, rebate: f64, r: f64, q: f64, vol: f64, t: f64,
+    is_one_touch: bool, is_upper: bool,
+) -> f64 {
+    let bt = if is_one_touch { DigitalBarrierType::OneTouch } else { DigitalBarrierType::NoTouch };
+    let res = digital_barrier(spot, barrier, rebate, r, q, vol, t, bt, is_upper);
+    res.price
+}
+
+// ---------------------------------------------------------------------------
+// Double barrier knockout
+// ---------------------------------------------------------------------------
+
+/// Price a **double-barrier knock-out** option (Ikeda-Kunitomo series).
+///
+/// The option is knocked out if the underlying hits either the lower or upper barrier.
+///
+/// Parameters:
+///   spot, strike, r, q, vol, t — standard BS inputs
+///   lower — lower barrier level
+///   upper — upper barrier level
+///   is_call — True for call, False for put
+///   n_terms — number of series terms (default 20)
+///
+/// Returns the knock-out option price as a float.
+#[pyfunction]
+#[pyo3(signature = (spot, strike, r, q, vol, t, lower, upper, is_call=true, n_terms=20))]
+#[allow(clippy::too_many_arguments)]
+pub fn double_barrier_knockout_py(
+    spot: f64, strike: f64, r: f64, q: f64, vol: f64, t: f64,
+    lower: f64, upper: f64, is_call: bool, n_terms: usize,
+) -> f64 {
+    let opt_type = if is_call { OptionType::Call } else { OptionType::Put };
+    let res = double_barrier_knockout(spot, strike, r, q, vol, t, lower, upper, opt_type, n_terms);
+    res.npv
+}
+
+// ---------------------------------------------------------------------------
+// Margrabe exchange option
+// ---------------------------------------------------------------------------
+
+/// Price a **Margrabe exchange** option: right to exchange asset 2 for asset 1.
+///
+/// Payoff at expiry: max(S1 − S2, 0).
+///
+/// Parameters:
+///   s1, s2     — current prices of asset 1 and asset 2
+///   q1, q2     — dividend yields
+///   vol1, vol2 — volatilities
+///   rho        — correlation between log-returns
+///   t          — time to expiry
+///
+/// Returns the exchange option price as a float.
+#[pyfunction]
+#[pyo3(signature = (s1, s2, q1, q2, vol1, vol2, rho, t))]
+pub fn margrabe_exchange_py(
+    s1: f64, s2: f64, q1: f64, q2: f64,
+    vol1: f64, vol2: f64, rho: f64, t: f64,
+) -> f64 {
+    margrabe_exchange(s1, s2, q1, q2, vol1, vol2, rho, t)
+}
+
+// ---------------------------------------------------------------------------
+// Stulz: call on max / min of two assets
+// ---------------------------------------------------------------------------
+
+/// Price a **call on the maximum** of two assets (Stulz 1982).
+///
+/// Payoff: max(max(S1, S2) − K, 0).
+///
+/// Parameters:
+///   s1, s2, strike, r, q1, q2, vol1, vol2, rho, t — market inputs
+///
+/// Returns the option price as a float.
+#[pyfunction]
+#[pyo3(signature = (s1, s2, strike, r, q1, q2, vol1, vol2, rho, t))]
+#[allow(clippy::too_many_arguments)]
+pub fn stulz_max_call_py(
+    s1: f64, s2: f64, strike: f64, r: f64, q1: f64, q2: f64,
+    vol1: f64, vol2: f64, rho: f64, t: f64,
+) -> f64 {
+    stulz_max_call(s1, s2, strike, r, q1, q2, vol1, vol2, rho, t)
+}
+
+/// Price a **call on the minimum** of two assets (Stulz 1982).
+///
+/// Payoff: max(min(S1, S2) − K, 0).
+///
+/// Parameters:
+///   s1, s2, strike, r, q1, q2, vol1, vol2, rho, t — market inputs
+///
+/// Returns the option price as a float.
+#[pyfunction]
+#[pyo3(signature = (s1, s2, strike, r, q1, q2, vol1, vol2, rho, t))]
+#[allow(clippy::too_many_arguments)]
+pub fn stulz_min_call_py(
+    s1: f64, s2: f64, strike: f64, r: f64, q1: f64, q2: f64,
+    vol1: f64, vol2: f64, rho: f64, t: f64,
+) -> f64 {
+    stulz_min_call(s1, s2, strike, r, q1, q2, vol1, vol2, rho, t)
+}
+
+// ---------------------------------------------------------------------------
+// Variance swap
+// ---------------------------------------------------------------------------
+
+/// Price a **variance swap** (mark-to-market).
+///
+/// Parameters:
+///   implied_vol      — current implied volatility (annualized)
+///   r                — risk-free rate
+///   t                — time remaining to maturity
+///   notional         — variance notional
+///   strike_var       — variance strike (K_var)
+///   realized_var     — annualized realized variance so far (0 for new swap)
+///   elapsed_fraction — fraction of observation period already elapsed (0 to 1)
+///
+/// Returns a ``VarianceSwapResult`` with npv, fair_variance, fair_volatility.
+#[pyfunction]
+#[pyo3(signature = (implied_vol, r, t, notional, strike_var, realized_var=0.0, elapsed_fraction=0.0))]
+pub fn variance_swap_py(
+    implied_vol: f64, r: f64, t: f64, notional: f64, strike_var: f64,
+    realized_var: f64, elapsed_fraction: f64,
+) -> PyVarianceSwapResult {
+    let vs = VarianceSwap {
+        variance_notional: notional,
+        variance_strike: strike_var,
+        time_to_expiry: t,
+        realized_variance: realized_var,
+        elapsed_fraction,
+    };
+    let res = price_variance_swap(&vs, implied_vol, r);
+    PyVarianceSwapResult {
+        npv: res.npv,
+        fair_variance: res.fair_variance,
+        fair_volatility: res.fair_volatility,
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Black swaption
+// ---------------------------------------------------------------------------
+
+/// Price a European **swaption** using the Black (log-normal) model.
+///
+/// Parameters:
+///   annuity      — PV01 (present value of annuity stream)
+///   swap_rate    — par swap rate
+///   strike       — swaption strike rate
+///   vol          — Black (log-normal) volatility
+///   t            — time to swaption expiry
+///   is_payer     — True for payer swaption, False for receiver
+///
+/// Returns the swaption NPV as a float.
+#[pyfunction]
+#[pyo3(signature = (annuity, swap_rate, strike, vol, t, is_payer=true))]
+pub fn black_swaption_py(
+    annuity: f64, swap_rate: f64, strike: f64, vol: f64, t: f64, is_payer: bool,
+) -> f64 {
+    black_swaption_generic(annuity, swap_rate, strike, vol, t, is_payer)
+}
+
+// ---------------------------------------------------------------------------
+// Bachelier swaption
+// ---------------------------------------------------------------------------
+
+/// Price a European **swaption** using the Bachelier (normal) model.
+///
+/// Parameters:
+///   annuity      — PV01 (present value of annuity stream)
+///   swap_rate    — par swap rate
+///   strike       — swaption strike rate
+///   vol          — normal (Bachelier) volatility
+///   t            — time to swaption expiry
+///   is_payer     — True for payer swaption, False for receiver
+///
+/// Returns the swaption NPV as a float.
+#[pyfunction]
+#[pyo3(signature = (annuity, swap_rate, strike, vol, t, is_payer=true))]
+pub fn bachelier_swaption_py(
+    annuity: f64, swap_rate: f64, strike: f64, vol: f64, t: f64, is_payer: bool,
+) -> f64 {
+    bachelier_swaption_generic(annuity, swap_rate, strike, vol, t, is_payer)
+}
+
+// ---------------------------------------------------------------------------
+// Black caplet / floorlet
+// ---------------------------------------------------------------------------
+
+/// Price a single **caplet or floorlet** using the Black model.
+///
+/// Parameters:
+///   df        — discount factor to payment date
+///   forward   — forward rate for the accrual period
+///   strike    — cap/floor strike rate
+///   vol       — Black (log-normal) volatility
+///   tau       — accrual period length in years
+///   t_fixing  — time to fixing date
+///   is_cap    — True for caplet, False for floorlet
+///
+/// Returns the caplet/floorlet price as a float.
+#[pyfunction]
+#[pyo3(signature = (df, forward, strike, vol, tau, t_fixing, is_cap=true))]
+pub fn black_caplet_py(
+    df: f64, forward: f64, strike: f64, vol: f64, tau: f64, t_fixing: f64, is_cap: bool,
+) -> f64 {
+    black_caplet_generic(df, forward, strike, vol, tau, t_fixing, is_cap)
+}
+
+// ---------------------------------------------------------------------------
+// MC American (Longstaff-Schwartz)
+// ---------------------------------------------------------------------------
+
+/// Price an **American option** using Monte Carlo with Longstaff-Schwartz regression.
+///
+/// Parameters:
+///   spot, strike, r, q, vol, t — standard BS inputs
+///   is_call — True for call, False for put
+///   num_paths — number of simulation paths (default 50,000)
+///   num_steps — time steps per path (default 100)
+///   basis_degree — polynomial regression degree (default 3)
+///   basis — ``"Monomial"`` or ``"Laguerre"`` (default "Laguerre")
+///   seed — RNG seed (default 42)
+///
+/// Returns an ``MCResult`` with npv, std_error, num_paths.
+///
+/// Raises ValueError on unknown basis type.
+#[pyfunction]
+#[pyo3(signature = (spot, strike, r, q, vol, t, is_call=false, num_paths=50_000, num_steps=100, basis_degree=3, basis="Laguerre", seed=42))]
+#[allow(clippy::too_many_arguments)]
+pub fn mc_american_lsm_py(
+    spot: f64, strike: f64, r: f64, q: f64, vol: f64, t: f64,
+    is_call: bool, num_paths: usize, num_steps: usize,
+    basis_degree: usize, basis: &str, seed: u64,
+) -> PyResult<PyMCResult> {
+    let opt_type = if is_call { OptionType::Call } else { OptionType::Put };
+    let lsm_basis = match basis {
+        "Monomial"  => LSMBasis::Monomial,
+        "Laguerre"  => LSMBasis::Laguerre,
+        other => return Err(PyValueError::new_err(format!(
+            "Unknown basis '{}'; use Monomial or Laguerre", other
+        ))),
+    };
+    let res = mc_american_longstaff_schwartz(
+        spot, strike, r, q, vol, t, opt_type, num_paths, num_steps,
+        basis_degree, lsm_basis, seed,
+    );
+    Ok(PyMCResult { npv: res.npv, std_error: res.std_error, num_paths: res.num_paths })
+}
+
+// ---------------------------------------------------------------------------
+// MC Asian arithmetic
+// ---------------------------------------------------------------------------
+
+/// Price an **arithmetic average-price Asian** option via Monte Carlo.
+///
+/// Parameters:
+///   spot, strike, r, q, sigma, t — standard BS inputs
+///   n_fixings — number of averaging observations (default 12)
+///   n_paths   — number of MC paths (default 100,000)
+///   is_call   — True for call, False for put
+///   seed      — RNG seed (default 42)
+///
+/// Returns an ``McAsianArithResult`` with price, std_error.
+#[pyfunction]
+#[pyo3(signature = (spot, strike, r, q, sigma, t, n_fixings=12, n_paths=100_000, is_call=true, seed=42))]
+#[allow(clippy::too_many_arguments)]
+pub fn mc_asian_arithmetic_py(
+    spot: f64, strike: f64, r: f64, q: f64, sigma: f64, t: f64,
+    n_fixings: usize, n_paths: usize, is_call: bool, seed: u64,
+) -> PyMcAsianArithResult {
+    let res = mc_asian_arithmetic_price(spot, strike, r, q, sigma, t, n_fixings, n_paths, is_call, Some(seed));
+    PyMcAsianArithResult { price: res.price, std_error: res.std_error }
 }
