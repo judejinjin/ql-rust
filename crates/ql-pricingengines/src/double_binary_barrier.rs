@@ -7,7 +7,6 @@
 //! Applied Financial Economics, 6, 343-346.
 
 use std::f64::consts::PI;
-use ql_math::distributions::cumulative_normal;
 
 /// Type of double-barrier binary option.
 #[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
@@ -104,22 +103,22 @@ pub fn double_binary_barrier(
     }
 
     // Multiply by drift exponential and discount
-    let drift_exp = (drift_adj * x - drift_adj * drift_adj * 0.5 * sigma * sigma * 0.0).exp();
+    let _drift_exp = (drift_adj * x - drift_adj * drift_adj * 0.5 * sigma * sigma * 0.0).exp();
     // Simplified: use direct Fourier result
-    p_survive = p_survive.abs();
+    let _p_survive = p_survive.abs();
 
     // Normalize: the series should sum to 1 for t→0
     // For a proper normalization, recompute with the standard formula:
-    let mut ko_price_normalized = 0.0;
+    let mut _ko_price_normalized = 0.0;
     for n in 1..=100 {
         let nf = n as f64;
         let sin_term = (nf * PI * x / width).sin();
-        let lambda_n = 0.5 * (nf * PI * sigma / width).powi(2)
+        let _lambda_n = 0.5 * (nf * PI * sigma / width).powi(2)
             + mu * nf * PI / width;
         // Actually use the standard Kunitomo-Ikeda formula for digital knock-out:
         let exp_decay = (-0.5 * (nf * PI * sigma / width).powi(2) * t).exp();
-        let mu_shift = (-mu * (x - 0.5 * width) / (sigma * sigma)).exp();
-        ko_price_normalized += sin_term * exp_decay * 2.0 / (nf * PI);
+        let _mu_shift = (-mu * (x - 0.5 * width) / (sigma * sigma)).exp();
+        _ko_price_normalized += sin_term * exp_decay * 2.0 / (nf * PI);
     }
 
     // Simple approach: survival probability via image method

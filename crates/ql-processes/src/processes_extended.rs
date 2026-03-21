@@ -285,6 +285,7 @@ pub fn discretize_step(
 /// * `scheme` — discretization scheme
 ///
 /// Returns the path values at each step (length = n_steps + 1, starting from x0).
+#[allow(clippy::needless_range_loop)]
 pub fn simulate_path(
     process: &dyn StochasticProcess1D,
     t_start: f64,

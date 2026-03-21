@@ -116,6 +116,7 @@ fn tdma(a: &[f64], b: &mut [f64], c: &[f64], d: &mut [f64]) {
 
 /// Apply a zero-flux Dirichlet condition by overwriting boundary values.
 #[inline]
+#[allow(dead_code)]
 fn apply_barrier_zero(v: &mut [f64], idx: std::ops::Range<usize>) {
     for i in idx {
         v[i] = 0.0;
@@ -139,6 +140,7 @@ fn apply_barrier_zero(v: &mut [f64], idx: std::ops::Range<usize>) {
 /// - `params` — FD grid parameters (use [`FdHestonGridParams::default()`])
 ///
 /// Returns a [`FdHestonBarrierResult`].
+#[allow(clippy::only_used_in_recursion)]
 pub fn fd_heston_barrier(
     model: &HestonModel,
     strike: f64,
@@ -159,7 +161,7 @@ pub fn fd_heston_barrier(
     let kappa = model.kappa();
     let theta = model.theta();
     let sigma = model.sigma();   // vol-of-vol
-    let rho   = model.rho();
+    let _rho   = model.rho();
 
     // --- Spot grid in log space ---
     // log-spot grid: uniform from log(s_min) to log(s_max)
@@ -483,9 +485,10 @@ pub fn fd_heston_double_barrier(
 // ---------------------------------------------------------------------------
 
 /// Apply knock-out barrier: zero out grid values beyond the barrier.
-fn apply_initial_barrier(grid: &mut [f64], s_grid: &[f64], nv: usize, ns: usize,
+#[allow(clippy::needless_range_loop)]
+fn apply_initial_barrier(_grid: &mut [f64], s_grid: &[f64], nv: usize, ns: usize,
     barrier_type: FdBarrierType) {
-    for iv in 0..nv {
+    for _iv in 0..nv {
         for is in 0..ns {
             let s = s_grid[is];
             let knocked = match barrier_type {

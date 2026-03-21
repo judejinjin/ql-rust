@@ -83,7 +83,7 @@ pub fn integral_cds_engine(
         for j in 1..=n_points {
             let t_j = prev_t + j as f64 * dt;
             let w = (t_j - prev_t) / (t_end - prev_t).max(1e-12);
-            let df_j = prev_df * (1.0 - w) + df_end * w; // linear interp
+            let _df_j = prev_df * (1.0 - w) + df_end * w; // linear interp
             let sp_j = prev_sp * (1.0 - w) + sp_end * w;
 
             let t_jm1 = prev_t + (j as f64 - 1.0) * dt;

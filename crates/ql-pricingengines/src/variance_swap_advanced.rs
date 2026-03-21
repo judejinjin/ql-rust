@@ -137,7 +137,7 @@ pub fn mc_variance_swap(
     seed: u64,
 ) -> VarianceSwapResult {
     use rand::rngs::StdRng;
-    use rand::{Rng, SeedableRng};
+    use rand::SeedableRng;
 
     let dt = t / n_fixings as f64;
     let drift = (r - q - 0.5 * sigma * sigma) * dt;
@@ -146,7 +146,7 @@ pub fn mc_variance_swap(
 
     let mut rng = StdRng::seed_from_u64(seed);
     let mut sum_variance = 0.0;
-    let mut sum_variance_sq = 0.0;
+    let mut _sum_variance_sq = 0.0;
 
     for _ in 0..n_paths {
         let mut s = spot;
@@ -163,7 +163,7 @@ pub fn mc_variance_swap(
         // Annualized realized variance
         let realized_var = sum_log_return_sq / t;
         sum_variance += realized_var;
-        sum_variance_sq += realized_var * realized_var;
+        _sum_variance_sq += realized_var * realized_var;
     }
 
     let fair_variance = sum_variance / n_paths as f64;

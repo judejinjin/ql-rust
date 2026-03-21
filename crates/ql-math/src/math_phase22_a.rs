@@ -1151,7 +1151,7 @@ fn inv_normal_cdf(p: f64) -> f64 {
         -3.969683028665376e+01,
         2.209460984245205e+02,
         -2.759285104469687e+02,
-        1.383577518672690e+02,
+        1.383_577_518_672_69e2,
         -3.066479806614716e+01,
         2.506628277459239e+00,
     ];
@@ -1231,6 +1231,7 @@ impl KnuthUniformRng {
         let mut ss = ((seed % (1u64 << 30)) as f64 + 2.0) / (1u64 << 30) as f64;
         let mut x = vec![0.0; KNUTH_KK + KNUTH_KK - 1];
 
+        #[allow(clippy::needless_range_loop)]
         for j in 0..KNUTH_KK {
             x[j] = ss;
             ss += ss;
@@ -1260,9 +1261,7 @@ impl KnuthUniformRng {
                 .max(0)];
         }
         // Simpler init
-        for j in 0..KNUTH_KK {
-            self.ran_u[j] = x[j];
-        }
+        self.ran_u[..KNUTH_KK].copy_from_slice(&x[..KNUTH_KK]);
         self.ptr = 0;
     }
 
@@ -1412,6 +1411,7 @@ impl RanluxUniformRng {
         let len = 24;
         let mut state = vec![0u64; len];
         let mut s = seed;
+        #[allow(clippy::needless_range_loop)]
         for i in 0..len {
             // Simple LCG seed expansion
             s = s.wrapping_mul(6364136223846793005).wrapping_add(1);
@@ -1496,7 +1496,7 @@ pub struct Burley2020SobolRsg {
 impl Burley2020SobolRsg {
     pub fn new(dimensionality: usize, _seed: u64, scramble_seed: u64) -> Self {
         // Generate group seeds (one per group of 4 dimensions)
-        let n_groups = (dimensionality + 3) / 4;
+        let n_groups = dimensionality.div_ceil(4);
         let mut group_seeds = Vec::with_capacity(n_groups);
         let mut s = scramble_seed as u32;
         for _ in 0..n_groups {
@@ -1527,6 +1527,7 @@ impl Burley2020SobolRsg {
 
         // Apply per-dimension scrambling
         let mut result = Vec::with_capacity(self.dimensionality);
+        #[allow(clippy::needless_range_loop)]
         for i in 0..self.dimensionality {
             let group = i / 4;
             let seed = Self::local_hash(self.group_seeds[group.min(self.group_seeds.len() - 1)], i as u32);
@@ -1548,6 +1549,7 @@ impl Burley2020SobolRsg {
         result[0] = Self::reverse_bits(n);
 
         // For higher dims, use basic direction numbers
+        #[allow(clippy::needless_range_loop)]
         for d in 1..dim.min(21) {
             let mut val = 0u32;
             let mut nn = n;
@@ -1578,7 +1580,7 @@ impl Burley2020SobolRsg {
         x = ((x & 0x33333333) << 2) | ((x & 0xCCCCCCCC) >> 2);
         x = ((x & 0x0F0F0F0F) << 4) | ((x & 0xF0F0F0F0) >> 4);
         x = ((x & 0x00FF00FF) << 8) | ((x & 0xFF00FF00) >> 8);
-        (x << 16) | (x >> 16)
+        x.rotate_right(16)
     }
 
     fn laine_karras_permutation(mut x: u32, seed: u32) -> u32 {
@@ -1599,7 +1601,7 @@ impl Burley2020SobolRsg {
         let mut h = seed;
         h ^= index.wrapping_mul(0x9e3779b9);
         h = h.wrapping_mul(0xcc9e2d51);
-        h = (h << 15) | (h >> 17);
+        h = h.rotate_left(15);
         h = h.wrapping_mul(0x1b873593);
         h
     }

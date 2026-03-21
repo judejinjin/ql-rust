@@ -137,6 +137,7 @@ fn gauss_laguerre_nodes_weights(n: usize) -> (Vec<f64>, Vec<f64>) {
 }
 
 /// Compute Gauss-Hermite nodes and weights.
+#[allow(clippy::needless_range_loop)]
 fn gauss_hermite_nodes_weights(n: usize) -> (Vec<f64>, Vec<f64>) {
     // Three-term recurrence: xHₙ = Hₙ₊₁/2 + nHₙ₋₁
     // Jacobi matrix: αᵢ = 0, βᵢ² = i/2
@@ -149,6 +150,7 @@ fn gauss_hermite_nodes_weights(n: usize) -> (Vec<f64>, Vec<f64>) {
 }
 
 /// Compute Gauss-Jacobi nodes and weights.
+#[allow(clippy::needless_range_loop)]
 fn gauss_jacobi_nodes_weights(n: usize, a: f64, b: f64) -> (Vec<f64>, Vec<f64>) {
     let mut alpha = vec![0.0; n];
     let mut beta_sq = vec![0.0; n];
@@ -181,6 +183,7 @@ fn gauss_jacobi_nodes_weights(n: usize, a: f64, b: f64) -> (Vec<f64>, Vec<f64>) 
 /// Golub-Welsch algorithm: find eigenvalues/vectors of symmetric tridiagonal matrix.
 ///
 /// Returns (nodes, weights) where nodes are eigenvalues and weights = μ₀ × v₁²
+#[allow(clippy::needless_range_loop)]
 fn golub_welsch(alpha: &[f64], beta_sq: &[f64], mu0: f64) -> (Vec<f64>, Vec<f64>) {
     let n = alpha.len();
     if n == 0 {
@@ -281,6 +284,7 @@ fn golub_welsch(alpha: &[f64], beta_sq: &[f64], mu0: f64) -> (Vec<f64>, Vec<f64>
 }
 
 /// Simple gamma function approximation (Lanczos).
+#[allow(clippy::needless_range_loop)]
 fn gamma_fn(x: f64) -> f64 {
     if x <= 0.0 && x == x.floor() {
         return f64::INFINITY;
@@ -289,14 +293,14 @@ fn gamma_fn(x: f64) -> f64 {
     if x > 0.5 {
         let g = 7.0;
         let c = [
-            0.99999999999980993,
+            0.999_999_999_999_809_9,
             676.5203681218851,
             -1259.1392167224028,
-            771.32342877765313,
-            -176.61502916214059,
+            771.323_428_777_653_1,
+            -176.615_029_162_140_6,
             12.507343278686905,
             -0.13857109526572012,
-            9.9843695780195716e-6,
+            9.984_369_578_019_572e-6,
             1.5056327351493116e-7,
         ];
         let x = x - 1.0;
@@ -593,6 +597,7 @@ impl KernelInterpolation {
         }
 
         // Add small regularization for numerical stability
+        #[allow(clippy::needless_range_loop)]
         for i in 0..n {
             k_matrix[i][i] += 1e-12;
         }
@@ -638,6 +643,7 @@ fn eval_kernel(kernel: KernelType, r: f64, epsilon: f64) -> f64 {
 }
 
 /// Solve a linear system Ax = b using Gaussian elimination with partial pivoting.
+#[allow(clippy::needless_range_loop)]
 fn solve_linear_system(a: &[Vec<f64>], b: &[f64]) -> QLResult<Vec<f64>> {
     let n = b.len();
     let mut aug: Vec<Vec<f64>> = a
@@ -810,9 +816,7 @@ fn cubic_spline_coefficients(xs: &[f64], ys: &[f64]) -> QLResult<Vec<[f64; 4]>> 
     let c_internal = thomas_tridiag(&lower, &diag, &upper, &rhs);
 
     let mut c = vec![0.0; n];
-    for i in 0..m {
-        c[i + 1] = c_internal[i];
-    }
+    c[1..m + 1].copy_from_slice(&c_internal[..m]);
 
     // Compute coefficients
     let mut coeffs = Vec::with_capacity(n_intervals);

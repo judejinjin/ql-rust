@@ -66,7 +66,7 @@ pub fn gjr_garch_option(
     // where h∞ = ω / (1 - α - β - γ/2)
 
     let persistence = alpha + beta + gamma / 2.0;
-    let h_inf = if persistence < 1.0 {
+    let _h_inf = if persistence < 1.0 {
         omega / (1.0 - persistence)
     } else {
         h0 // non-stationary case
@@ -75,7 +75,7 @@ pub fn gjr_garch_option(
     // Forecast terminal variance (average variance over the period)
     let mut avg_var = 0.0;
     let mut h = h0;
-    for i in 0..n_periods {
+    for _i in 0..n_periods {
         avg_var += h;
         // Under risk-neutral measure, expected next-period variance:
         h = omega + persistence * h;
@@ -95,9 +95,7 @@ pub fn gjr_garch_option(
 
     let d1 = if sigma_eff * sqrt_t > 1e-10 {
         ((fwd / strike).ln() + 0.5 * sigma_eff * sigma_eff * t) / (sigma_eff * sqrt_t)
-    } else {
-        if fwd > strike { 10.0 } else { -10.0 }
-    };
+    } else if fwd > strike { 10.0 } else { -10.0 };
     let d2 = d1 - sigma_eff * sqrt_t;
 
     let call_flag = if is_call { 1.0 } else { -1.0 };
@@ -231,7 +229,7 @@ pub fn vasicek_european_equity(
     let b_t = (1.0 - (-kappa * t).exp()) / kappa;
 
     // Variance of integrated rate
-    let var_r = sigma_r * sigma_r * (t + (2.0 / kappa) * ((-kappa * t).exp() - 1.0)
+    let _var_r = sigma_r * sigma_r * (t + (2.0 / kappa) * ((-kappa * t).exp() - 1.0)
         - (1.0 / (2.0 * kappa)) * ((-2.0 * kappa * t).exp() - 1.0));
 
     // Expected integrated rate

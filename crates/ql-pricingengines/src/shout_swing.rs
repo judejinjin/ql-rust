@@ -15,7 +15,6 @@ use serde::{Deserialize, Serialize};
 ///
 /// This is priced via a 2D FD scheme in (S, shouted_level) or more efficiently
 /// by solving two coupled 1D PDEs (un-shouted and shouted).
-
 /// Result from the shout option engine.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ShoutOptionResult {
@@ -116,12 +115,12 @@ pub fn fd_shout_option(
     let w = fi - i0 as f64;
 
     let price = (1.0 - w) * v_shout[i0] + w * v_shout[i0 + 1];
-    let delta = if i0 >= 1 && i0 + 1 <= ns {
+    let delta = if i0 >= 1 && i0 < ns {
         (v_shout[i0 + 1] - v_shout[i0 - 1]) / (2.0 * ds)
     } else {
         0.0
     };
-    let gamma = if i0 >= 1 && i0 + 1 <= ns {
+    let gamma = if i0 >= 1 && i0 < ns {
         (v_shout[i0 + 1] - 2.0 * v_shout[i0] + v_shout[i0 - 1]) / (ds * ds)
     } else {
         0.0
@@ -165,6 +164,7 @@ pub struct SwingOptionResult {
 /// - `n_exercise_dates` — number of equally-spaced exercise dates
 /// - `ns`, `nt` — FD grid sizes
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::needless_range_loop)]
 pub fn fd_swing_option(
     spot: f64,
     strike: f64,
@@ -206,7 +206,7 @@ pub fn fd_swing_option(
 
     // Step backward in time
     let mut current_t = t;
-    for step in 0..nt {
+    for _step in 0..nt {
         current_t -= dt;
 
         // Diffuse all layers
@@ -260,7 +260,7 @@ fn crank_nicolson_step(
     sigma: f64,
     ns: usize,
     is_call: bool,
-    s_max: f64,
+    _s_max: f64,
 ) -> Vec<f64> {
     let mut a = vec![0.0; ns + 1];
     let mut b = vec![0.0; ns + 1];

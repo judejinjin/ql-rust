@@ -35,6 +35,7 @@ pub struct QdFpAmericanResult {
 /// - `is_call` — true for call, false for put
 /// - `n_chebyshev` — number of Chebyshev nodes (default 12 is good)
 /// - `max_iter` — max fixed-point iterations (default 8)
+#[allow(clippy::needless_range_loop)]
 pub fn qdfp_american(
     spot: f64,
     strike: f64,
@@ -63,7 +64,7 @@ pub fn qdfp_american(
     }
 
     let omega: f64 = if is_call { 1.0 } else { -1.0 };
-    let norm = NormalDistribution::standard();
+    let _norm = NormalDistribution::standard();
 
     // Black-Scholes European price
     let bs_price = |s: f64, k: f64, tau: f64| -> f64 {
@@ -155,7 +156,7 @@ pub fn qdfp_american(
             let mut eep = 0.0;
             for j in 0..i {
                 let tau_j = tau_nodes[j];
-                let ds = if j + 1 <= i { tau_nodes[j + 1] - tau_j } else { 0.0 };
+                let ds = if j < i { tau_nodes[j + 1] - tau_j } else { 0.0 };
                 let s = tau_i - tau_j; // time from tau_j to tau_i
                 if s < 1e-14 || ds < 1e-14 { continue; }
 

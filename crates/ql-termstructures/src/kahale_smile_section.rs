@@ -39,7 +39,7 @@ pub struct KahaleSmileSection {
 
 #[derive(Debug, Clone)]
 struct KahaleSegment {
-    k_lo: f64,
+    _k_lo: f64,
     k_hi: f64,
     /// Fitted implied vol for this segment's Black formula.
     sigma: f64,
@@ -113,17 +113,17 @@ impl KahaleSmileSection {
             .collect();
 
         // Left tail: K < K_0, use first knot's sigma
-        segments.push(KahaleSegment { k_lo: 0.0, k_hi: strikes[0], sigma: sigmas[0], f_eff: forward });
+        segments.push(KahaleSegment { _k_lo: 0.0, k_hi: strikes[0], sigma: sigmas[0], f_eff: forward });
 
         // Interior segments: each segment uses its LEFT endpoint sigma.
         // Black(F, K, sigma_left) is monotone decreasing in K, so C values decrease
         // as K increases within each segment.
         for i in 0..n - 1 {
-            segments.push(KahaleSegment { k_lo: strikes[i], k_hi: strikes[i + 1], sigma: sigmas[i], f_eff: forward });
+            segments.push(KahaleSegment { _k_lo: strikes[i], k_hi: strikes[i + 1], sigma: sigmas[i], f_eff: forward });
         }
 
         // Right tail: K > K_{n-1}, use last knot's sigma
-        segments.push(KahaleSegment { k_lo: strikes[n - 1], k_hi: f64::INFINITY, sigma: sigmas[n - 1], f_eff: forward });
+        segments.push(KahaleSegment { _k_lo: strikes[n - 1], k_hi: f64::INFINITY, sigma: sigmas[n - 1], f_eff: forward });
 
         Self { forward, expiry, strikes, segments }
     }

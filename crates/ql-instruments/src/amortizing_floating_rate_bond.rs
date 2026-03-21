@@ -15,7 +15,7 @@
 //! (ql/instruments/bonds/amortizingfloatingratebond.hpp).
 
 use ql_cashflows::ibor_coupon::IborCoupon;
-use ql_cashflows::{add_notional_exchange, Leg, SimpleCashFlow};
+use ql_cashflows::{Leg, SimpleCashFlow};
 use ql_indexes::IborIndex;
 use ql_time::{Date, DayCounter, Schedule};
 
@@ -184,6 +184,7 @@ impl AmortizingFloatingRateBond {
             face_amount * r / (1.0 - (1.0 + r).powi(-(n as i32)))
         };
 
+        #[allow(clippy::needless_range_loop)]
         for i in 0..n {
             notionals.push(outstanding);
             let interest = outstanding * assumed_rate * accrual_fractions[i];

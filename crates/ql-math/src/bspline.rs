@@ -101,6 +101,7 @@ impl BSpline {
         }
 
         // Add small regularization for numerical stability
+        #[allow(clippy::needless_range_loop)]
         for p in 0..n {
             btb[p][p] += 1e-12;
         }
@@ -142,6 +143,7 @@ impl BSpline {
 }
 
 /// Solve Ax = b via Gaussian elimination with partial pivoting.
+#[allow(clippy::needless_range_loop)]
 fn solve_normal_equations(a: &[Vec<f64>], b: &[f64]) -> Vec<f64> {
     let n = b.len();
     let mut aug: Vec<Vec<f64>> = a.iter().enumerate()

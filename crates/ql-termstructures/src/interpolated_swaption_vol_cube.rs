@@ -73,7 +73,7 @@ impl InterpolatedSwaptionVolCube {
     /// Look up (or bilinearly interpolate) the Black vol at a given
     /// expiry, tenor, and strike.
     pub fn vol(&self, expiry: f64, tenor: f64, strike: f64) -> f64 {
-        let ne = self.expiries.len();
+        let _ne = self.expiries.len();
         let nt = self.tenors.len();
 
         // Find bracketing indices for expiry
@@ -95,7 +95,7 @@ impl InterpolatedSwaptionVolCube {
 
     /// ATM vol at given expiry and tenor.
     pub fn atm_vol(&self, expiry: f64, tenor: f64) -> f64 {
-        let ne = self.expiries.len();
+        let _ne = self.expiries.len();
         let nt = self.tenors.len();
         let (ei0, ei1, ew) = bracket(&self.expiries, expiry);
         let (ti0, ti1, tw) = bracket(&self.tenors, tenor);

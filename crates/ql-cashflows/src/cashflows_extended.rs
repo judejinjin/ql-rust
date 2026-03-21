@@ -20,18 +20,15 @@ use std::any::Any;
 
 /// Rate averaging convention for overnight coupons (G83).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Default)]
 pub enum RateAveraging {
     /// Compound averaging: ∏(1 + rᵢ δᵢ) − 1.
+    #[default]
     Compound,
     /// Simple (arithmetic) averaging: Σ(rᵢ δᵢ) / Σ(δᵢ).
     Simple,
 }
 
-impl Default for RateAveraging {
-    fn default() -> Self {
-        Self::Compound
-    }
-}
 
 /// Compute averaged rate from sub-period rates and year fractions.
 pub fn compute_averaged_rate(

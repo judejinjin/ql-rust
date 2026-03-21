@@ -96,10 +96,10 @@ pub fn ln_gamma(x: f64) -> f64 {
     // Lanczos coefficients (g=7, n=9)
     const G: f64 = 7.0;
     const COEFF: [f64; 9] = [
-        0.999_999_999_999_809_93,
+        0.999_999_999_999_809_9,
         676.520_368_121_885_1,
-        -1259.139_216_722_403,
-        771.323_428_777_653_13,
+        -1_259.139_216_722_403,
+        771.323_428_777_653_1,
         -176.615_029_162_140_6,
         12.507_343_278_686_905,
         -0.138_571_095_265_720_12,
@@ -115,6 +115,7 @@ pub fn ln_gamma(x: f64) -> f64 {
     let x = x - 1.0;
     let mut a = COEFF[0];
     let t = x + G + 0.5;
+    #[allow(clippy::needless_range_loop)]
     for i in 1..9 {
         a += COEFF[i] / (x + i as f64);
     }
@@ -775,12 +776,12 @@ pub fn bivariate_student_t_cdf(x: f64, y: f64, nu: f64, rho: f64) -> f64 {
     // Numerical integration using Gauss-Legendre over the correlation angle
     // P(X ≤ x, Y ≤ y) via Plackett's formula adapted for Student-t
     let n_points = 20;
-    let mut sum = 0.0;
+    let mut _sum = 0.0;
 
     for i in 0..n_points {
         let theta = std::f64::consts::PI * (i as f64 + 0.5) / n_points as f64 * 0.5;
         let st = theta.sin();
-        let ct = theta.cos();
+        let _ct = theta.cos();
         let r = rho * st;
 
         let a = x / (nu + x * x).sqrt();
@@ -797,7 +798,7 @@ pub fn bivariate_student_t_cdf(x: f64, y: f64, nu: f64, rho: f64) -> f64 {
             }
         }
 
-        sum += theta.cos(); // placeholder weight for integration
+        _sum += theta.cos(); // placeholder weight for integration
     }
 
     // Fall back to product of marginal CDFs as approximation
@@ -898,7 +899,7 @@ pub fn bivariate_normal_cdf(x: f64, y: f64, rho: f64) -> f64 {
     }
 
     // Drezner-Wesolowsky approximation with Gauss-Legendre quadrature
-    let weights = [
+    let _weights = [
         0.04717533638651, 0.10693932599532, 0.16007832854335,
         0.20316742672307, 0.23349253653836, 0.24914704581340,
     ];
@@ -907,10 +908,11 @@ pub fn bivariate_normal_cdf(x: f64, y: f64, rho: f64) -> f64 {
         0.58731795428662, 0.36783149899818, 0.12523340851147,
     ];
 
-    let mut result = 0.0;
+    let mut result;
 
     if rho.abs() < 0.925 {
         let a_sin = (1.0 - rho * rho).sqrt();
+        #[allow(clippy::needless_range_loop)]
         for i in 0..6 {
             for sign in &[-1.0, 1.0] {
                 let sv = a_sin * (1.0 + sign * abscissae[i]) / 2.0;

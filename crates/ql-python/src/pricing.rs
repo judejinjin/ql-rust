@@ -469,6 +469,7 @@ pub fn sabr_vol_py(
 /// Returns a ``VGResult`` with npv, delta, vega.
 #[pyfunction]
 #[pyo3(signature = (sigma, nu, theta, spot, strike, tau, r, q=0.0, is_call=true, n_terms=128, l=10.0))]
+#[allow(clippy::too_many_arguments)]
 pub fn vg_price_py(
     sigma: f64,
     nu: f64,
@@ -608,6 +609,7 @@ pub fn bilateral_cva_py(
 ///
 /// Returns a ``CosHestonResult``.
 #[pyfunction]
+#[allow(clippy::too_many_arguments)]
 pub fn cos_heston_price_py(
     spot: f64,
     strike: f64,
@@ -974,6 +976,7 @@ pub fn asian_levy_py(
 /// Returns a ``BasketSpreadResult`` with npv, delta1, delta2.
 #[pyfunction]
 #[pyo3(signature = (s1, s2, r, q1, q2, v1, v2, rho, t, k=0.0, is_call=true))]
+#[allow(clippy::too_many_arguments)]
 pub fn choi_basket_spread_py(
     s1: f64, s2: f64, r: f64, q1: f64, q2: f64,
     v1: f64, v2: f64, rho: f64, t: f64, k: f64, is_call: bool,
@@ -1121,6 +1124,7 @@ pub fn partial_time_barrier_py(
 /// Returns a ``TwoAssetCorrelationResult`` with npv, delta1, delta2.
 #[pyfunction]
 #[pyo3(signature = (s1, s2, k1, k2, r, q1, q2, v1, v2, rho, t, is_call=true))]
+#[allow(clippy::too_many_arguments)]
 pub fn two_asset_correlation_py(
     s1: f64, s2: f64, k1: f64, k2: f64,
     r: f64, q1: f64, q2: f64, v1: f64, v2: f64, rho: f64,

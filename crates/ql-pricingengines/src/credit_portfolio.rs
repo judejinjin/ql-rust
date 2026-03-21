@@ -227,7 +227,7 @@ pub fn price_cdo_tranche(
     // Use Gauss-Hermite quadrature over the systematic factor
     let n_pts = n_integration.max(10);
     let mut el = 0.0;
-    let sqrt_2 = 2.0_f64.sqrt();
+    let _sqrt_2 = 2.0_f64.sqrt();
 
     for i in 0..n_pts {
         // Gauss-Hermite points (simplified: uniform grid over normal)
@@ -309,7 +309,7 @@ fn inv_cumulative_normal(p: f64) -> f64 {
 
     let a = [
         -3.969683028665376e+01, 2.209460984245205e+02,
-        -2.759285104469687e+02, 1.383577518672690e+02,
+        -2.759285104469687e+02, 1.383_577_518_672_69e2,
         -3.066479806614716e+01, 2.506628277459239e+00,
     ];
     let b = [
@@ -360,7 +360,7 @@ fn bivariate_normal_cdf(x: f64, y: f64, rho: f64) -> f64 {
     }
 
     // Gauss-Legendre quadrature approximation
-    let det = (1.0 - rho * rho).sqrt();
+    let _det = (1.0 - rho * rho).sqrt();
     let mut sum = 0.0;
     let n = 20;
     for i in 0..n {

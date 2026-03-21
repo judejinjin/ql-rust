@@ -51,7 +51,7 @@ pub struct Cashflow {
 pub fn npv<T: Number>(cashflows: &[Cashflow], curve: &DiscountCurveAD<T>) -> T {
     let mut total = T::zero();
     for cf in cashflows {
-        total = total + T::from_f64(cf.amount) * curve.discount(cf.time);
+        total += T::from_f64(cf.amount) * curve.discount(cf.time);
     }
     total
 }
@@ -66,7 +66,7 @@ pub fn pv01<T: Number>(cashflows: &[Cashflow], curve: &DiscountCurveAD<T>) -> T 
     for cf in cashflows {
         let df = curve.discount(cf.time);
         // ∂NPV/∂r_parallel = Σ -t_i * cf_i * DF(t_i)
-        total = total + T::from_f64(-cf.time * cf.amount * 0.0001) * df;
+        total += T::from_f64(-cf.time * cf.amount * 0.0001) * df;
     }
     total
 }
@@ -77,8 +77,8 @@ pub fn macaulay_duration<T: Number>(cashflows: &[Cashflow], curve: &DiscountCurv
     let mut total = T::zero();
     for cf in cashflows {
         let pv = T::from_f64(cf.amount) * curve.discount(cf.time);
-        weighted = weighted + T::from_f64(cf.time) * pv;
-        total = total + pv;
+        weighted += T::from_f64(cf.time) * pv;
+        total += pv;
     }
     weighted / total
 }
@@ -107,7 +107,7 @@ pub fn par_rate<T: Number>(
     // Annuity = Σ DF(t_i)
     let mut annuity = T::zero();
     for &t in coupon_times {
-        annuity = annuity + curve.discount(t);
+        annuity += curve.discount(t);
     }
     let t_n = *coupon_times.last().expect("need at least one coupon time");
     let df_n = curve.discount(t_n);

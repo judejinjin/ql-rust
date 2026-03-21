@@ -355,8 +355,8 @@ pub fn barone_adesi_whaley_generic<T: Number>(
         // Use simplified: g' ≈ delta_euro + (1 - dfq*nd1)*(1/q + omega) - omega
         // Actually, Newton step: h = omega*(S* - K) - euro - a_coeff
         // We invert the sign: we solve for h = 0
-        let rhs = omega * (s_star - strike) - euro;
-        let lhs = a_coeff;
+        let _rhs = omega * (s_star - strike) - euro;
+        let _lhs = a_coeff;
 
         // Simpler approach: iterate S* = K + (euro + a_coeff) / omega,
         // but use Newton on the full equation.
@@ -371,7 +371,7 @@ pub fn barone_adesi_whaley_generic<T: Number>(
             break;
         }
         let step = g_val / dg;
-        s_star = s_star - step;
+        s_star -= step;
 
         // Clamp
         if s_star.to_f64() <= 0.0 {
@@ -506,7 +506,7 @@ pub fn merton_jd_generic<T: Number>(
         let r_n = r - lambda * k_bar + nf * (one + k_bar).ln() / t;
 
         let bs = black_scholes_generic(spot, strike, r_n, q, sigma_n, t, is_call);
-        price = price + w * bs;
+        price += w * bs;
 
         // Update log-Poisson PMF
         log_pmf = log_pmf + (lambda_prime * t).ln() - T::from_f64(((n + 1) as f64).ln());
@@ -607,11 +607,11 @@ pub fn bond_pv_generic<T: Number>(
 
     // Discount each coupon
     for (&amt, &ti) in coupon_amounts.iter().zip(coupon_times.iter()) {
-        pv = pv + T::from_f64(amt) * discount_factor(rate, T::from_f64(ti));
+        pv += T::from_f64(amt) * discount_factor(rate, T::from_f64(ti));
     }
 
     // Notional repayment at maturity
-    pv = pv + T::from_f64(notional) * discount_factor(rate, T::from_f64(maturity));
+    pv += T::from_f64(notional) * discount_factor(rate, T::from_f64(maturity));
 
     pv
 }
@@ -664,7 +664,7 @@ pub fn swap_pv_generic<T: Number>(
 fn npv_generic<T: Number>(amounts: &[f64], times: &[f64], rate: T) -> T {
     let mut pv = T::zero();
     for (&amt, &ti) in amounts.iter().zip(times.iter()) {
-        pv = pv + T::from_f64(amt) * discount_factor(rate, T::from_f64(ti));
+        pv += T::from_f64(amt) * discount_factor(rate, T::from_f64(ti));
     }
     pv
 }
@@ -696,7 +696,7 @@ pub fn kirk_spread_generic<T: Number>(
     t: T,
 ) -> T {
     let zero = T::zero();
-    let half = T::half();
+    let _half = T::half();
 
     if t.to_f64() <= 0.0 {
         let payoff = s1 - s2 - strike;
@@ -993,7 +993,7 @@ pub fn leg_npv_generic<T: Number>(
     debug_assert_eq!(times.len(), amounts.len());
     let mut total = T::zero();
     for (&t, &amt) in times.iter().zip(amounts) {
-        total = total + T::from_f64(amt) * curve.discount_t(t);
+        total += T::from_f64(amt) * curve.discount_t(t);
     }
     total
 }
@@ -1010,7 +1010,7 @@ pub fn leg_pv01_generic<T: Number>(
     let mut total = T::zero();
     for (&t, &amt) in times.iter().zip(amounts) {
         let df = curve.discount_t(t);
-        total = total + T::from_f64(-t * amt * 0.0001) * df;
+        total += T::from_f64(-t * amt * 0.0001) * df;
     }
     total
 }
@@ -1026,8 +1026,8 @@ pub fn leg_duration_generic<T: Number>(
     let mut total = T::zero();
     for (&t, &amt) in times.iter().zip(amounts) {
         let pv = T::from_f64(amt) * curve.discount_t(t);
-        weighted = weighted + T::from_f64(t) * pv;
-        total = total + pv;
+        weighted += T::from_f64(t) * pv;
+        total += pv;
     }
     weighted / total
 }
@@ -1051,10 +1051,10 @@ pub fn bond_pv_curve_generic<T: Number>(
 ) -> T {
     let mut pv = T::zero();
     for (&t, &c) in coupon_times.iter().zip(coupon_amounts) {
-        pv = pv + T::from_f64(c) * curve.discount_t(t);
+        pv += T::from_f64(c) * curve.discount_t(t);
     }
     // Notional redemption at maturity
-    pv = pv + T::from_f64(notional) * curve.discount_t(maturity_time);
+    pv += T::from_f64(notional) * curve.discount_t(maturity_time);
     pv
 }
 
@@ -1100,7 +1100,7 @@ pub fn par_rate_generic<T: Number>(
     let df_mat = curve.discount_t(maturity_time);
     let mut annuity = T::zero();
     for (&t, &yf) in coupon_times.iter().zip(coupon_yfs) {
-        annuity = annuity + T::from_f64(yf) * curve.discount_t(t);
+        annuity += T::from_f64(yf) * curve.discount_t(t);
     }
     // par = (1 - DF(maturity)) / Σ(yf_i × DF(t_i))
     (T::one() - df_mat) / annuity
@@ -1125,7 +1125,7 @@ pub fn swap_rate_generic<T: Number>(
     let df_end = curve.discount_t(float_end_time);
     let mut annuity = T::zero();
     for (&t, &yf) in fixed_times.iter().zip(fixed_yfs) {
-        annuity = annuity + T::from_f64(yf) * curve.discount_t(t);
+        annuity += T::from_f64(yf) * curve.discount_t(t);
     }
     (df_start - df_end) / annuity
 }
@@ -1153,7 +1153,7 @@ pub fn key_rate_durations_generic(
     // Base NPV
     let base_curve = ql_termstructures::generic::InterpDiscountCurve::from_zero_rates(
         curve_times,
-        &curve_rates.to_vec(),
+        curve_rates,
     );
     let base_npv: f64 = leg_npv_generic(times, amounts, &base_curve);
     // Bump each pillar
@@ -1228,7 +1228,7 @@ pub fn swap_engine_generic<T: Number>(
     // Fixed leg
     let mut fixed_npv = T::zero();
     for (&t, &yf) in fixed_times.iter().zip(fixed_yfs) {
-        fixed_npv = fixed_npv + T::from_f64(notional * fixed_rate * yf) * curve.discount_t(t);
+        fixed_npv += T::from_f64(notional * fixed_rate * yf) * curve.discount_t(t);
     }
 
     // Floating leg (par approximation)
@@ -1239,7 +1239,7 @@ pub fn swap_engine_generic<T: Number>(
     // Fair rate
     let mut annuity = T::zero();
     for (&t, &yf) in fixed_times.iter().zip(fixed_yfs) {
-        annuity = annuity + T::from_f64(yf) * curve.discount_t(t);
+        annuity += T::from_f64(yf) * curve.discount_t(t);
     }
     let fair_rate = (df_start - df_end) / annuity;
 
@@ -1303,9 +1303,9 @@ pub fn fixed_bond_engine_generic<T: Number>(
 ) -> BondResult<T> {
     let mut npv = T::zero();
     for (&t, &yf) in coupon_times.iter().zip(coupon_yfs) {
-        npv = npv + T::from_f64(notional * coupon_rate * yf) * curve.discount_t(t);
+        npv += T::from_f64(notional * coupon_rate * yf) * curve.discount_t(t);
     }
-    npv = npv + T::from_f64(notional) * curve.discount_t(maturity_time);
+    npv += T::from_f64(notional) * curve.discount_t(maturity_time);
 
     let clean = npv - T::from_f64(accrued);
     let ytm = curve.zero_rate_t(maturity_time);
@@ -1342,10 +1342,10 @@ pub fn floating_bond_engine_generic<T: Number>(
         let yf = float_yfs[i];
         let fwd = forecast_curve.forward_rate_t(t1, t2);
         let coupon = T::from_f64(notional) * (fwd + T::from_f64(spread)) * T::from_f64(yf);
-        npv = npv + coupon * discount_curve.discount_t(t2);
+        npv += coupon * discount_curve.discount_t(t2);
     }
     // Notional redemption
-    npv = npv + T::from_f64(notional) * discount_curve.discount_t(maturity_time);
+    npv += T::from_f64(notional) * discount_curve.discount_t(maturity_time);
     npv
 }
 
@@ -1386,7 +1386,7 @@ pub fn amortizing_bond_generic<T: Number>(
         } else {
             notionals[i] // final redemption
         };
-        npv = npv + T::from_f64(interest + principal) * curve.discount_t(coupon_times[i]);
+        npv += T::from_f64(interest + principal) * curve.discount_t(coupon_times[i]);
     }
     npv
 }
@@ -1416,7 +1416,7 @@ pub fn inflation_bond_generic<T: Number>(
     let mut npv = T::zero();
     for i in 0..coupon_times.len() {
         let coupon = T::from_f64(notional * coupon_rate * coupon_yfs[i]) * cpi_ratios[i];
-        npv = npv + coupon * curve.discount_t(coupon_times[i]);
+        npv += coupon * curve.discount_t(coupon_times[i]);
     }
     // Inflation-adjusted redemption with floor
     let adjusted = if cpi_ratio_mat.to_f64() > floor {
@@ -1424,7 +1424,7 @@ pub fn inflation_bond_generic<T: Number>(
     } else {
         T::from_f64(floor)
     };
-    npv = npv + T::from_f64(notional) * adjusted * curve.discount_t(maturity_time);
+    npv += T::from_f64(notional) * adjusted * curve.discount_t(maturity_time);
     npv
 }
 
@@ -1464,10 +1464,10 @@ pub fn cds_midpoint_generic<T: Number>(
         } else {
             t / 2.0
         };
-        prot_leg = prot_leg + T::from_f64(notional * lgd) * default_prob * yield_curve.discount_t(t_mid);
+        prot_leg += T::from_f64(notional * lgd) * default_prob * yield_curve.discount_t(t_mid);
 
         // Premium leg: pays spread × yf on survival
-        prem_leg = prem_leg + T::from_f64(notional * spread * yf) * surv * yield_curve.discount_t(t);
+        prem_leg += T::from_f64(notional * spread * yf) * surv * yield_curve.discount_t(t);
 
         prev_surv = surv;
     }
@@ -1500,12 +1500,12 @@ pub fn xccy_swap_generic<T: Number>(
     let mut dom_pv = T::zero();
     let mut for_pv = T::zero();
     for (&t, &yf) in times.iter().zip(yfs) {
-        dom_pv = dom_pv + T::from_f64(notional_dom * fixed_rate_dom * yf) * dom_curve.discount_t(t);
-        for_pv = for_pv + T::from_f64(notional_for * fixed_rate_for * yf) * for_curve.discount_t(t);
+        dom_pv += T::from_f64(notional_dom * fixed_rate_dom * yf) * dom_curve.discount_t(t);
+        for_pv += T::from_f64(notional_for * fixed_rate_for * yf) * for_curve.discount_t(t);
     }
     // Notional exchange at maturity
-    dom_pv = dom_pv + T::from_f64(notional_dom) * dom_curve.discount_t(maturity_time);
-    for_pv = for_pv + T::from_f64(notional_for) * for_curve.discount_t(maturity_time);
+    dom_pv += T::from_f64(notional_dom) * dom_curve.discount_t(maturity_time);
+    for_pv += T::from_f64(notional_for) * for_curve.discount_t(maturity_time);
 
     // NPV in domestic: receive domestic, pay foreign (converted at spot)
     dom_pv - fx_spot * for_pv
@@ -1611,8 +1611,8 @@ pub fn basis_swap_generic<T: Number>(
         let fwd1 = forecast_curve1.forward_rate_t(t1, t2);
         let fwd2 = forecast_curve2.forward_rate_t(t1, t2);
 
-        leg1_pv = leg1_pv + T::from_f64(notional * yf) * (fwd1 + T::from_f64(spread1)) * df;
-        leg2_pv = leg2_pv + T::from_f64(notional * yf) * (fwd2 + T::from_f64(spread2)) * df;
+        leg1_pv += T::from_f64(notional * yf) * (fwd1 + T::from_f64(spread1)) * df;
+        leg2_pv += T::from_f64(notional * yf) * (fwd2 + T::from_f64(spread2)) * df;
     }
     leg1_pv - leg2_pv
 }
@@ -1662,11 +1662,11 @@ pub fn cat_bond_generic<T: Number>(
     let mut npv = T::zero();
     for i in 0..coupon_times.len() {
         let coupon = notional * coupon_rate * coupon_yfs[i] * survival_probs[i];
-        npv = npv + T::from_f64(coupon) * curve.discount_t(coupon_times[i]);
+        npv += T::from_f64(coupon) * curve.discount_t(coupon_times[i]);
     }
     // Notional at maturity, conditional on survival
     let mat_survival = survival_probs.last().copied().unwrap_or(1.0);
-    npv = npv + T::from_f64(notional * mat_survival) * curve.discount_t(maturity_time);
+    npv += T::from_f64(notional * mat_survival) * curve.discount_t(maturity_time);
     npv
 }
 
@@ -1692,9 +1692,9 @@ pub fn bond_forward_generic<T: Number>(
     // Bond dirty price from today
     let mut bond_pv = T::zero();
     for (&t, &yf) in coupon_times.iter().zip(coupon_yfs) {
-        bond_pv = bond_pv + T::from_f64(notional * coupon_rate * yf) * curve.discount_t(t);
+        bond_pv += T::from_f64(notional * coupon_rate * yf) * curve.discount_t(t);
     }
-    bond_pv = bond_pv + T::from_f64(notional) * curve.discount_t(maturity_time);
+    bond_pv += T::from_f64(notional) * curve.discount_t(maturity_time);
 
     // Forward contract: pay forward_price at delivery
     let fwd_pv = T::from_f64(forward_price) * curve.discount_t(delivery_time);
@@ -1724,7 +1724,7 @@ pub fn swap_multicurve_generic<T: Number>(
     // Fixed leg
     let mut fixed_npv = T::zero();
     for (&t, &yf) in fixed_times.iter().zip(fixed_yfs) {
-        fixed_npv = fixed_npv + T::from_f64(notional * fixed_rate * yf) * discount_curve.discount_t(t);
+        fixed_npv += T::from_f64(notional * fixed_rate * yf) * discount_curve.discount_t(t);
     }
 
     // Floating leg
@@ -1732,7 +1732,7 @@ pub fn swap_multicurve_generic<T: Number>(
     for i in 0..float_start_times.len() {
         let fwd = forecast_curve.forward_rate_t(float_start_times[i], float_end_times[i]);
         let coupon = T::from_f64(notional * float_yfs[i]) * fwd;
-        float_npv = float_npv + coupon * discount_curve.discount_t(float_end_times[i]);
+        float_npv += coupon * discount_curve.discount_t(float_end_times[i]);
     }
 
     float_npv - fixed_npv
@@ -1758,7 +1758,7 @@ fn bjs_phi_generic<T: Number>(
     s: T, t: T, gamma: f64, h: T, big_i: T, r: T, q: T, vol: T,
 ) -> T {
     let zero = T::zero();
-    let one = T::one();
+    let _one = T::one();
 
     if t.to_f64() <= 0.0 || s.to_f64() <= 0.0 || h.to_f64() <= 0.0 || big_i.to_f64() <= 0.0 {
         return zero;
@@ -1880,7 +1880,7 @@ pub fn qd_plus_generic<T: Number>(
     spot: T, strike: T, r: T, q: T, vol: T, t: T, is_call: bool,
 ) -> T {
     let zero = T::zero();
-    let one = T::one();
+    let _one = T::one();
     let omega = if is_call { 1.0 } else { -1.0 };
 
     if t.to_f64() <= 0.0 {
@@ -1894,7 +1894,7 @@ pub fn qd_plus_generic<T: Number>(
 
     let sig2 = vol * vol;
     let tf = t.to_f64();
-    let sf = spot.to_f64();
+    let _sf = spot.to_f64();
     let kf = strike.to_f64();
     let rf = r.to_f64();
     let qf = q.to_f64();
@@ -1970,7 +1970,7 @@ pub fn qd_plus_generic<T: Number>(
                 - q * spot * (zero - q * tau).exp() * normal_cdf(zero - d1)
         };
 
-        premium = premium + T::from_f64(weight * tf) * integrand;
+        premium += T::from_f64(weight * tf) * integrand;
     }
 
     let npv = euro + premium;
@@ -2309,9 +2309,7 @@ pub fn digital_american_generic<T: Number>(
     if t.to_f64() <= 0.0 || sigma.to_f64() <= 0.0 {
         let payoff = if is_call {
             if spot.to_f64() > strike.to_f64() { cash } else { zero }
-        } else {
-            if spot.to_f64() < strike.to_f64() { cash } else { zero }
-        };
+        } else if spot.to_f64() < strike.to_f64() { cash } else { zero };
         return payoff;
     }
 
@@ -2512,7 +2510,7 @@ pub fn asian_geometric_continuous_generic<T: Number>(
     let half = T::half();
     let two = T::from_f64(2.0);
     let six = T::from_f64(6.0);
-    let twelve = T::from_f64(12.0);
+    let _twelve = T::from_f64(12.0);
 
     let b = r - q;
     // Adjusted cost-of-carry for geometric average
@@ -2563,7 +2561,7 @@ pub fn asian_geometric_discrete_generic<T: Number>(
     let omega = if is_call { one } else { zero - one };
     let sqrt_t = t.sqrt();
 
-    let f_g = spot * (b_g * t).exp();
+    let _f_g = spot * (b_g * t).exp();
     let d1 = ((spot / strike).ln() + (b_g + half * sigma_g_sq) * t) / (sigma_g * sqrt_t);
     let d2 = d1 - sigma_g * sqrt_t;
 
@@ -2587,15 +2585,15 @@ pub fn asian_turnbull_wakeman_generic<T: Number>(
     q: T,
     vol: T,
     t: T,
-    t_elapsed: T,
-    running_avg: T,
+    _t_elapsed: T,
+    _running_avg: T,
     is_call: bool,
 ) -> T {
     let zero = T::zero();
     let one = T::one();
     let half = T::half();
     let two = T::from_f64(2.0);
-    let three = T::from_f64(3.0);
+    let _three = T::from_f64(3.0);
 
     let b = r - q;
 
@@ -2741,8 +2739,8 @@ pub fn operator_splitting_spread_generic<T: Number>(
     s2: T,
     strike: T,
     r: T,
-    q1: T,
-    q2: T,
+    _q1: T,
+    _q2: T,
     vol1: T,
     vol2: T,
     rho: T,
@@ -2923,7 +2921,7 @@ pub fn double_barrier_knockout_generic<T: Number>(
                 / (one + (n_pi * n_pi))
         };
 
-        price = price + coeff * integral;
+        price += coeff * integral;
     }
 
     let factor = (mu * (s_ln - l_ln)).exp();
@@ -2958,7 +2956,7 @@ pub fn binary_barrier_generic<T: Number>(
     let b = r - q;
     let sigma2 = vol * vol;
     let mu = (b - sigma2 / two) / sigma2;
-    let lambda = (mu * mu + two * r / sigma2).sqrt();
+    let _lambda = (mu * mu + two * r / sigma2).sqrt();
     let sqrt_t = t.sqrt();
 
     let eta = if is_up { T::zero() - one } else { one };
@@ -2978,6 +2976,7 @@ pub fn binary_barrier_generic<T: Number>(
         let b_term = phi * spot * ratio.powf(two * (mu + one)) * normal_cdf(eta * y1);
 
         if is_knock_in {
+            #[allow(clippy::if_same_then_else)]
             if is_up { b_term } else { b_term }
         } else {
             a - b_term
@@ -3069,7 +3068,7 @@ pub fn hw_bond_option_generic<T: Number>(
     let zero = T::zero();
     let one = T::one();
     let two = T::from_f64(2.0);
-    let four = T::from_f64(4.0);
+    let _four = T::from_f64(4.0);
 
     let t_opt = option_expiry;
     let t_bond = bond_maturity;
@@ -3380,7 +3379,7 @@ pub fn gjr_garch_option_generic<T: Number>(
 
     // Simulate GARCH variance path (risk-neutral mean path)
     for _ in 0..n_steps {
-        total_var = total_var + h * dt;
+        total_var += h * dt;
         let eps = T::zero(); // Risk-neutral ε = 0
         let leverage = if eps.to_f64() < 0.0 { gamma } else { T::zero() };
         h = omega_g + (alpha + leverage) * h * eps * eps + beta * h;
@@ -3427,8 +3426,8 @@ pub fn vasicek_bond_option_generic<T: Number>(
         let b_val = b_func(t1, t2);
         let tau = t2 - t1;
         let r_inf = b_vasicek - sigma * sigma / (two * a * a);
-        let exp_term = (r_inf * (b_val - tau) - sigma * sigma * b_val * b_val / (four * a)).exp();
-        exp_term
+        
+        (r_inf * (b_val - tau) - sigma * sigma * b_val * b_val / (four * a)).exp()
     };
 
     // P(0, T_opt) and P(0, T_bond)
@@ -3459,7 +3458,7 @@ pub fn vasicek_european_equity_generic<T: Number>(
     spot: T,
     strike: T,
     a: T,
-    b_vasicek: T,
+    _b_vasicek: T,
     sigma_r: T,
     sigma_s: T,
     rho: T,
@@ -3504,8 +3503,8 @@ pub fn cliquet_generic<T: Number>(
     q: T,
     vol: T,
     reset_times: &[f64],
-    local_floor: T,
-    local_cap: T,
+    _local_floor: T,
+    _local_cap: T,
     is_call: bool,
 ) -> T {
     let mut total = T::zero();
@@ -3519,7 +3518,7 @@ pub fn cliquet_generic<T: Number>(
         let fs = forward_start_generic(spot, r, q, vol, t1, t2, T::one(), is_call);
         // Actually the cliquet payoff per period is capped/floored
         // For simplicity, return unclipped sum of forward-starts
-        total = total + fs;
+        total += fs;
     }
 
     total
@@ -3551,7 +3550,7 @@ pub fn holder_extensible_generic<T: Number>(
     // Standard European to t1
     let euro_t1 = black_scholes_generic(spot, strike1, r, q, vol, t1, is_call);
     // Extension: European from t1 to t2 at strike2
-    let euro_t2 = black_scholes_generic(spot, strike2, r, q, vol, t2, is_call);
+    let _euro_t2 = black_scholes_generic(spot, strike2, r, q, vol, t2, is_call);
 
     // The holder-extensible option is worth at least max(euro_t1, euro_t2)
     // Proper formula uses bivariate normal for the joint distribution
@@ -3565,9 +3564,9 @@ pub fn holder_extensible_generic<T: Number>(
     let e1 = ((spot / strike2).ln() + (r - q + T::half() * vol * vol) * t2) / (vol * sqrt_t2);
     let e2 = e1 - vol * sqrt_t2;
 
-    let df1 = (zero - r * t1).exp();
+    let _df1 = (zero - r * t1).exp();
     let df2 = (zero - r * t2).exp();
-    let fwd1 = (zero - q * t1).exp();
+    let _fwd1 = (zero - q * t1).exp();
     let fwd2 = (zero - q * t2).exp();
 
     // Standard European + extension premium
@@ -3578,6 +3577,7 @@ pub fn holder_extensible_generic<T: Number>(
         - omega * strike2 * df2 * bvn2
         + euro_t1 * (one - normal_cdf(omega * d1));
 
+    #[allow(clippy::if_same_then_else)]
     if is_call { extensible } else { extensible }
 }
 
@@ -3719,9 +3719,9 @@ pub fn quanto_barrier_generic<T: Number>(
     spot: T,
     strike: T,
     barrier: T,
-    rebate: T,
+    _rebate: T,
     r_dom: T,
-    r_for: T,
+    _r_for: T,
     q: T,
     sigma_s: T,
     sigma_fx: T,
@@ -3742,7 +3742,7 @@ pub fn quanto_barrier_generic<T: Number>(
 
     // Analytic single-barrier knockout (Merton-Reiner-Rubinstein)
     let mu = (r_dom - q_adj - half * sigma_s * sigma_s) / (sigma_s * sigma_s);
-    let lambda = (mu * mu + T::from_f64(2.0) * r_dom / (sigma_s * sigma_s)).sqrt();
+    let _lambda = (mu * mu + T::from_f64(2.0) * r_dom / (sigma_s * sigma_s)).sqrt();
     let df = (zero - r_dom * t).exp();
 
     let x1 = (spot / strike).ln() / (sigma_s * sqrt_t) + (T::one() + mu) * sigma_s * sqrt_t;
@@ -3856,20 +3856,20 @@ pub fn mc_asian_arithmetic_generic<T: Number>(
 
         for _ in 0..n_fixings {
             let z = T::from_f64(lcg_normal(&mut state));
-            s1 = s1 * (drift + vol * z).exp();
-            s2 = s2 * (drift - vol * z).exp();
-            avg1 = avg1 + s1;
-            avg2 = avg2 + s2;
+            s1 *= (drift + vol * z).exp();
+            s2 *= (drift - vol * z).exp();
+            avg1 += s1;
+            avg2 += s2;
         }
 
-        avg1 = avg1 * inv_nf;
-        avg2 = avg2 * inv_nf;
+        avg1 *= inv_nf;
+        avg2 *= inv_nf;
 
         let p1 = (omega * (avg1 - strike)).max(zero);
         let p2 = (omega * (avg2 - strike)).max(zero);
         let payoff = (p1 + p2) * half;
 
-        sum = sum + payoff;
+        sum += payoff;
         sum_sq_f64 += payoff.to_f64() * payoff.to_f64();
     }
 
@@ -3937,12 +3937,12 @@ pub fn mc_variance_swap_generic<T: Number>(
             let z = T::from_f64(lcg_normal(&mut state));
             let s_new = s * (drift + vol_sqrt_dt * z).exp();
             let log_ret = (s_new / s).ln();
-            sum_lr_sq = sum_lr_sq + log_ret * log_ret;
+            sum_lr_sq += log_ret * log_ret;
             s = s_new;
         }
 
         let realised_var = sum_lr_sq / t;
-        sum_var = sum_var + realised_var;
+        sum_var += realised_var;
     }
 
     let fair_variance = sum_var / T::from_f64(n_paths as f64);
@@ -4034,14 +4034,14 @@ pub fn mc_asian_heston_generic<T: Number>(
             };
 
             let vol_avg = half * (v + v_next.max(zero));
-            s = s * ((r - q - half * vol_avg) * dt + vol_avg.sqrt() * dt.sqrt() * w1).exp();
+            s *= ((r - q - half * vol_avg) * dt + vol_avg.sqrt() * dt.sqrt() * w1).exp();
             v = v_next.max(zero);
-            avg = avg + s;
+            avg += s;
         }
 
-        avg = avg / nf;
+        avg /= nf;
         let payoff = (omega * (avg - strike)).max(zero);
-        sum = sum + payoff;
+        sum += payoff;
         sum_sq_f64 += payoff.to_f64() * payoff.to_f64();
     }
 
@@ -4112,11 +4112,11 @@ pub fn mc_basket_generic<T: Number>(
                 z_corr += chol[i * n + j] * z_indep[j];
             }
             let s_t = spots[i] * (drifts[i] + vols[i] * sqrt_t * T::from_f64(z_corr)).exp();
-            basket_val = basket_val + weights[i] * s_t;
+            basket_val += weights[i] * s_t;
         }
 
         let payoff = (omega * (basket_val - strike)).max(zero);
-        sum = sum + payoff;
+        sum += payoff;
         sum_sq_f64 += payoff.to_f64() * payoff.to_f64();
     }
 
@@ -4185,7 +4185,7 @@ pub fn mc_barrier_generic<T: Number>(
             for _ in 0..n_steps {
                 let z_f64 = lcg_normal(&mut state);
                 let s_prev_f64 = s.to_f64();
-                s = s * (drift + vol * T::from_f64(z_f64 * anti)).exp();
+                s *= (drift + vol * T::from_f64(z_f64 * anti)).exp();
                 let s_f64 = s.to_f64();
 
                 if !hit {
@@ -4219,11 +4219,9 @@ pub fn mc_barrier_generic<T: Number>(
 
             let payoff = if is_knockout {
                 if hit { rebate } else { (omega * (s - strike)).max(zero) }
-            } else {
-                if hit { (omega * (s - strike)).max(zero) } else { zero }
-            };
+            } else if hit { (omega * (s - strike)).max(zero) } else { zero };
 
-            sum = sum + payoff;
+            sum += payoff;
             sum_sq_f64 += payoff.to_f64() * payoff.to_f64();
         }
     }
@@ -4295,7 +4293,7 @@ pub fn mc_digital_generic<T: Number>(
         let payoff_anti = if in_money_anti { cash_amount } else { zero };
         let avg = (payoff + payoff_anti) * half;
 
-        sum = sum + avg;
+        sum += avg;
         sum_sq_f64 += avg.to_f64() * avg.to_f64();
     }
 
@@ -4363,7 +4361,7 @@ pub fn mc_forward_start_generic<T: Number>(
         let p2 = (omega * (s_exp_a - k_a)).max(zero);
 
         let payoff = (p1 + p2) * half;
-        sum = sum + payoff;
+        sum += payoff;
         sum_sq_f64 += payoff.to_f64() * payoff.to_f64();
     }
 
@@ -4479,7 +4477,7 @@ pub fn binomial_barrier_generic<T: Number>(
 
     // Backward induction
     for step in (0..n).rev() {
-        let mut new_values: Vec<T> = (0..=step)
+        let new_values: Vec<T> = (0..=step)
             .map(|j| {
                 let s_j = spot * u.powf(T::from_f64(j as f64))
                     * d.powf(T::from_f64((step - j) as f64));
@@ -4540,7 +4538,7 @@ pub fn fd_swing_generic<T: Number>(
         build_bs_operator_generic, build_log_spot_grid, fd_1d_solve_generic,
     };
 
-    let r_f64 = r.to_f64();
+    let _r_f64 = r.to_f64();
     let vol_f64 = vol.to_f64();
     let spot_f64 = spot.to_f64();
     let t_f64 = t.to_f64();
@@ -4557,7 +4555,7 @@ pub fn fd_swing_generic<T: Number>(
     let dt_exercise = t_f64 / n_exercises as f64;
     let steps_per_period = n_time_steps / n_exercises;
 
-    for ex in (0..n_exercises).rev() {
+    for _ex in (0..n_exercises).rev() {
         // Terminal condition for this exercise period: continuation + exercise payoff
         let terminal: Vec<T> = grid
             .iter()
@@ -4891,9 +4889,9 @@ pub fn commodity_swap_generic<T: Number>(
     let mut sum_df = T::zero();
     let mut sum_fwd = T::zero();
     for i in 0..n {
-        sum_fwd_df = sum_fwd_df + forward_prices[i] * discount_factors[i];
-        sum_df = sum_df + discount_factors[i];
-        sum_fwd = sum_fwd + forward_prices[i];
+        sum_fwd_df += forward_prices[i] * discount_factors[i];
+        sum_df += discount_factors[i];
+        sum_fwd += forward_prices[i];
     }
     let n_t = T::from_f64(n as f64);
     let avg_fwd = sum_fwd / n_t;
@@ -4944,8 +4942,8 @@ pub fn asset_swap_generic<T: Number>(
     let mut coupon_pv = T::zero();
     let mut annuity = T::zero();
     for i in 0..n {
-        coupon_pv = coupon_pv + notional * coupon_rate * year_fractions[i] * discount_factors[i];
-        annuity = annuity + notional * year_fractions[i] * discount_factors[i];
+        coupon_pv += notional * coupon_rate * year_fractions[i] * discount_factors[i];
+        annuity += notional * year_fractions[i] * discount_factors[i];
     }
     let par_pv = notional * discount_factors[n - 1];
     let bond_leg_npv = coupon_pv + par_pv;
@@ -5042,7 +5040,7 @@ fn inv_cumulative_normal_f64(p: f64) -> f64 {
 
     let a = [
         -3.969683028665376e+01,  2.209460984245205e+02,
-        -2.759285104469687e+02,  1.383577518672690e+02,
+        -2.759285104469687e+02,  1.383_577_518_672_69e2,
         -3.066479806614716e+01,  2.506628277459239e+00,
     ];
     let b = [
@@ -5114,7 +5112,7 @@ fn cdo_expected_loss_generic<T: Number>(
         // We route through T for the conditional loss, but the
         // tranche clamping involves piecewise functions best done in f64
         // and converted back.
-        el = el + T::from_f64(wi_f * tl_f);
+        el += T::from_f64(wi_f * tl_f);
     }
     el
 }
@@ -5244,11 +5242,11 @@ pub fn tree_swaption_generic<T: Number>(
             };
             let mut c_i = fixed_rate * T::from_f64(tau_i);
             if i == n_coupons - 1 {
-                c_i = c_i + T::one();
+                c_i += T::one();
             }
             let tau = T::from_f64(swap_tenors[i] - option_expiry);
             let p = hw_bond_price_generic(a, sigma, r_j, tau);
-            swap_val = swap_val - c_i * p;
+            swap_val -= c_i * p;
         }
         let payoff = omega * swap_val;
         values[idx(j)] = if payoff.to_f64() > 0.0 { payoff * notional } else { T::zero() };
@@ -5256,7 +5254,7 @@ pub fn tree_swaption_generic<T: Number>(
 
     // Backward induction
     for step in (0..n_steps).rev() {
-        let t = step as f64 * dt;
+        let _t = step as f64 * dt;
         let mut new_values = vec![T::zero(); width];
         for j in -j_max..=j_max {
             let r_j = r0 + T::from_f64(j as f64 * dx);
@@ -5337,7 +5335,7 @@ pub fn tree_cap_floor_generic<T: Number>(
         }
 
         // Backward induction
-        for step in (0..n_steps).rev() {
+        for _step in (0..n_steps).rev() {
             let mut new_values = vec![T::zero(); width];
             for j in -j_max..=j_max {
                 let r_j = r0 + T::from_f64(j as f64 * dx);
@@ -5353,7 +5351,7 @@ pub fn tree_cap_floor_generic<T: Number>(
             values = new_values;
         }
 
-        total_npv = total_npv + values[idx_fn(0)];
+        total_npv += values[idx_fn(0)];
     }
 
     total_npv
@@ -5366,6 +5364,7 @@ pub fn tree_cap_floor_generic<T: Number>(
 /// Gauss-Hermite quadrature nodes/weights (Golub-Welsch), f64 only.
 ///
 /// Returns (nodes, weights) for the physicists' Hermite measure exp(−x²).
+#[allow(clippy::needless_range_loop)]
 fn gauss_hermite_f64(n: usize) -> (Vec<f64>, Vec<f64>) {
     assert!(n >= 2);
     // Build tridiagonal Jacobi matrix for Hermite polynomials
@@ -5535,12 +5534,12 @@ pub fn gaussian1d_swaption_generic<T: Number>(
             let b_j_t = T::from_f64(b_j);
             let zb_j = pm_j_ratio
                 * (T::zero() - b_j_t * x - T::from_f64(0.5) * b_j_t * b_j_t * T::from_f64(zeta_f)).exp();
-            annuity = annuity + T::from_f64(year_fractions[j]) * zb_j;
+            annuity += T::from_f64(year_fractions[j]) * zb_j;
         }
 
         let swap_value = sign * notional * (swap_start_bond - swap_end_bond - fixed_rate * annuity);
         let payoff = if swap_value.to_f64() > 0.0 { swap_value } else { T::zero() };
-        integral = integral + T::from_f64(*weight) * payoff;
+        integral += T::from_f64(*weight) * payoff;
     }
 
     pm_te * integral / T::from_f64(std::f64::consts::PI.sqrt())
@@ -5570,6 +5569,7 @@ pub fn gaussian1d_swaption_generic<T: Number>(
 /// * `exercise_time` — exercise time (European).
 /// * `nx`, `ny`, `nt` — grid sizes.
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::needless_range_loop)]
 pub fn fd_g2_swaption_generic<T: Number>(
     a: T,
     sigma_x: T,
@@ -5631,7 +5631,7 @@ pub fn fd_g2_swaption_generic<T: Number>(
         let mut fixed_pv = T::zero();
         for (i, &t_i) in fixed_leg_times.iter().enumerate() {
             if t_i > current_time {
-                fixed_pv = fixed_pv + fixed_leg_amounts[i] * discount_fn(t_i);
+                fixed_pv += fixed_leg_amounts[i] * discount_fn(t_i);
             }
         }
         let last_t = if float_leg_last_time > current_time {
@@ -5762,9 +5762,7 @@ pub fn fd_g2_swaption_generic<T: Number>(
             rhs[ny - 1] = v_half[i][ny - 1];
 
             let soln = thomas_t(&lower, &diag_vec, &upper, &rhs);
-            for j in 0..ny {
-                v[i][j] = soln[j];
-            }
+            v[i][..ny].copy_from_slice(&soln[..ny]);
         }
     }
 
@@ -5968,6 +5966,7 @@ fn vv_bs_price<T: Number>(
 }
 
 /// BS vega helper, generic.
+#[allow(dead_code)]
 fn vv_bs_vega<T: Number>(spot: T, strike: T, r_d: T, r_f: T, sigma: T, t: T) -> T {
     let fwd = spot * ((r_d - r_f) * t).exp();
     let sqrt_t = t.sqrt();
@@ -5983,7 +5982,7 @@ fn vv_bs_barrier<T: Number>(
     r_d: T, r_f: T, sigma: T, t: T, is_down: bool, is_knockout: bool, is_call: bool,
 ) -> T {
     let mu = (r_d - r_f) / (sigma * sigma) - T::half();
-    let lambda = (mu * mu + T::two() * r_d / (sigma * sigma)).sqrt();
+    let _lambda = (mu * mu + T::two() * r_d / (sigma * sigma)).sqrt();
     let sqrt_t = t.sqrt();
     let h_ratio = barrier / spot;
     let x2 = (spot / barrier).ln() / (sigma * sqrt_t) + (T::one() + mu) * sigma * sqrt_t;
@@ -6063,7 +6062,7 @@ pub fn vanna_volga_barrier_generic<T: Number>(
             let rv = r.to_f64().clamp(0.0, 1.0);
             T::from_f64(rv)
         } else { T::zero() };
-        vv_adj = vv_adj + w[i] * overhedge[i] * ratio_i;
+        vv_adj += w[i] * overhedge[i] * ratio_i;
     }
 
     let price = bs_bar + vv_adj;
@@ -6091,7 +6090,7 @@ pub fn hw_jamshidian_swaption_generic<T: Number>(
     for i in 0..n {
         let tau_i = if i == 0 { swap_tenors[0] - option_expiry } else { swap_tenors[i] - swap_tenors[i - 1] };
         let mut c = fixed_rate * tau_i;
-        if i == n - 1 { c = c + T::one(); }
+        if i == n - 1 { c += T::one(); }
         coupons.push(c);
     }
 
@@ -6123,12 +6122,12 @@ pub fn hw_jamshidian_swaption_generic<T: Number>(
         let mut gp = T::zero();
         for i in 0..n {
             let p_i = (a_coeffs[i] - b_vals[i] * r_star).exp();
-            g = g + coupons[i] * p_i;
-            gp = gp - coupons[i] * b_vals[i] * p_i;
+            g += coupons[i] * p_i;
+            gp -= coupons[i] * b_vals[i] * p_i;
         }
         if gp.to_f64().abs() < 1e-30 { break; }
         let dr = g / gp;
-        r_star = r_star - dr;
+        r_star -= dr;
         if dr.to_f64().abs() < 1e-12 { break; }
     }
 
@@ -6143,7 +6142,7 @@ pub fn hw_jamshidian_swaption_generic<T: Number>(
             a, sigma, p_option, discount_factors[i],
             option_expiry, swap_tenors[i], bond_strikes[i], is_bond_call,
         );
-        total = total + coupons[i] * res;
+        total += coupons[i] * res;
     }
     notional * total
 }
@@ -6198,7 +6197,7 @@ pub fn replicating_variance_swap_generic<T: Number>(
         let dk = if i == 0 { strikes[1] - strikes[0] }
         else if i == n - 1 { strikes[n - 1] - strikes[n - 2] }
         else { (strikes[i + 1] - strikes[i - 1]) * T::half() };
-        fair_var = fair_var + two_over_t * dk * option_prices[i] / (k * k * df);
+        fair_var += two_over_t * dk * option_prices[i] / (k * k * df);
     }
 
     let pv = notional * df * (fair_var - variance_strike);
@@ -6307,8 +6306,8 @@ pub fn mc_american_lsm_generic<T: Number>(
     for i in 0..n_paths {
         let disc = T::from_f64(df_table[cf_time[i]]);
         let pv = cf_val[i] * disc;
-        sum = sum + pv;
-        sum_sq = sum_sq + pv * pv;
+        sum += pv;
+        sum_sq += pv * pv;
     }
     let nf = T::from_f64(n_paths as f64);
     let mean = sum / nf;
@@ -6319,6 +6318,7 @@ pub fn mc_american_lsm_generic<T: Number>(
 }
 
 /// Solve a 3×3 linear system (for LSM regression).
+#[allow(clippy::needless_range_loop)]
 fn solve_3x3(a: [[f64; 3]; 3], b: [f64; 3]) -> [f64; 3] {
     let mut m = [[0.0; 4]; 3];
     for i in 0..3 { for j in 0..3 { m[i][j] = a[i][j]; } m[i][3] = b[i]; }
@@ -6367,7 +6367,7 @@ pub fn callable_bond_generic<T: Number>(
     // Add coupons at maturity
     for &(t, amt) in coupon_times {
         if (t - total_time).abs() < dt * 0.5 {
-            for val in values.iter_mut() { *val = *val + amt; }
+            for val in values.iter_mut() { *val += amt; }
         }
     }
 
@@ -6385,7 +6385,7 @@ pub fn callable_bond_generic<T: Number>(
         let t_end = (step + 1) as f64 * dt;
         for &(t, amt) in coupon_times {
             if t > t_start && t <= t_end && (t - total_time).abs() > dt * 0.5 {
-                for val in new_values.iter_mut() { *val = *val + amt; }
+                for val in new_values.iter_mut() { *val += amt; }
             }
         }
         // Exercise
@@ -6394,9 +6394,7 @@ pub fn callable_bond_generic<T: Number>(
                 for val in new_values.iter_mut() {
                     if is_call {
                         if val.to_f64() > call_price.to_f64() { *val = call_price; }
-                    } else {
-                        if val.to_f64() < call_price.to_f64() { *val = call_price; }
-                    }
+                    } else if val.to_f64() < call_price.to_f64() { *val = call_price; }
                 }
             }
         }
@@ -6413,6 +6411,7 @@ pub fn callable_bond_generic<T: Number>(
 ///
 /// At each node: value = max(continuation + coupons, conversion_value).
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::needless_range_loop)]
 pub fn convertible_bond_generic<T: Number>(
     face: T, stock_price: T, conversion_ratio: T,
     r: T, q: T, vol: T, total_time: f64,
@@ -6436,7 +6435,7 @@ pub fn convertible_bond_generic<T: Number>(
     // Coupons at maturity
     for &(t, amt) in coupon_times {
         if (t - total_time).abs() < dt * 0.5 {
-            for val in values.iter_mut() { *val = *val + amt; }
+            for val in values.iter_mut() { *val += amt; }
         }
     }
 
@@ -6452,7 +6451,7 @@ pub fn convertible_bond_generic<T: Number>(
         let t_end = (step + 1) as f64 * dt;
         for &(t, amt) in coupon_times {
             if t > t_start && t <= t_end && (t - total_time).abs() > dt * 0.5 {
-                for val in new_values.iter_mut() { *val = *val + amt; }
+                for val in new_values.iter_mut() { *val += amt; }
             }
         }
         values = new_values;
@@ -6516,7 +6515,7 @@ pub fn mc_mountain_range_generic<T: Number>(
             for i in 0..n_assets {
                 let drift = (r - q[i] - T::half() * vols[i] * vols[i]) * T::from_f64(dt_f);
                 let diff = vols[i] * T::from_f64(sqrt_dt * z_corr[i]);
-                prices[i] = prices[i] * (drift + diff).exp();
+                prices[i] *= (drift + diff).exp();
             }
 
             // Per-asset returns
@@ -6539,7 +6538,7 @@ pub fn mc_mountain_range_generic<T: Number>(
                     let capped = if avg_ret.to_f64() > local_cap { T::from_f64(local_cap) }
                     else if avg_ret.to_f64() > 0.0 { avg_ret }
                     else { T::zero() };
-                    accum = accum + capped;
+                    accum += capped;
                     if obs_idx == n_obs - 1 { payoff = accum; }
                 }
             }
@@ -6547,8 +6546,8 @@ pub fn mc_mountain_range_generic<T: Number>(
         }
 
         let disc = notional * payoff * df;
-        sum = sum + disc;
-        sum_sq = sum_sq + disc * disc;
+        sum += disc;
+        sum_sq += disc * disc;
     }
 
     let nf = T::from_f64(n_paths as f64);
@@ -6567,10 +6566,8 @@ fn cholesky_f64(corr: &[f64], n: usize) -> Vec<f64> {
             for k in 0..j { s += l[i * n + k] * l[j * n + k]; }
             l[i * n + j] = if i == j {
                 (corr[i * n + j] - s).max(0.0).sqrt()
-            } else {
-                if l[j * n + j].abs() > 1e-15 { (corr[i * n + j] - s) / l[j * n + j] }
-                else { 0.0 }
-            };
+            } else if l[j * n + j].abs() > 1e-15 { (corr[i * n + j] - s) / l[j * n + j] }
+            else { 0.0 };
         }
     }
     l
@@ -6595,7 +6592,7 @@ fn heston_cf_generic<T: Number>(
     u_freq: f64, tau: T, v0: T, kappa: T, theta: T, sigma: T, rho: T, log_fk: T,
 ) -> ComplexT<T> {
     let u = T::from_f64(u_freq);
-    let iu = ComplexT::new(T::zero(), u);
+    let _iu = ComplexT::new(T::zero(), u);
 
     let alpha = ComplexT::new(-T::half() * u * u, -T::half() * u);
     let beta = ComplexT::new(kappa, -rho * sigma * u);
@@ -6661,6 +6658,7 @@ fn cos_payoff_coeffs(n: usize, a: f64, b: f64, strike: f64, is_call: bool) -> Ve
 
 /// COS Heston pricing, generic over `T: Number` (AD-78).
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::needless_range_loop)]
 pub fn cos_heston_generic<T: Number>(
     spot: T, strike: T, tau: T,
     r: T, q: T,
@@ -6699,9 +6697,9 @@ pub fn cos_heston_generic<T: Number>(
         let phase = ComplexT::new(T::from_f64(phase_arg.cos()), T::from_f64(phase_arg.sin()));
         let re_cf_phase = cf.mul(phase).re;
         let weight = if k == 0 { T::half() } else { T::one() };
-        price = price + weight * re_cf_phase * T::from_f64(u_k[k]);
+        price += weight * re_cf_phase * T::from_f64(u_k[k]);
     }
-    price = price * df;
+    price *= df;
     if price.to_f64() > 0.0 { price } else { T::zero() }
 }
 
@@ -6750,8 +6748,8 @@ pub fn mc_slv_generic<T: Number>(
         } else {
             let d = strike - s; if d.to_f64() > 0.0 { d } else { T::zero() }
         };
-        sum = sum + payoff;
-        sum_sq = sum_sq + payoff * payoff;
+        sum += payoff;
+        sum_sq += payoff * payoff;
     }
 
     let nf = T::from_f64(n_paths as f64);
@@ -6836,8 +6834,8 @@ pub fn nth_to_default_mc_generic<T: Number>(
             if x < threshold { n_defaults += 1; }
         }
         let payoff = if n_defaults >= nth { lgd } else { T::zero() };
-        sum = sum + payoff;
-        sum_sq = sum_sq + payoff * payoff;
+        sum += payoff;
+        sum_sq += payoff * payoff;
     }
 
     let nf = T::from_f64(n_paths as f64);
@@ -6856,6 +6854,7 @@ pub fn nth_to_default_mc_generic<T: Number>(
 /// Evolves forward rates via log-normal LMM, then computes swap NPV.
 /// RNG in f64; forward rates, payoff, discounting in T.
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::needless_range_loop)]
 pub fn lmm_swaption_mc_generic<T: Number>(
     initial_forwards: &[T], vols: &[T], correlations: &[f64],
     accruals: &[f64], swap_start_idx: usize, swap_end_idx: usize,
@@ -6890,12 +6889,12 @@ pub fn lmm_swaption_mc_generic<T: Number>(
             for j in (step + 1)..n_rates {
                 let mut drift = T::zero();
                 for k in (step + 1)..=j {
-                    drift = drift + T::from_f64(accruals[k]) * vols[k] * fwds[k]
+                    drift += T::from_f64(accruals[k]) * vols[k] * fwds[k]
                         / (T::one() + T::from_f64(accruals[k]) * fwds[k]);
                 }
                 drift = drift * vols[j] * T::from_f64(dt);
                 let diffusion = vols[j] * T::from_f64(sqrt_dt * zc[j]);
-                fwds[j] = fwds[j] * (drift - T::half() * vols[j] * vols[j] * T::from_f64(dt) + diffusion).exp();
+                fwds[j] *= (drift - T::half() * vols[j] * vols[j] * T::from_f64(dt) + diffusion).exp();
             }
         }
 
@@ -6903,27 +6902,25 @@ pub fn lmm_swaption_mc_generic<T: Number>(
         let mut swap_npv = T::zero();
         let mut df_accum = T::one();
         for j in swap_start_idx..swap_end_idx {
-            df_accum = df_accum / (T::one() + T::from_f64(accruals[j]) * fwds[j]);
+            df_accum /= T::one() + T::from_f64(accruals[j]) * fwds[j];
             let flow = T::from_f64(accruals[j]) * (fwds[j] - fixed_rate);
-            swap_npv = swap_npv + flow * df_accum;
+            swap_npv += flow * df_accum;
         }
 
         let payoff = if is_payer {
             if swap_npv.to_f64() > 0.0 { swap_npv } else { T::zero() }
-        } else {
-            if (-swap_npv).to_f64() > 0.0 { -swap_npv } else { T::zero() }
-        };
+        } else if (-swap_npv).to_f64() > 0.0 { -swap_npv } else { T::zero() };
         let pv = notional * payoff;
 
         // Discount back to time 0
         let mut df_to_zero = T::one();
         for j in 0..swap_start_idx {
-            df_to_zero = df_to_zero / (T::one() + T::from_f64(accruals[j]) * initial_forwards[j]);
+            df_to_zero /= T::one() + T::from_f64(accruals[j]) * initial_forwards[j];
         }
         let disc_pv = pv * df_to_zero;
 
-        sum = sum + disc_pv;
-        sum_sq = sum_sq + disc_pv * disc_pv;
+        sum += disc_pv;
+        sum_sq += disc_pv * disc_pv;
     }
 
     let nf = T::from_f64(n_paths as f64);
@@ -6939,7 +6936,7 @@ pub fn lmm_swaption_mc_generic<T: Number>(
 
 /// VG characteristic function (log-return), generic.
 fn vg_cf_generic<T: Number>(
-    u_freq: f64, tau: T, sigma: T, nu: T, theta_vg: T, omega: T, log_fk: T, r_minus_q: T,
+    u_freq: f64, tau: T, sigma: T, nu: T, theta_vg: T, omega: T, log_fk: T, _r_minus_q: T,
 ) -> ComplexT<T> {
     let u = T::from_f64(u_freq);
     // φ_VG(u) = exp(iuω T) · (1 − iuθν + ½σ²νu²)^{−T/ν}
@@ -6960,6 +6957,7 @@ fn vg_cf_generic<T: Number>(
 
 /// VG COS pricing, generic over `T: Number` (AD-92).
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::needless_range_loop)]
 pub fn vg_cos_generic<T: Number>(
     spot: T, strike: T, tau: T,
     r: T, q: T,
@@ -7000,9 +6998,9 @@ pub fn vg_cos_generic<T: Number>(
         let phase = ComplexT::new(T::from_f64(phase_arg.cos()), T::from_f64(phase_arg.sin()));
         let re_cf_phase = cf.mul(phase).re;
         let weight = if k == 0 { T::half() } else { T::one() };
-        price = price + weight * re_cf_phase * T::from_f64(u_k[k]);
+        price += weight * re_cf_phase * T::from_f64(u_k[k]);
     }
-    price = price * df;
+    price *= df;
     if price.to_f64() > 0.0 { price } else { T::zero() }
 }
 

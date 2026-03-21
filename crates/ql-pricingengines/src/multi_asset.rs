@@ -343,17 +343,11 @@ pub fn margrabe_exchange(
     rho: f64,
     time_to_expiry: f64,
 ) -> f64 {
-    let t = time_to_expiry;
-    let n = NormalDistribution::standard();
-
-    let sigma = (vol1 * vol1 + vol2 * vol2 - 2.0 * rho * vol1 * vol2).sqrt();
-    let sqrt_t = t.sqrt();
-
-    let d1 = ((s1 / s2).ln() + (q2 - q1 + 0.5 * sigma * sigma) * t) / (sigma * sqrt_t);
-    let d2 = d1 - sigma * sqrt_t;
-
-    let price = s1 * (-q1 * t).exp() * n.cdf(d1) - s2 * (-q2 * t).exp() * n.cdf(d2);
-    price.max(0.0)
+    // Delegate to the generic implementation (AD-ready).
+    crate::generic::margrabe_exchange_generic::<f64>(
+        s1, s2, q1, q2, vol1, vol2, rho, time_to_expiry,
+    )
+    .max(0.0)
 }
 
 // ===========================================================================

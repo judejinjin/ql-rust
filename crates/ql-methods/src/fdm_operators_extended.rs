@@ -108,7 +108,7 @@ impl NinePointLinearOp {
         y
     }
 
-    fn size(&self) -> usize {
+    fn _size(&self) -> usize {
         self.n1 * self.n2
     }
 }
@@ -268,7 +268,7 @@ impl NthOrderDerivativeOp {
         let mut coeffs = Vec::with_capacity(n);
         let mut offsets = Vec::with_capacity(n);
         for i in 0..n {
-            let lo = if i >= hw { i - hw } else { 0 };
+            let lo = i.saturating_sub(hw);
             let hi = (i + hw + 1).min(n);
             let pts: Vec<f64> = (lo..hi).map(|k| grid[k]).collect();
             let offs: Vec<i32> = (lo..hi).map(|k| k as i32 - i as i32).collect();
@@ -286,6 +286,7 @@ impl NthOrderDerivativeOp {
     }
 
     /// Apply: y[i] = Σ_k c_k · u[i + offset_k].
+    #[allow(clippy::needless_range_loop)]
     pub fn apply(&self, u: &[f64]) -> Vec<f64> {
         let mut y = vec![0.0; self.n];
         for i in 0..self.n {

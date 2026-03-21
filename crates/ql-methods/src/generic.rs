@@ -77,9 +77,9 @@ impl<T: Number> TripleBandOpGeneric<T> {
     /// Scale the operator by a generic constant.
     pub fn scale(&mut self, factor: T) {
         for i in 0..self.n {
-            self.lower[i] = self.lower[i] * factor;
-            self.diag[i] = self.diag[i] * factor;
-            self.upper[i] = self.upper[i] * factor;
+            self.lower[i] *= factor;
+            self.diag[i] *= factor;
+            self.upper[i] *= factor;
         }
     }
 
@@ -87,9 +87,9 @@ impl<T: Number> TripleBandOpGeneric<T> {
     pub fn add_assign(&mut self, other: &TripleBandOpGeneric<T>) {
         assert_eq!(self.n, other.n);
         for i in 0..self.n {
-            self.lower[i] = self.lower[i] + other.lower[i];
-            self.diag[i] = self.diag[i] + other.diag[i];
-            self.upper[i] = self.upper[i] + other.upper[i];
+            self.lower[i] += other.lower[i];
+            self.diag[i] += other.diag[i];
+            self.upper[i] += other.upper[i];
         }
     }
 }
@@ -390,7 +390,7 @@ pub fn fd_2d_solve_generic<T: Number>(
                         - values[(j + 1) * n_x + (i - 1)]
                         - values[(j - 1) * n_x + (i + 1)]
                         + values[(j - 1) * n_x + (i - 1)]);
-                rhs[idx] = rhs[idx] + T::from_f64(dt) * cross_term;
+                rhs[idx] += T::from_f64(dt) * cross_term;
             }
         }
 
@@ -409,9 +409,7 @@ pub fn fd_2d_solve_generic<T: Number>(
             }
 
             let solved = ops.op_x.solve_implicit(&rhs_x, theta, dt);
-            for i in 0..n_x {
-                intermediate[row_start + i] = solved[i];
-            }
+            intermediate[row_start..row_start + n_x].copy_from_slice(&solved[..n_x]);
         }
 
         // Step 3: v-direction implicit sweep (for each x-level)
@@ -495,7 +493,7 @@ pub fn binomial_crr_generic<T: Number>(
 
     // Backward induction
     for step in (0..n).rev() {
-        let mut new_values: Vec<T> = (0..=step)
+        let new_values: Vec<T> = (0..=step)
             .map(|j| {
                 let cont = df * (p * values[j + 1] + (one - p) * values[j]);
                 if is_american {

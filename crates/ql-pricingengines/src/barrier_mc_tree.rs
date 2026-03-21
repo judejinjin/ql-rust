@@ -5,7 +5,6 @@
 //! - [`mc_barrier`] — Monte Carlo pricing for barrier options with 
 //!   Brownian bridge barrier adjustment.
 
-use ql_math::distributions::cumulative_normal;
 use rand::prelude::*;
 use rand_distr::StandardNormal;
 
@@ -40,6 +39,7 @@ pub struct BarrierTreeMcResult {
 /// - `barrier_type` — type of barrier
 /// - `n_steps` — number of time steps
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::needless_range_loop)]
 pub fn binomial_barrier(
     spot: f64,
     strike: f64,
@@ -206,7 +206,7 @@ pub fn mc_barrier(
                             0.0
                         };
 
-                        if rng.gen::<f64>() < bb_prob {
+                        if rng.random::<f64>() < bb_prob {
                             hit = true;
                         }
                     }

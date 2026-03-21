@@ -17,8 +17,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::fdm_operators::{TripleBandOp, crank_nicolson_step, hundsdorfer_verwer_step,
-    modified_craig_sneyd_step, Heston2dOps, douglas_adi_step, apply_american_condition,
+use crate::fdm_operators::{TripleBandOp, crank_nicolson_step, apply_american_condition,
     AdiScheme, fd_heston_solve_adi, HestonFdResult};
 use crate::fdm_meshers::Mesher1d;
 

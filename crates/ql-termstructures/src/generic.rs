@@ -18,7 +18,7 @@
 //! ```
 
 use ql_core::Number;
-use ql_math::generic::{linear_interp, log_linear_interp};
+use ql_math::generic::log_linear_interp;
 
 // ===========================================================================
 // GenericYieldCurve trait (INFRA-3)
@@ -135,7 +135,7 @@ impl<T: Number> InterpDiscountCurve<T> {
         log_dfs.push(cum);
         for i in 1..times.len() {
             let dt = times[i] - times[i - 1];
-            cum = cum + T::from_f64(-dt) * fwd_rates[i];
+            cum += T::from_f64(-dt) * fwd_rates[i];
             log_dfs.push(cum);
         }
         Self {

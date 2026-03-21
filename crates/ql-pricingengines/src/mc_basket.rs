@@ -5,7 +5,6 @@
 
 use rand::prelude::*;
 use rand_distr::StandardNormal;
-use nalgebra::{DMatrix, DVector};
 
 /// Basket payoff type.
 #[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
@@ -30,6 +29,7 @@ pub struct McBasketResult {
 }
 
 /// Cholesky decomposition of a correlation matrix.
+#[allow(clippy::needless_range_loop)]
 fn cholesky(corr: &[Vec<f64>]) -> Vec<Vec<f64>> {
     let n = corr.len();
     let mut l = vec![vec![0.0; n]; n];
@@ -155,6 +155,7 @@ pub fn mc_european_basket(
 /// # Arguments
 /// - Same as `mc_european_basket` plus `n_steps` for exercise monitoring
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::needless_range_loop)]
 pub fn mc_american_basket(
     spots: &[f64],
     strike: f64,
@@ -184,9 +185,7 @@ pub fn mc_american_basket(
     // Simulate all paths and store basket values at each step
     let mut paths = vec![vec![vec![0.0_f64; n_assets]; n_steps + 1]; n_paths];
     for p in 0..n_paths {
-        for i in 0..n_assets {
-            paths[p][0][i] = spots[i];
-        }
+        paths[p][0][..n_assets].copy_from_slice(&spots[..n_assets]);
         for step in 1..=n_steps {
             let z_indep: Vec<f64> = (0..n_assets).map(|_| rng.sample(StandardNormal)).collect();
             let mut z_corr = vec![0.0; n_assets];
@@ -306,6 +305,7 @@ pub fn mc_american_basket(
     }
 }
 
+#[allow(clippy::needless_range_loop)]
 fn solve_3x3(a: &[[f64; 3]; 3], b: &[f64; 3]) -> [f64; 3] {
     let mut m = [[0.0; 4]; 3];
     for i in 0..3 {

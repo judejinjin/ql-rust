@@ -5,7 +5,6 @@
 //! - [`mc_asian_geometric_price`] — MC geometric average price Asian (control variate)
 //! - [`mc_asian_heston_price`] — MC arithmetic Asian under Heston dynamics
 
-use ql_math::distributions::NormalDistribution;
 use rand::prelude::*;
 use rand_distr::StandardNormal;
 
@@ -295,7 +294,7 @@ pub fn mc_asian_heston_price(
                 // Exponential approximation
                 let p = (psi - 1.0) / (psi + 1.0);
                 let beta = (1.0 - p) / m.max(1e-20);
-                let u_uniform: f64 = rng.gen();
+                let u_uniform: f64 = rng.random();
                 if u_uniform <= p {
                     0.0
                 } else {

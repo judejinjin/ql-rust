@@ -40,6 +40,7 @@ struct C {
     im: f64,
 }
 
+#[allow(dead_code)]
 impl C {
     fn new(re: f64, im: f64) -> Self {
         Self { re, im }
@@ -78,16 +79,16 @@ fn heston_log_cf(
     theta: f64,
     sigma: f64,
     rho: f64,
-    rd: f64,           // risk-free rate
-    rd_minus_q: f64,   // r − q (forward measure adjustment)
+    _rd: f64,           // risk-free rate
+    _rd_minus_q: f64,   // r − q (forward measure adjustment)
     x0_over_k: f64,    // ln(F/K) where F = S·e^{(r-q)T}
 ) -> C {
     // u is the purely real frequency argument; characteristic function φ(u)
     // where X = ln(S_T/K) under the risk-neutral measure with forward.
-    let xi = C::new(kappa - rho * sigma * u, -rho * sigma * 0.0); // kappa - rho*sigma*(iu)
+    let _xi = C::new(kappa - rho * sigma * u, -rho * sigma * 0.0); // kappa - rho*sigma*(iu)
     // For logCF we evaluate at iu (purely imaginary)
-    let a = kappa;
-    let b = C::new(
+    let _a = kappa;
+    let _b = C::new(
         kappa - rho * sigma * /* nothing */ 0.0,
         -rho * sigma * u,
     );
@@ -95,14 +96,14 @@ fn heston_log_cf(
     //   with the Albrecher choice  d = sqrt((rho*sigma*iu - kappa)^2 + sigma^2(iu+u^2))
     // Standard formula: we compute φ(u) = exp(A + B*v0) where
     //   d^2 = (kappa - i*rho*sigma*u)^2 + sigma^2*(u^2 + i*u)
-    let iu = C::new(0.0, u);
-    let neg_iu = C::new(0.0, -u);
+    let _iu = C::new(0.0, u);
+    let _neg_iu = C::new(0.0, -u);
     // alpha_hat = -0.5*(u^2 + i*u)
     // beta = kappa - rho*sigma*i*u
     let alpha = C::new(-0.5 * (u * u), -0.5 * u); // -½(u² + iu)
     let beta = C::new(kappa, -rho * sigma * u);
     // gamma = 0.5*sigma²
-    let half_sig2 = 0.5 * sigma * sigma;
+    let _half_sig2 = 0.5 * sigma * sigma;
     // d = sqrt(beta² - 2*gamma*alpha*2) ... use standard form
     // d² = beta² - sigma²*alpha  (since 2*gamma = sigma²)
     let beta_sq = C::new(
@@ -135,11 +136,11 @@ fn heston_log_cf(
 
     // (1 − g·e^{d*tau}) / (1 − g)
     let ge_dtau = g.mul(exp_dtau);
-    let one = C::new(1.0, 0.0);
+    let _one = C::new(1.0, 0.0);
     let num2 = C::new(1.0 - ge_dtau.re, -ge_dtau.im);
     let den2 = C::new(1.0 - g.re, -g.im);
     let den2_norm = den2.re * den2.re + den2.im * den2.im;
-    let ratio = if den2_norm < 1e-30 {
+    let _ratio = if den2_norm < 1e-30 {
         C::new(1.0, 0.0)
     } else {
         C::new(
@@ -186,9 +187,9 @@ fn heston_log_cf(
         let real_q = (inner_log_num.re * inner_log_den.re + inner_log_num.im * inner_log_den.im) / iln_den_norm;
         let imag_q = (inner_log_num.im * inner_log_den.re - inner_log_num.re * inner_log_den.im) / iln_den_norm;
         let abs_q = (real_q * real_q + imag_q * imag_q).sqrt();
-        let ln_abs = abs_q.ln();
+        
         // Result re of ln(ratio)
-        ln_abs
+        abs_q.ln()
     };
     let log_ratio_im = if iln_den_norm < 1e-30 {
         0.0
@@ -302,6 +303,7 @@ pub struct CosHestonResult {
 /// - `opt_type` — call or put
 /// - `n_terms` — number of cosine series terms (default: 128; use 64–256)
 /// - `L` — truncation parameter (default: 12.0; controls [a,b] width)
+#[allow(clippy::needless_range_loop)]
 pub fn cos_heston_price(
     model: &HestonModel,
     spot: f64,

@@ -117,6 +117,7 @@ impl ChebyshevInterpolation {
 }
 
 /// Compute Chebyshev coefficients from function values via DCT-like transform.
+#[allow(clippy::needless_range_loop)]
 fn compute_chebyshev_coefficients(values: &[f64], n: usize) -> Vec<f64> {
     let mut coeffs = vec![0.0; n];
     for j in 0..n {

@@ -69,7 +69,7 @@ impl Seasonality {
 
     /// Get the seasonality factor for a given month (1-based: Jan=1, Dec=12).
     pub fn factor(&self, month: u32) -> f64 {
-        let idx = ((month.max(1).min(12)) - 1) as usize;
+        let idx = ((month.clamp(1, 12)) - 1) as usize;
         self.monthly_factors[idx]
     }
 
@@ -100,8 +100,8 @@ impl Seasonality {
     /// (going forward), the correction factor = product of monthly factors
     /// over the period, normalised by the period length.
     pub fn correction_factor(&self, start_month: u32, end_month: u32) -> f64 {
-        let s = start_month.max(1).min(12);
-        let e = end_month.max(1).min(12);
+        let s = start_month.clamp(1, 12);
+        let e = end_month.clamp(1, 12);
 
         match self.seasonality_type {
             SeasonalityType::Multiplicative => {
@@ -149,7 +149,7 @@ pub fn estimate_seasonality(
     let mut counts = [0_u32; 12];
 
     for &(_year, month, rate) in observations {
-        if month >= 1 && month <= 12 {
+        if (1..=12).contains(&month) {
             let idx = (month - 1) as usize;
             sums[idx] += rate;
             counts[idx] += 1;

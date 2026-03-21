@@ -140,12 +140,12 @@ impl ZeroCouponInflationSwap {
         let inflation_amount = self.notional * (fixing_cpi / self.base_cpi - 1.0);
         let fixed_amount = self.notional * ((1.0 + self.fixed_rate).powf(t) - 1.0);
 
-        let npv = if self.pay_fixed {
+        
+        if self.pay_fixed {
             (inflation_amount - fixed_amount) * discount_factor
         } else {
             (fixed_amount - inflation_amount) * discount_factor
-        };
-        npv
+        }
     }
 
     /// Breakeven inflation rate implied by the fixing CPI.
@@ -487,6 +487,7 @@ impl Btp {
     }
 
     /// Dirty price given discount factors for each coupon date.
+    #[allow(clippy::needless_range_loop)]
     pub fn dirty_price(&self, discount_factors: &[f64]) -> f64 {
         let n = self.schedule_dates.len() - 1;
         assert_eq!(discount_factors.len(), n);

@@ -198,7 +198,7 @@ pub fn fd_bates_vanilla(
         + ws * wv * u[idx(i_s + 1, j_v + 1)];
 
     // Numerical Greeks
-    let delta = if i_s >= 1 && i_s + 1 <= ns {
+    let delta = if i_s >= 1 && i_s < ns {
         let u_up = (1.0 - wv) * u[idx(i_s + 1, j_v)] + wv * u[idx(i_s + 1, j_v + 1)];
         let u_dn = (1.0 - wv) * u[idx(i_s - 1, j_v)] + wv * u[idx(i_s - 1, j_v + 1)];
         (u_up - u_dn) / (2.0 * ds)
@@ -206,7 +206,7 @@ pub fn fd_bates_vanilla(
         0.0
     };
 
-    let gamma = if i_s >= 1 && i_s + 1 <= ns {
+    let gamma = if i_s >= 1 && i_s < ns {
         let u_up = (1.0 - wv) * u[idx(i_s + 1, j_v)] + wv * u[idx(i_s + 1, j_v + 1)];
         let u_dn = (1.0 - wv) * u[idx(i_s - 1, j_v)] + wv * u[idx(i_s - 1, j_v + 1)];
         let u_mid = (1.0 - wv) * u[idx(i_s, j_v)] + wv * u[idx(i_s, j_v + 1)];
@@ -370,6 +370,7 @@ pub fn fd_sabr_vanilla(
 /// - `is_call` — true for call
 /// - `ns`, `nt` — grid sizes
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::needless_range_loop)]
 pub fn fd_cev_vanilla(
     spot: f64,
     strike: f64,
@@ -440,13 +441,13 @@ pub fn fd_cev_vanilla(
     let w = fi - i0 as f64;
     let price = (1.0 - w) * u[i0] + w * u[i0 + 1];
 
-    let delta = if i0 >= 1 && i0 + 1 <= ns {
+    let delta = if i0 >= 1 && i0 < ns {
         (u[i0 + 1] - u[i0 - 1]) / (2.0 * ds)
     } else {
         0.0
     };
 
-    let gamma = if i0 >= 1 && i0 + 1 <= ns {
+    let gamma = if i0 >= 1 && i0 < ns {
         (u[i0 + 1] - 2.0 * u[i0] + u[i0 - 1]) / (ds * ds)
     } else {
         0.0

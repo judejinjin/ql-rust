@@ -103,11 +103,11 @@ pub fn digital_american(
     //   where μ = b - σ²/2
 
     let mu = b - 0.5 * sigma * sigma;
-    let lambda = ((mu * mu + 2.0 * r * sigma * sigma).sqrt()) ;
+    let lambda = (mu * mu + 2.0 * r * sigma * sigma).sqrt() ;
     let a = mu / (sigma * sigma);
     let b_coeff = lambda / (sigma * sigma);
 
-    let (is_up, eta) = match digital_type {
+    let (_is_up, eta) = match digital_type {
         DigitalAmericanType::CashOrNothingCall | DigitalAmericanType::AssetOrNothingCall => (true, -1.0_f64),
         DigitalAmericanType::CashOrNothingPut | DigitalAmericanType::AssetOrNothingPut => (false, 1.0_f64),
     };

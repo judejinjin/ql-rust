@@ -34,7 +34,7 @@
 use serde::{Deserialize, Serialize};
 
 use ql_time::{
-    BusinessDayConvention, Calendar, Date, DayCounter, Month,
+    BusinessDayConvention, Calendar, Date, DayCounter,
 };
 
 use crate::bootstrap::RateHelper;
@@ -351,6 +351,7 @@ fn interpolate_log_linear(times: &[f64], dfs: &[f64], t: f64) -> f64 {
 mod tests {
     use super::*;
     use approx::assert_abs_diff_eq;
+    use ql_time::Month;
 
     fn ref_date() -> Date {
         Date::from_ymd(2025, Month::January, 15)

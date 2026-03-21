@@ -125,7 +125,7 @@ pub fn price_two_asset_barrier(opt: &TwoAssetBarrierOption) -> TwoAssetBarrierRe
     // Correlation adjustment: the joint probability of being ITM on asset 1
     // AND barrier being hit on asset 2 involves the bivariate normal.
     // Simplified: adjust by correlation factor
-    let rho_adj = 1.0 - rho * rho;
+    let _rho_adj = 1.0 - rho * rho;
     let correlation_factor = 1.0 + rho * eta * 0.1 * (h / s2).ln().abs();
 
     let conditional_price = if is_out {

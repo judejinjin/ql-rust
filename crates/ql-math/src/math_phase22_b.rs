@@ -523,6 +523,12 @@ pub struct PrimeNumbers {
     primes: Vec<u64>,
 }
 
+impl Default for PrimeNumbers {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PrimeNumbers {
     pub fn new() -> Self {
         Self {
@@ -542,7 +548,7 @@ impl PrimeNumbers {
         let mut candidate = self.primes.last().unwrap() + 2;
         loop {
             let sqrt_c = (candidate as f64).sqrt() as u64;
-            let is_prime = self.primes.iter().take_while(|&&p| p <= sqrt_c).all(|&p| candidate % p != 0);
+            let is_prime = self.primes.iter().take_while(|&&p| p <= sqrt_c).all(|&p| !candidate.is_multiple_of(p));
             if is_prime {
                 self.primes.push(candidate);
                 return;
@@ -635,7 +641,7 @@ pub fn beta_function(z: f64, w: f64) -> f64 {
 
 /// Incomplete beta function I_x(a, b) (regularised).
 pub fn incomplete_beta(a: f64, b: f64, x: f64) -> QLResult<f64> {
-    if x < 0.0 || x > 1.0 {
+    if !(0.0..=1.0).contains(&x) {
         return Err(QLError::InvalidArgument("x must be in [0, 1]".into()));
     }
     if x == 0.0 || x == 1.0 {
@@ -952,7 +958,7 @@ impl DiscreteSimpsonIntegrator {
     /// Integrate a function over [a, b].
     pub fn integrate<F: Fn(f64) -> f64>(&self, f: &F, a: f64, b: f64) -> f64 {
         let n = (self.evaluations.max(3) - 1) | 1; // ensure even number of intervals, but n is odd count
-        let n = if n % 2 == 0 { n + 1 } else { n }; // Actually need even number of intervals
+        let n = if n.is_multiple_of(2) { n + 1 } else { n }; // Actually need even number of intervals
         // Uniform Simpson 1/3: n must be odd (even number of intervals)
         let n_intervals = n.max(2);
         let _n_points = n_intervals + 1;
@@ -1043,6 +1049,7 @@ pub trait MomentBasedGaussianPolynomial {
         // z arrays have length n+1 to accommodate z[k-1][i+1] access
         let m = n + 1;
         let mut z: Vec<Vec<f64>> = vec![vec![0.0; m]; n];
+        #[allow(clippy::needless_range_loop)]
         for i in 0..m {
             z[0][i] = self.moment(i);
         }

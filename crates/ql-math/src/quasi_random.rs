@@ -338,7 +338,7 @@ impl FaureSequence {
 
         // Dimensions 1..d: apply Pascal matrix transformation
         let digits = to_base(i, self.base, 32);
-        for j in 1..self.dimension {
+        for _j in 1..self.dimension {
             let mut transformed = vec![0u64; digits.len()];
             for (k, &dk) in digits.iter().enumerate() {
             for (l, dkl) in self.pascal.iter().enumerate().take(digits.len()) {
@@ -415,10 +415,10 @@ fn smallest_prime_ge(n: u64) -> u64 {
 fn is_prime(n: u64) -> bool {
     if n < 2 { return false; }
     if n == 2 { return true; }
-    if n % 2 == 0 { return false; }
+    if n.is_multiple_of(2) { return false; }
     let mut i = 3;
     while i * i <= n {
-        if n % i == 0 { return false; }
+        if n.is_multiple_of(i) { return false; }
         i += 2;
     }
     true
@@ -524,7 +524,7 @@ impl Xoshiro256StarStar {
 
     #[inline(always)]
     fn rotl(x: u64, k: u32) -> u64 {
-        (x << k) | (x >> (64 - k))
+        x.rotate_left(k)
     }
 
     /// Generate next 64-bit unsigned integer.

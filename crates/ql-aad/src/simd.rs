@@ -50,6 +50,7 @@ pub struct Lanes<const N: usize> {
     pub data: [f64; N],
 }
 
+#[allow(clippy::needless_range_loop)]
 impl<const N: usize> Lanes<N> {
     /// All lanes set to `v`.
     #[inline]
@@ -173,6 +174,7 @@ impl<const N: usize> Lanes<N> {
 
 use std::ops::{Add, Sub, Mul, Div, Neg, AddAssign};
 
+#[allow(clippy::needless_range_loop)]
 impl<const N: usize> Add for Lanes<N> {
     type Output = Self;
     #[inline]
@@ -183,6 +185,7 @@ impl<const N: usize> Add for Lanes<N> {
     }
 }
 
+#[allow(clippy::needless_range_loop)]
 impl<const N: usize> Sub for Lanes<N> {
     type Output = Self;
     #[inline]
@@ -193,6 +196,7 @@ impl<const N: usize> Sub for Lanes<N> {
     }
 }
 
+#[allow(clippy::needless_range_loop)]
 impl<const N: usize> Mul for Lanes<N> {
     type Output = Self;
     #[inline]
@@ -203,6 +207,7 @@ impl<const N: usize> Mul for Lanes<N> {
     }
 }
 
+#[allow(clippy::needless_range_loop)]
 impl<const N: usize> Div for Lanes<N> {
     type Output = Self;
     #[inline]
@@ -213,6 +218,7 @@ impl<const N: usize> Div for Lanes<N> {
     }
 }
 
+#[allow(clippy::needless_range_loop)]
 impl<const N: usize> Neg for Lanes<N> {
     type Output = Self;
     #[inline]
@@ -223,6 +229,7 @@ impl<const N: usize> Neg for Lanes<N> {
     }
 }
 
+#[allow(clippy::needless_range_loop)]
 impl<const N: usize> AddAssign for Lanes<N> {
     #[inline]
     fn add_assign(&mut self, rhs: Self) {
@@ -261,6 +268,7 @@ pub struct SimdReal<const N: usize> {
     pub val: Lanes<N>,
 }
 
+#[allow(clippy::needless_range_loop)]
 impl<const N: usize> SimdTape<N> {
     /// Create a new empty tape.
     pub fn new() -> Self {
@@ -529,7 +537,7 @@ impl<const N: usize> SimdTape<N> {
             let a_i = adj[i];
             if a_i.all_zero() { continue; }
             for &(child_idx, partial) in &self.nodes[i].partials {
-                adj[child_idx] = adj[child_idx] + a_i * partial;
+                adj[child_idx] += a_i * partial;
             }
         }
 
@@ -574,7 +582,7 @@ pub fn mc_european_simd<const N: usize>(
     num_paths: usize,
     seed: u64,
 ) -> McEuropeanGreeks {
-    assert!(N >= 2 && N % 2 == 0, "N must be even and >= 2");
+    assert!(N >= 2 && N.is_multiple_of(2), "N must be even and >= 2");
 
     let mut rng = SmallRng::seed_from_u64(seed);
     let num_batches = num_paths / N;
@@ -701,7 +709,7 @@ pub fn mc_heston_simd<const N: usize>(
     num_steps: usize,
     seed: u64,
 ) -> McHestonGreeks {
-    assert!(N >= 2 && N % 2 == 0, "N must be even and >= 2");
+    assert!(N >= 2 && N.is_multiple_of(2), "N must be even and >= 2");
 
     let mut rng = SmallRng::seed_from_u64(seed);
     let dt = time_to_expiry / num_steps as f64;

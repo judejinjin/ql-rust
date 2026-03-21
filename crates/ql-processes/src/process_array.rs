@@ -76,6 +76,7 @@ impl StochasticProcessArray {
 
     /// Diffusion matrix: L · diag(σ_i) where L is the Cholesky factor.
     /// Returns an n×n matrix stored as Vec<Vec<f64>>.
+    #[allow(clippy::needless_range_loop)]
     pub fn diffusion_matrix(&self, _t: f64, _x: &[f64]) -> Vec<Vec<f64>> {
         let n = self.processes.len();
         let mut result = vec![vec![0.0; n]; n];
@@ -97,6 +98,7 @@ impl StochasticProcessArray {
     ///
     /// # Returns
     /// New values after one step.
+    #[allow(clippy::needless_range_loop)]
     pub fn evolve(&self, x: &[f64], t: f64, dt: f64, dw: &[f64]) -> Vec<f64> {
         let n = self.processes.len();
         assert_eq!(x.len(), n);
@@ -132,7 +134,7 @@ impl StochasticProcessArray {
     /// # Returns
     /// (n_steps + 1) × n matrix of values; row 0 is the initial values.
     pub fn evolve_path(&self, n_steps: usize, t_final: f64, dw_matrix: &[Vec<f64>]) -> Vec<Vec<f64>> {
-        let n = self.processes.len();
+        let _n = self.processes.len();
         let dt = t_final / n_steps as f64;
         let mut path = Vec::with_capacity(n_steps + 1);
         path.push(self.initial_values());
@@ -154,6 +156,7 @@ impl StochasticProcessArray {
 
 /// Cholesky decomposition of a symmetric positive (semi-)definite matrix.
 /// Returns lower-triangular L such that A = L·Lᵀ.
+#[allow(clippy::needless_range_loop)]
 pub fn cholesky_decompose(a: &[Vec<f64>]) -> Vec<Vec<f64>> {
     let n = a.len();
     let mut l = vec![vec![0.0; n]; n];

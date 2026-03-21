@@ -184,6 +184,7 @@ impl BinomialLossModel {
 }
 
 impl DefaultLossModel for BinomialLossModel {
+    #[allow(clippy::needless_range_loop)]
     fn expected_tranche_loss(&self, attachment: f64, detachment: f64) -> f64 {
         if detachment <= attachment { return 0.0; }
         let lgd = 1.0 - self.recovery;
@@ -328,6 +329,7 @@ impl RecursiveLossModel {
 }
 
 impl DefaultLossModel for RecursiveLossModel {
+    #[allow(clippy::needless_range_loop)]
     fn expected_tranche_loss(&self, attachment: f64, detachment: f64) -> f64 {
         if detachment <= attachment { return 0.0; }
         let n_buckets = 200;
@@ -585,7 +587,7 @@ pub struct OneFactorGaussianCopula {
 
 impl OneFactorGaussianCopula {
     pub fn new(correlation: f64) -> Self {
-        assert!(correlation >= 0.0 && correlation <= 1.0);
+        assert!((0.0..=1.0).contains(&correlation));
         Self { correlation }
     }
 
@@ -635,7 +637,7 @@ pub struct OneFactorStudentCopula {
 impl OneFactorStudentCopula {
     pub fn new(nu: f64, correlation: f64) -> Self {
         assert!(nu > 2.0);
-        assert!(correlation >= 0.0 && correlation <= 1.0);
+        assert!((0.0..=1.0).contains(&correlation));
         Self { nu, correlation }
     }
 
@@ -893,6 +895,7 @@ impl RandomDefaultLatentModel {
     }
 
     /// Simulate default distribution via MC.
+    #[allow(clippy::needless_range_loop)]
     pub fn simulate_defaults(&self, default_probs: &[f64]) -> Vec<f64> {
         use rand::rngs::SmallRng;
         use rand::{Rng, SeedableRng};
@@ -907,7 +910,7 @@ impl RandomDefaultLatentModel {
             let mut n_defaults = 0usize;
             for i in 0..n {
                 let cond_p = self.latent.conditional_default_prob(i, default_probs[i], z);
-                if rng.gen::<f64>() < cond_p {
+                if rng.random::<f64>() < cond_p {
                     n_defaults += 1;
                 }
             }
@@ -1071,7 +1074,7 @@ impl DefaultLossModel for BaseCorrelationLossModel {
         let el_a = self.equity_tranche_el(attachment, rho_a) * attachment;
 
         let width = detachment - attachment;
-        ((el_d - el_a) / width).max(0.0).min(1.0)
+        ((el_d - el_a) / width).clamp(0.0, 1.0)
     }
 
     fn loss_distribution(&self, n_buckets: usize) -> Vec<(f64, f64)> {
@@ -1360,7 +1363,7 @@ fn regularized_inc_beta(x: f64, a: f64, b: f64) -> f64 {
 
 /// Continued fraction for regularized incomplete beta.
 fn beta_cf(x: f64, a: f64, b: f64) -> f64 {
-    let mut f = 1.0;
+    let mut f;
     let mut c = 1.0;
     let mut d = 1.0 - (a + b) * x / (a + 1.0);
     if d.abs() < 1e-30 { d = 1e-30; }

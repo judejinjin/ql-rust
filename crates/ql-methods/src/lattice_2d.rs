@@ -200,7 +200,7 @@ pub fn trinomial_2d_bond_option(
 fn trinomial_j_max(a: f64, dt: f64) -> usize {
     // Hull-White truncation: j_max = ceil(0.1835 / (a·dt))
     let jm = (0.1835 / (a * dt)).ceil() as usize;
-    jm.max(1).min(200) // Clamp to reasonable range
+    jm.clamp(1, 200) // Clamp to reasonable range
 }
 
 /// Build trinomial transition probabilities for one factor.

@@ -47,6 +47,7 @@ pub struct VgResult {
 /// - `opt_type` — call or put
 /// - `n_terms` — COS terms (default 128 when 0)
 /// - `l` — truncation half-width in cumulant std-devs (default 12 when ≤ 0)
+#[allow(clippy::needless_range_loop)]
 pub fn vg_cos_price(
     model: &VarianceGammaModel,
     spot: f64,
@@ -163,6 +164,8 @@ fn vg_cf_with_forward(
 }
 
 /// Scalar price calculation (no greeks) for finite-difference use.
+#[allow(clippy::too_many_arguments)]
+#[allow(clippy::needless_range_loop)]
 fn vg_cos_scalar(
     model: &VarianceGammaModel,
     spot: f64,
@@ -172,7 +175,7 @@ fn vg_cos_scalar(
     q: f64,
     opt_type: OptionType,
     n: usize,
-    l: f64,
+    _l: f64,
     omega: f64,
     a: f64,
     b: f64,

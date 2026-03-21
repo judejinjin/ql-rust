@@ -164,6 +164,7 @@ fn solve_linear_system(a: &[Vec<f64>], b: &[f64]) -> Vec<f64> {
         // Partial pivoting
         let mut max_row = col;
         let mut max_val = aug[col][col].abs();
+        #[allow(clippy::needless_range_loop)]
         for row in (col + 1)..n {
             if aug[row][col].abs() > max_val {
                 max_val = aug[row][col].abs();
@@ -177,8 +178,10 @@ fn solve_linear_system(a: &[Vec<f64>], b: &[f64]) -> Vec<f64> {
             continue;
         }
 
+        #[allow(clippy::needless_range_loop)]
         for row in (col + 1)..n {
             let factor = aug[row][col] / pivot;
+            #[allow(clippy::needless_range_loop)]
             for j in col..=n {
                 aug[row][j] -= factor * aug[col][j];
             }

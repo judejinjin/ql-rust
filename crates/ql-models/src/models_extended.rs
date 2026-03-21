@@ -56,6 +56,7 @@ impl HestonSlvFdmModel {
     /// - `n_spot`: number of spot grid points
     /// - `max_time`: maximum maturity
     /// - `local_vol_surface`: market local vol σ_loc(t, S) used for calibration
+    #[allow(clippy::too_many_arguments)]
     pub fn calibrate(
         v0: f64,
         kappa: f64,

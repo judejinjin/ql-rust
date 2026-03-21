@@ -123,7 +123,7 @@ pub fn bates_price_generic<T: Number>(
             let cos_px = phi_x.cos();
             let sin_px = phi_x.sin();
             let integrand = (f.re * sin_px + f.im * cos_px) / T::from_f64(phi);
-            sum = sum + integrand * T::from_f64(wi * half_range);
+            sum += integrand * T::from_f64(wi * half_range);
         }
         sum
     };

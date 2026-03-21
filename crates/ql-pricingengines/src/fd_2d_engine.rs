@@ -47,6 +47,7 @@ pub enum Fd2dPayoff {
 /// - `n1`, `n2` — spatial grid sizes
 /// - `n_time` — time steps
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::needless_range_loop)]
 pub fn fd_2d_vanilla(
     spot1: f64,
     spot2: f64,

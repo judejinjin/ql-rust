@@ -64,14 +64,10 @@ impl CubicBSplinesFitting {
 
         let mut knots = Vec::new();
         // 4 repeated knots at start (for cubic = order 4)
-        for _ in 0..4 {
-            knots.push(0.0);
-        }
+        knots.extend(std::iter::repeat_n(0.0, 4));
         knots.extend_from_slice(&interior);
         // 4 repeated knots at end
-        for _ in 0..4 {
-            knots.push(max_maturity);
-        }
+        knots.extend(std::iter::repeat_n(max_maturity, 4));
         knots
     }
 

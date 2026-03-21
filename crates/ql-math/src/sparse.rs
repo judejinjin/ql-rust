@@ -109,6 +109,7 @@ impl CsrMatrix {
     }
 
     /// Matrix-vector product: y = A * x.
+    #[allow(clippy::needless_range_loop)]
     pub fn matvec(&self, x: &[f64]) -> Vec<f64> {
         assert_eq!(x.len(), self.ncols);
         let mut y = vec![0.0; self.nrows];
@@ -164,6 +165,7 @@ impl Ilu0 {
         let mut diag_idx = vec![0usize; n];
         for i in 0..n {
             let mut found = false;
+            #[allow(clippy::needless_range_loop)]
             for idx in row_ptr[i]..row_ptr[i + 1] {
                 if col_idx[idx] == i {
                     diag_idx[i] = idx;

@@ -27,18 +27,15 @@ use std::sync::Arc;
 
 /// Volatility type: shifted log-normal (Black) or normal (Bachelier).
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Default)]
 pub enum VolatilityType {
     /// Black-Scholes / Black-76 log-normal volatility.
+    #[default]
     ShiftedLognormal,
     /// Bachelier (normal / absolute) volatility.
     Normal,
 }
 
-impl Default for VolatilityType {
-    fn default() -> Self {
-        Self::ShiftedLognormal
-    }
-}
 
 // ===========================================================================
 // ConstantLocalVol (G61)
@@ -331,7 +328,7 @@ impl InterpolatedHazardRateCurve {
         Self {
             reference_date,
             day_counter,
-            times: times,
+            times,
             hazard_rates: hazard_rates.to_vec(),
         }
     }

@@ -156,6 +156,7 @@ impl FdmBermudanStepCondition {
     /// Apply the exercise condition at the current time step.
     ///
     /// Only modifies values if `t` matches an exercise date.
+    #[allow(clippy::needless_range_loop)]
     pub fn apply(&self, values: &mut [f64], t: f64) {
         if !self.is_exercise_time(t) {
             return;
@@ -268,6 +269,7 @@ impl Fdm3DimSolver {
     /// V^{n+1} = S₃(dt) · S₂(dt) · S₁(dt) · V^n
     ///
     /// where S_d(dt) = (I - θ·dt·L_d)⁻¹ · (I + (1-θ)·dt·L_d)
+    #[allow(clippy::needless_range_loop)]
     pub fn step(&self, values: &mut Fdm3dResult, dt: f64) {
         let (n1, n2, n3) = (self.n1, self.n2, self.n3);
 

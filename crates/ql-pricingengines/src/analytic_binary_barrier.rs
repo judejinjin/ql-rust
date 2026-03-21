@@ -71,11 +71,13 @@ fn n(x: f64) -> f64 {
 
 /// Standard normal PDF.
 #[inline]
+#[allow(dead_code)]
 fn phi(x: f64) -> f64 {
     (-0.5 * x * x).exp() / std::f64::consts::TAU.sqrt()
 }
 
 /// Parameters extracted from inputs — used across all sub-cases.
+#[allow(dead_code)]
 struct Params {
     // ---- vanilla inputs ----
     pub s: f64,
@@ -153,20 +155,21 @@ fn b_cash(p: &Params, phi: f64) -> f64 {
 }
 
 /// Building block C (asset-or-nothing, reflected at barrier).
-fn c_asset(p: &Params, phi: f64, eta: f64) -> f64 {
+fn c_asset(p: &Params, _phi: f64, eta: f64) -> f64 {
     p.s * (p.b * p.tau).exp() * p.df
         * (p.h / p.s).powf(2.0 * (p.mu + 1.0))
         * n(eta * p.y1)
 }
 
 /// Building block D (cash-or-nothing, reflected at barrier).
-fn d_cash(p: &Params, phi: f64, eta: f64) -> f64 {
+fn d_cash(p: &Params, _phi: f64, eta: f64) -> f64 {
     p.df * p.k
         * (p.h / p.s).powf(2.0 * p.mu)
         * n(eta * (p.y1 - p.sigma * p.sqrt_t))
 }
 
 /// Building block E — rebate triggered at barrier crossing (asset).
+#[allow(dead_code)]
 fn e_asset(p: &Params, eta: f64) -> f64 {
     p.s * (p.b * p.tau).exp() * p.df
         * ((p.h / p.s).powf(2.0 * (p.mu + 1.0)) * n(eta * p.y2)
@@ -175,6 +178,7 @@ fn e_asset(p: &Params, eta: f64) -> f64 {
 }
 
 /// Building block F — rebate triggered at barrier crossing (cash).
+#[allow(dead_code)]
 fn f_cash(p: &Params, eta: f64) -> f64 {
     p.df * p.k
         * ((p.h / p.s).powf(2.0 * p.mu) * n(eta * (p.y2 - p.sigma * p.sqrt_t))

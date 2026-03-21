@@ -173,7 +173,7 @@ fn optimal_split(steps: usize, slots: usize) -> usize {
     }
 
     while lo < hi {
-        let mid = lo + (hi - lo + 1) / 2;
+        let mid = lo + (hi - lo).div_ceil(2);
         if binom(mid, slots) < steps {
             lo = mid;
         } else {
@@ -299,6 +299,7 @@ fn gbm_step_taped(
 /// assert!((greeks.npv - 10.45).abs() < 1.0);
 /// assert!((greeks.delta - 0.637).abs() < 0.1);
 /// ```
+#[allow(clippy::too_many_arguments, clippy::needless_range_loop)]
 pub fn mc_european_checkpointed(
     spot: f64,
     strike: f64,
@@ -373,7 +374,7 @@ pub fn mc_european_checkpointed(
         //    tape the segment, adjoint, accumulate
 
         let block_size = if num_checkpoints > 0 {
-            (num_steps + num_checkpoints - 1) / num_checkpoints
+            num_steps.div_ceil(num_checkpoints)
         } else {
             num_steps
         };
@@ -501,6 +502,7 @@ pub fn mc_european_checkpointed(
 ///
 /// Returns `(new_log_s, new_v)`.
 #[inline]
+#[allow(clippy::too_many_arguments)]
 fn heston_step_f64(
     log_s: f64, v: f64,
     r_q: f64, kappa: f64, theta: f64, sigma: f64, rho: f64,
@@ -528,6 +530,7 @@ fn heston_step_f64(
 ///
 /// Returns `(new_log_s, new_v)`.
 #[inline]
+#[allow(clippy::too_many_arguments)]
 fn heston_step_taped(
     tape: &mut Tape,
     log_s: AReal,
@@ -596,6 +599,7 @@ fn heston_step_taped(
 /// * `num_steps` — time steps per path
 /// * `num_checkpoints` — checkpoint slots (√num_steps is optimal)
 /// * `seed` — RNG seed
+#[allow(clippy::too_many_arguments, clippy::needless_range_loop)]
 pub fn mc_heston_checkpointed(
     spot: f64,
     strike: f64,
@@ -626,7 +630,7 @@ pub fn mc_heston_checkpointed(
     let discount = (-r * time_to_expiry).exp();
 
     let block_size = if num_checkpoints > 0 {
-        (num_steps + num_checkpoints - 1) / num_checkpoints
+        num_steps.div_ceil(num_checkpoints)
     } else {
         num_steps
     };

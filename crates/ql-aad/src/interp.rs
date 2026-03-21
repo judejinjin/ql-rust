@@ -38,6 +38,7 @@ use crate::number::Number;
 /// Performs binary search; always returns a valid index in `[0, n-2]`.
 /// Input `x` is f64 (the differentiation target is the *value*, not the location).
 #[inline]
+#[allow(clippy::needless_range_loop)]
 fn locate(xs: &[f64], x: f64) -> usize {
     let n = xs.len();
     debug_assert!(n >= 2);

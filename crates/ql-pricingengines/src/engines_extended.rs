@@ -584,7 +584,6 @@ pub fn tree_swap_engine(
     };
 
     let mut annuity = 0.0;
-    let mut float_pv = 0.0;
     let mut fixed_pv = 0.0;
 
     for i in 0..n {
@@ -601,7 +600,7 @@ pub fn tree_swap_engine(
 
     // Float leg = 1 - df(T_n)
     let df_end = hw_df(*payment_times.last().unwrap());
-    float_pv = 1.0 - df_end;
+    let float_pv = 1.0 - df_end;
 
     let swap_rate = if annuity.abs() > 1e-15 {
         float_pv / annuity

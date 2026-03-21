@@ -218,11 +218,10 @@ fn generate_twentieth_schedule(
     loop {
         for &m in months_to_use {
             let d = Date::from_ymd(year, m, 20);
-            if d > effective_date && d <= maturity {
-                if dates.last().map_or(true, |&last| d > last) {
+            if d > effective_date && d <= maturity
+                && dates.last().is_none_or(|&last| d > last) {
                     dates.push(d);
                 }
-            }
             if d >= maturity {
                 if *dates.last().unwrap() != maturity {
                     // Ensure maturity is included
@@ -257,11 +256,10 @@ fn generate_third_wednesday_schedule(
     loop {
         for &m in &quarterly_months {
             let d = third_wednesday(year, m);
-            if d > effective_date && d <= maturity {
-                if dates.last().map_or(true, |&last| d > last) {
+            if d > effective_date && d <= maturity
+                && dates.last().is_none_or(|&last| d > last) {
                     dates.push(d);
                 }
-            }
             if d >= maturity {
                 if *dates.last().unwrap() != maturity {
                     dates.push(maturity);

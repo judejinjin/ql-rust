@@ -260,7 +260,7 @@ impl SmileDeltaTermStructure {
 
     /// Get the smile at a given time as a vector of (delta, vol) pairs.
     pub fn smile_at(&self, tau: f64) -> Vec<(f64, f64)> {
-        let deltas = vec![0.10, 0.25, 0.50, 0.75, 0.90];
+        let deltas = [0.10, 0.25, 0.50, 0.75, 0.90];
         deltas
             .iter()
             .map(|&d| (d, self.vol(tau, d)))

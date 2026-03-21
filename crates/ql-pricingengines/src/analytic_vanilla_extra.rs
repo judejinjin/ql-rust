@@ -13,7 +13,6 @@
 //! All engines return put prices that are adjusted by put-call parity
 //! (approximate for the expansion engine; exact elsewhere).
 
-use std::f64::consts::PI;
 
 use ql_core::errors::{QLError, QLResult};
 use ql_instruments::OptionType;
@@ -49,7 +48,7 @@ pub fn heston_expansion_price(
     dividend_yield: f64,
     v0: f64,
     kappa: f64,
-    theta: f64,
+    _theta: f64,
     sigma: f64,
     rho: f64,
     opt_type: OptionType,

@@ -40,6 +40,7 @@ pub struct BasketSpreadResult {
 /// - `t` — time to expiry (years)
 /// - `k` — strike on the spread (usually ≥ 0)
 /// - `is_call` — true for call (pays max(S₁-S₂-K, 0))
+#[allow(clippy::too_many_arguments)]
 pub fn choi_basket_spread(
     s1: f64,
     s2: f64,
@@ -94,6 +95,7 @@ pub fn choi_basket_spread(
 }
 
 /// Internal Kirk approximation (used as fallback).
+#[allow(clippy::too_many_arguments)]
 fn kirk_impl(
     s1: f64,
     s2: f64,

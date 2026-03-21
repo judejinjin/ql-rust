@@ -30,7 +30,7 @@ pub struct CmsPricerResult {
 }
 
 /// Black swaption price helper (normal/log-normal).
-fn black_swaption(
+fn _black_swaption(
     forward: f64, strike: f64, sigma: f64, t: f64, annuity: f64, is_call: bool,
 ) -> f64 {
     if t <= 0.0 || sigma <= 0.0 {
@@ -44,7 +44,7 @@ fn black_swaption(
 }
 
 /// Standard normal density.
-fn norm_pdf(x: f64) -> f64 {
+fn _norm_pdf(x: f64) -> f64 {
     (-0.5 * x * x).exp() / (2.0 * PI).sqrt()
 }
 
@@ -142,7 +142,7 @@ pub fn conundrum_cms_pricer(
     } else { 1.0 };
 
     let caplet_price = if let Some(k) = cap_strike {
-        let accrual = tp - t; // simplified
+        let _accrual = tp - t; // simplified
         df_ratio * black_call(adjusted_rate, k, sigma, t) * a0
     } else { 0.0 };
 
@@ -201,12 +201,12 @@ pub fn linear_tsr_cms_pricer(
     let n_periods = (2.0 * swap_tenor).round().max(1.0) as usize;
     let tau = swap_tenor / n_periods as f64;
 
-    let mut annuity_calc = 0.0;
+    let mut _annuity_calc = 0.0;
     let mut d_annuity = 0.0;
     for i in 1..=n_periods {
         let base = 1.0 + s0 * tau;
         let df_i = base.powi(-(i as i32));
-        annuity_calc += tau * df_i;
+        _annuity_calc += tau * df_i;
         d_annuity -= i as f64 * tau * tau * df_i / base;
     }
 

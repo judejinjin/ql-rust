@@ -63,6 +63,7 @@ pub fn ju_quadratic_american(
     let european_npv = bs_european(spot, strike, r, q, sigma, t, is_call, &nd);
 
     // BAW parameters
+    #[allow(clippy::if_same_then_else)]
     let m = if is_call { 2.0 * r / s2 } else { 2.0 * r / s2 };
     let n = 2.0 * b / s2;
     let k = 1.0 - (-r * t).exp();
@@ -75,6 +76,7 @@ pub fn ju_quadratic_american(
     };
 
     // Critical price S* via Newton iterations
+    #[allow(clippy::if_same_then_else)]
     let mut s_star = if is_call {
         strike / (1.0 - 1.0 / q2)
     } else {
@@ -92,7 +94,7 @@ pub fn ju_quadratic_american(
     for _ in 0..50 {
         let eu = bs_european(s_star, strike, r, q, sigma, t, is_call, &nd);
         let intrinsic = if is_call { s_star - strike } else { strike - s_star };
-        let d1_star = (s_star / strike * (b + 0.5 * s2) * t).ln().signum()
+        let _d1_star = (s_star / strike * (b + 0.5 * s2) * t).ln().signum()
             * ((s_star / strike).ln() + (b + 0.5 * s2) * t) / (sigma * t.sqrt());
         // More stable d1 computation
         let _d1_star = ((s_star / strike).ln() + (b + 0.5 * s2) * t) / (sigma * t.sqrt());
@@ -134,12 +136,10 @@ pub fn ju_quadratic_american(
         } else {
             european_npv + a2 * (spot / s_star).powf(q2) * (1.0 - (h * (spot / s_star - 1.0)).exp())
         }
+    } else if spot <= s_star {
+        strike - spot
     } else {
-        if spot <= s_star {
-            strike - spot
-        } else {
-            european_npv + a2 * (spot / s_star).powf(q2) * (1.0 - (h * (spot / s_star - 1.0)).exp())
-        }
+        european_npv + a2 * (spot / s_star).powf(q2) * (1.0 - (h * (spot / s_star - 1.0)).exp())
     };
 
     let npv = npv.max(0.0).max(european_npv);
@@ -204,10 +204,8 @@ fn ju_npv_only(
     let npv = if is_call {
         if spot >= s_star { spot - strike }
         else { european_npv + a2 * (spot / s_star).powf(q2) * (1.0 - (h * (spot / s_star - 1.0)).exp()) }
-    } else {
-        if spot <= s_star { strike - spot }
-        else { european_npv + a2 * (spot / s_star).powf(q2) * (1.0 - (h * (spot / s_star - 1.0)).exp()) }
-    };
+    } else if spot <= s_star { strike - spot }
+    else { european_npv + a2 * (spot / s_star).powf(q2) * (1.0 - (h * (spot / s_star - 1.0)).exp()) };
     let bs_val = bs_european(spot, strike, r, q, sigma, t, is_call, nd);
     npv.max(0.0).max(bs_val)
 }

@@ -192,6 +192,7 @@ impl<const N: usize> DivAssign for DualVec<N> {
 // Number trait implementation
 // ===========================================================================
 
+#[allow(clippy::needless_range_loop)]
 impl<const N: usize> Number for DualVec<N> {
     #[inline(always)]
     fn from_f64(v: f64) -> Self { Self::constant(v) }

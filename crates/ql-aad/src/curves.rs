@@ -128,7 +128,7 @@ impl<T: Number> DiscountCurveAD<T> {
         // Subsequent pillars
         for i in 1..times.len() {
             let dt = times[i] - times[i - 1];
-            cum = cum + T::from_f64(-dt) * fwd_rates[i];
+            cum += T::from_f64(-dt) * fwd_rates[i];
             log_dfs.push(cum);
         }
         Self {

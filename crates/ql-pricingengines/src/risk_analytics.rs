@@ -220,11 +220,10 @@ pub fn bs_vega(
     volatility: f64,
     time_to_expiry: f64,
 ) -> f64 {
-    use std::f64::consts::FRAC_1_SQRT_2;
-    let d1 = ((spot / strike).ln() + (rate - dividend + 0.5 * volatility * volatility) * time_to_expiry)
-        / (volatility * time_to_expiry.sqrt());
-    let phi = (-0.5 * d1 * d1).exp() * FRAC_1_SQRT_2 / std::f64::consts::PI.sqrt();
-    spot * (-dividend * time_to_expiry).exp() * phi * time_to_expiry.sqrt()
+    // Delegate to the generic implementation (AD-ready).
+    ql_math::generic::bs_vega_generic::<f64>(
+        spot, strike, rate, dividend, volatility, time_to_expiry,
+    )
 }
 
 #[cfg(test)]

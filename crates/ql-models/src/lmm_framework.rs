@@ -48,7 +48,7 @@ use rand::{Rng, SeedableRng};
 use rand_distr::StandardNormal;
 use serde::{Deserialize, Serialize};
 
-use crate::lmm::{LmmConfig, LmmCurveState, LmmResult};
+use crate::lmm::{LmmConfig, LmmCurveState};
 
 // ===========================================================================
 // Curve State trait and implementations
@@ -247,6 +247,7 @@ impl LMMDriftCalculator {
     }
 
     /// Drift of forward rate i under terminal measure.
+    #[allow(clippy::needless_range_loop)]
     pub fn drift(&self, i: usize, forwards: &[f64]) -> f64 {
         let n = self.n_rates;
         let mut mu = 0.0;
@@ -289,6 +290,7 @@ impl LMMNormalDriftCalculator {
     /// Under normal dynamics the drift in the terminal measure is:
     ///   μ_i = - Σ_{j=i+1}^{N-1} τ_j σ_i σ_j ρ_{ij} / (1 + τ_j f_j)
     /// Same structure but evolution is additive rather than multiplicative.
+    #[allow(clippy::needless_range_loop)]
     pub fn drift(&self, i: usize, forwards: &[f64]) -> f64 {
         let n = self.n_rates;
         let mut mu = 0.0;
@@ -317,6 +319,7 @@ impl SMMDriftCalculator {
     }
 
     /// Drift of coterminal swap rate S_i under the terminal swap measure.
+    #[allow(clippy::needless_range_loop)]
     pub fn drift(&self, i: usize, swap_rates: &[f64]) -> f64 {
         let n = self.n_rates;
         let mut mu = 0.0;
@@ -352,6 +355,7 @@ impl CmSMMDriftCalculator {
     }
 
     /// CMS drift under the terminal CMS measure.
+    #[allow(clippy::needless_range_loop)]
     pub fn drift(&self, i: usize, cms_rates: &[f64]) -> f64 {
         let n = self.n_rates;
         let mut mu = 0.0;
@@ -509,6 +513,7 @@ impl TimeHomogeneousForwardCorrelation {
     }
 
     /// Derive coterminal swap correlation from forward correlation.
+    #[allow(clippy::needless_range_loop)]
     pub fn coterminal_from_forward(&self, forwards: &[f64], accruals: &[f64]) -> Vec<f64> {
         let n = self.n_rates;
         // Weights derived from annuity mapping
@@ -621,7 +626,7 @@ impl SobolBrownianGenerator {
         self.count += 1;
         let n = self.count;
         // Find rightmost zero bit of (n-1)
-        let c = if n == 1 { 0 } else { (!(n - 1) as u64).trailing_zeros() as usize };
+        let c = if n == 1 { 0 } else { (!(n - 1)).trailing_zeros() as usize };
 
         let mut result = Vec::with_capacity(self.dimension);
         for d in 0..self.dimension {
@@ -647,7 +652,7 @@ impl BrownianGenerator for SobolBrownianGenerator {
 fn inv_normal_cdf(u: f64) -> f64 {
     let a = [
         -3.969683028665376e+01, 2.209460984245205e+02,
-        -2.759285104469687e+02, 1.383577518672690e+02,
+        -2.759285104469687e+02, 1.383_577_518_672_69e2,
         -3.066479806614716e+01, 2.506628277459239e+00,
     ];
     let b = [
@@ -738,6 +743,7 @@ impl LogNormalFwdRateEuler {
 }
 
 impl Evolver for LogNormalFwdRateEuler {
+    #[allow(clippy::needless_range_loop)]
     fn evolve(&self, forwards: &[f64], alive_from: usize, step: usize, z: &[f64]) -> Vec<f64> {
         let n = self.config.n_rates;
         let dt = self.config.accruals[step.min(self.config.accruals.len() - 1)];
@@ -780,6 +786,7 @@ impl LogNormalFwdRatePC {
 }
 
 impl Evolver for LogNormalFwdRatePC {
+    #[allow(clippy::needless_range_loop)]
     fn evolve(&self, forwards: &[f64], alive_from: usize, step: usize, z: &[f64]) -> Vec<f64> {
         let n = self.config.n_rates;
         let dt = self.config.accruals[step.min(self.config.accruals.len() - 1)];
@@ -831,6 +838,7 @@ impl LogNormalFwdRateBalland {
 }
 
 impl Evolver for LogNormalFwdRateBalland {
+    #[allow(clippy::needless_range_loop)]
     fn evolve(&self, forwards: &[f64], alive_from: usize, step: usize, z: &[f64]) -> Vec<f64> {
         let n = self.config.n_rates;
         let dt = self.config.accruals[step.min(self.config.accruals.len() - 1)];
@@ -879,6 +887,7 @@ impl LogNormalFwdRateConstrainedEuler {
 }
 
 impl Evolver for LogNormalFwdRateConstrainedEuler {
+    #[allow(clippy::needless_range_loop)]
     fn evolve(&self, forwards: &[f64], alive_from: usize, step: usize, z: &[f64]) -> Vec<f64> {
         let n = self.config.n_rates;
         let dt = self.config.accruals[step.min(self.config.accruals.len() - 1)];
@@ -922,6 +931,7 @@ impl LogNormalFwdRateIPC {
 }
 
 impl Evolver for LogNormalFwdRateIPC {
+    #[allow(clippy::needless_range_loop)]
     fn evolve(&self, forwards: &[f64], alive_from: usize, step: usize, z: &[f64]) -> Vec<f64> {
         let n = self.config.n_rates;
         let dt = self.config.accruals[step.min(self.config.accruals.len() - 1)];
@@ -977,6 +987,7 @@ impl LogNormalCotSwapRatePC {
 }
 
 impl Evolver for LogNormalCotSwapRatePC {
+    #[allow(clippy::needless_range_loop)]
     fn evolve(&self, forwards: &[f64], alive_from: usize, step: usize, z: &[f64]) -> Vec<f64> {
         let n = self.config.n_rates;
         let dt = self.config.accruals[step.min(self.config.accruals.len() - 1)];
@@ -1009,7 +1020,7 @@ impl Evolver for LogNormalCotSwapRatePC {
             let d0 = smm_drift.drift(i, &cot_rates);
             let d1 = smm_drift.drift(i, &cot_pred);
             let sigma = self.swap_vols[i.min(self.swap_vols.len() - 1)];
-            cot_rates[i] = cot_rates[i] * ((0.5 * (d0 + d1) - 0.5 * sigma * sigma) * dt + sigma * dw[i]).exp();
+            cot_rates[i] *= ((0.5 * (d0 + d1) - 0.5 * sigma * sigma) * dt + sigma * dw[i]).exp();
         }
 
         // Convert back to forwards (approximate: use last coterminal for last rate)
@@ -1043,6 +1054,7 @@ impl NormalFwdRatePC {
 }
 
 impl Evolver for NormalFwdRatePC {
+    #[allow(clippy::needless_range_loop)]
     fn evolve(&self, forwards: &[f64], alive_from: usize, step: usize, z: &[f64]) -> Vec<f64> {
         let n = self.config.n_rates;
         let dt = self.config.accruals[step.min(self.config.accruals.len() - 1)];
@@ -1097,6 +1109,7 @@ impl LogNormalCMSwapRatePC {
 }
 
 impl Evolver for LogNormalCMSwapRatePC {
+    #[allow(clippy::needless_range_loop)]
     fn evolve(&self, forwards: &[f64], alive_from: usize, step: usize, z: &[f64]) -> Vec<f64> {
         let n = self.config.n_rates;
         let dt = self.config.accruals[step.min(self.config.accruals.len() - 1)];
@@ -1132,14 +1145,12 @@ impl Evolver for LogNormalCMSwapRatePC {
             let d0 = cms_drift.drift(i, &cms_rates);
             let d1 = cms_drift.drift(i, &cms_pred);
             let sigma = self.cms_vols[i.min(self.cms_vols.len() - 1)];
-            cms_rates[i] = cms_rates[i] * ((0.5 * (d0 + d1) - 0.5 * sigma * sigma) * dt + sigma * dw[i]).exp();
+            cms_rates[i] *= ((0.5 * (d0 + d1) - 0.5 * sigma * sigma) * dt + sigma * dw[i]).exp();
         }
 
         // Map back to forwards (approximate)
         let mut new_fwd = forwards.to_vec();
-        for i in alive_from..n {
-            new_fwd[i] = cms_rates[i];
-        }
+        new_fwd[alive_from..n].copy_from_slice(&cms_rates[alive_from..n]);
         new_fwd
     }
 
@@ -1179,6 +1190,7 @@ impl SwapForwardMappings {
     }
 
     /// Coterminal swap annuity at each starting period.
+    #[allow(clippy::needless_range_loop)]
     pub fn coterminal_annuities(forwards: &[f64], accruals: &[f64]) -> Vec<f64> {
         let n = forwards.len();
         let mut annuities = vec![0.0; n];

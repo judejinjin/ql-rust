@@ -4,9 +4,9 @@
 //! which represent the spread between two currencies' funding rates.
 //!
 //! - `CrossCurrencyBasisSwapHelper` — for XCCY basis swaps where
-//!    both legs pay floating + basis spread
+//!   both legs pay floating + basis spread
 //! - `TenorBasisSwapHelper` — for single-currency tenor basis swaps
-//!    (e.g. 3M vs 6M IBOR)
+//!   (e.g. 3M vs 6M IBOR)
 //!
 //! Reference:
 //! - QuantLib: CrossCurrencyBasisSwapRateHelper, TenorBasisSwapRateHelper
@@ -93,9 +93,9 @@ pub struct XccyBootstrapResult {
 /// - `helpers` — cross-currency basis swap quotes
 /// - `day_counter` — day counter
 pub fn bootstrap_xccy_curve(
-    reference_date: Date,
+    _reference_date: Date,
     helpers: &[CrossCurrencyBasisSwapHelper],
-    day_counter: DayCounter,
+    _day_counter: DayCounter,
 ) -> XccyBootstrapResult {
     if helpers.is_empty() {
         return XccyBootstrapResult {
@@ -154,7 +154,7 @@ pub fn bootstrap_xccy_curve(
 /// - `helpers` — tenor basis swap quotes
 /// - `short_tenor_zero_rates` — zero rates from the short-tenor curve at each pillar
 pub fn bootstrap_tenor_basis_curve(
-    reference_date: Date,
+    _reference_date: Date,
     helpers: &[TenorBasisSwapHelper],
     short_tenor_zero_rates: &[f64],
 ) -> XccyBootstrapResult {

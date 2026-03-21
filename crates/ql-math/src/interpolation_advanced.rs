@@ -128,9 +128,9 @@ impl ConvexMonotoneInterpolation {
         let t = (x - self.xs[i]) / h;
         let t2 = t * t;
         let dh00 = (6.0 * t2 - 6.0 * t) / h;
-        let dh10 = (3.0 * t2 - 4.0 * t + 1.0);
+        let dh10 = 3.0 * t2 - 4.0 * t + 1.0;
         let dh01 = (-6.0 * t2 + 6.0 * t) / h;
-        let dh11 = (3.0 * t2 - 2.0 * t);
+        let dh11 = 3.0 * t2 - 2.0 * t;
         dh00 * self.ys[i]
             + dh10 * self.helpers[i]
             + dh01 * self.ys[i + 1]
@@ -289,7 +289,7 @@ impl LagrangeInterpolation {
                 dd[i] = (dd[i] - dd[i - 1]) / denom;
             }
         }
-        Ok(Self { xs, ys: ys, coeffs: dd })
+        Ok(Self { xs, ys, coeffs: dd })
     }
 
     /// Evaluate the interpolating polynomial at `x`.

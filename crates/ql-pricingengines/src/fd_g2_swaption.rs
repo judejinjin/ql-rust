@@ -91,7 +91,7 @@ pub fn fd_g2_swaption(
     let sigma = model.sigma();
     let b = model.b();
     let eta = model.eta();
-    let rho = model.rho();
+    let _rho = model.rho();
 
     let mat_time = *exercise_times.last().unwrap_or(&1.0);
     let dt = mat_time / params.nt as f64;
@@ -127,7 +127,7 @@ pub fn fd_g2_swaption(
 
     // Backward induction with ADI scheme
     let mut t = mat_time;
-    for step in 0..params.nt {
+    for _step in 0..params.nt {
         t -= dt;
         let phi_t = g2_phi(model, t.max(0.0));
 
@@ -201,9 +201,7 @@ pub fn fd_g2_swaption(
             diag[ny - 1] = 1.0;
 
             let soln = solve_tridiag(&lower, &diag, &upper, &rhs);
-            for j in 0..ny {
-                v[i][j] = soln[j];
-            }
+            v[i][..ny].copy_from_slice(&soln[..ny]);
         }
 
         // Early exercise for Bermudan
@@ -281,8 +279,7 @@ fn swap_value_from_r(
 
     // Float leg PV ≈ notional × (1 − P(T_n))
     let last_float_t = float_times.iter().copied()
-        .filter(|&t| t > current_time)
-        .last()
+        .rfind(|&t| t > current_time)
         .unwrap_or(current_time);
     let float_pv = notional * (1.0 - discount(last_float_t));
 

@@ -7,12 +7,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::lmm_framework::{
-    CurveState, LMMCurveState, CoterminalSwapCurveState, CMSwapCurveState,
-    LMMDriftCalculator, PiecewiseConstantVariance,
-    ExponentialCorrelation, TimeHomogeneousForwardCorrelation,
-    LogNormalFwdRatePC, FlatVol,
-    AccountingEngine, AccountingResult,
-    SwapForwardMappings,
+    CurveState, CoterminalSwapCurveState, TimeHomogeneousForwardCorrelation,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -137,6 +132,7 @@ impl PathwiseDiscounter {
     }
 
     /// Compute discount factor from period 0 to `to`.
+    #[allow(clippy::needless_range_loop)]
     pub fn discount(&self, forwards: &[f64], to: usize) -> f64 {
         let mut df = 1.0;
         for i in 0..to.min(forwards.len()) {
@@ -155,6 +151,7 @@ impl PathwiseDiscounter {
     }
 
     /// Full Jacobian: ∂df(0,j)/∂f_k for all j, k.
+    #[allow(clippy::needless_range_loop)]
     pub fn jacobian(&self, forwards: &[f64], n: usize) -> Vec<Vec<f64>> {
         let mut jac = vec![vec![0.0; forwards.len()]; n];
         for j in 0..n {
@@ -239,7 +236,7 @@ impl RatePseudoRootJacobian {
         pseudo_root_fn: impl Fn(&[f64]) -> Vec<f64>,
     ) -> Self {
         let n_rates = forwards.len();
-        let base = pseudo_root_fn(forwards);
+        let _base = pseudo_root_fn(forwards);
         let total = n_rates * n_factors * n_rates;
         let mut jacobian = vec![0.0; total];
 
@@ -297,7 +294,7 @@ impl SwaptionPseudoJacobian {
         bump_size: f64,
         swaption_pricer: impl Fn(&[f64]) -> Vec<f64>,
     ) -> Self {
-        let base = swaption_pricer(pseudo_root);
+        let _base = swaption_pricer(pseudo_root);
         let n_elem = n_rates * n_factors;
         let mut jacobian = vec![vec![0.0; n_elem]; n_swaptions];
 
@@ -365,7 +362,7 @@ impl VegaBumpCluster {
     pub fn compute_vegas(
         &self,
         pseudo_root: &[f64],
-        n_rates: usize,
+        _n_rates: usize,
         n_factors: usize,
         pricer: impl Fn(&[f64]) -> f64,
     ) -> Vec<f64> {
@@ -414,7 +411,7 @@ impl CapletCoterminalAlphaCalibration {
         caplet_vols: &[f64],
         swaption_vols: &[f64],
         forwards: &[f64],
-        accruals: &[f64],
+        _accruals: &[f64],
         n_factors: usize,
         alpha: f64,
         corr: &TimeHomogeneousForwardCorrelation,
@@ -429,7 +426,7 @@ impl CapletCoterminalAlphaCalibration {
 
         // Simple rank-1 pseudo-root from blended vols + correlation
         let corr_mat = &corr.correlations;
-        let cn = corr.n_rates;
+        let _cn = corr.n_rates;
         let mut error = 0.0;
         for i in 0..n {
             let f0 = if n_factors == 1 {
@@ -515,20 +512,21 @@ impl CapletCoterminalPeriodic {
     /// Calibrate with periodic structure.
     ///
     /// Imposes periodic structure on volatility parameters with given period.
+    #[allow(clippy::needless_range_loop)]
     pub fn calibrate(
         caplet_vols: &[f64],
-        swaption_vols: &[f64],
+        _swaption_vols: &[f64],
         forwards: &[f64],
-        accruals: &[f64],
+        _accruals: &[f64],
         n_factors: usize,
         period: usize,
-        corr: &TimeHomogeneousForwardCorrelation,
+        _corr: &TimeHomogeneousForwardCorrelation,
     ) -> Self {
         let n = forwards.len();
         let mut pseudo_root = vec![0.0; n * n_factors];
 
         // Average vols within each period group
-        let n_groups = (n + period - 1) / period;
+        let n_groups = n.div_ceil(period);
         let mut group_vols = vec![0.0; n_groups];
         let mut group_counts = vec![0usize; n_groups];
 
@@ -633,7 +631,7 @@ impl CTSMMCapletCalibration {
         forwards: &[f64],
         accruals: &[f64],
         n_factors: usize,
-        corr: &TimeHomogeneousForwardCorrelation,
+        _corr: &TimeHomogeneousForwardCorrelation,
     ) -> Self {
         let n = forwards.len();
         let mut pseudo_root = vec![0.0; n * n_factors];
@@ -924,6 +922,7 @@ impl HistoricalForwardRatesAnalysis {
     ///
     /// `data[t][i]` = forward rate i at time t.
     /// `dt` = observation interval in years.
+    #[allow(clippy::needless_range_loop)]
     pub fn analyse(data: &[Vec<f64>], dt: f64) -> Self {
         let n_obs = data.len();
         if n_obs < 2 {
@@ -1020,6 +1019,7 @@ impl HistoricalRatesAnalysis {
     /// Analyse historical rate levels.
     ///
     /// `data[t][i]` = rate i at time t.
+    #[allow(clippy::needless_range_loop)]
     pub fn analyse(data: &[Vec<f64>]) -> Self {
         let n_obs = data.len();
         if n_obs < 2 {
@@ -1438,6 +1438,7 @@ impl MarketModelBasisSystem for SwapForwardBasisSystem {
     fn n_basis(&self) -> usize {
         1 + self.n_forwards * self.degree
     }
+    #[allow(clippy::needless_range_loop)]
     fn evaluate(&self, variables: &[f64]) -> Vec<f64> {
         // variables = [sr, f0, f1, ..., f_{n-1}]
         let mut result = vec![1.0]; // intercept
@@ -1698,6 +1699,7 @@ impl SvdDFwdRatePC {
     }
 
     /// Evolve one step (predictor-corrector) using SVD decomposition.
+    #[allow(clippy::needless_range_loop)]
     pub fn evolve(
         &self,
         forwards: &mut [f64],
@@ -2139,9 +2141,7 @@ fn solve_small_linear(n: usize, a: &[f64], b: &[f64]) -> Vec<f64> {
         }
         if max_row != col {
             for j in 0..=n {
-                let tmp = m[col * (n + 1) + j];
-                m[col * (n + 1) + j] = m[max_row * (n + 1) + j];
-                m[max_row * (n + 1) + j] = tmp;
+                m.swap(col * (n + 1) + j, max_row * (n + 1) + j);
             }
         }
         let pivot = m[col * (n + 1) + col];
@@ -2192,6 +2192,7 @@ fn erf(x: f64) -> f64 {
 mod tests {
     use super::*;
     use approx::assert_abs_diff_eq;
+    use crate::lmm_framework::LMMCurveState;
 
     fn sample_forwards() -> Vec<f64> {
         vec![0.03, 0.035, 0.04, 0.042, 0.045]

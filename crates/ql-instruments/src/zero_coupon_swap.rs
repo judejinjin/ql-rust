@@ -104,7 +104,7 @@ pub fn price_zero_coupon_swap(
 
     // Fair rate: solve fixed_compound = float_compound
     let fair_rate = if n > 0 {
-        n as f64 * ((1.0 + forward_rate / n as f64).powf(n as f64 * dcf / (n as f64 * dcf)) - 1.0)
+        n as f64 * ((1.0 + forward_rate / n as f64).powf(1.0) - 1.0)
     } else {
         forward_rate
     };

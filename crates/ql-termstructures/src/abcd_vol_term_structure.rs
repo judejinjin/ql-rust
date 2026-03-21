@@ -171,7 +171,7 @@ impl AbcdVolTermStructure {
         if var <= 0.0 {
             return notional * (forward - strike).max(0.0) * expiry;
         }
-        let sigma = (var / expiry).sqrt();
+        let _sigma = (var / expiry).sqrt();
         let d1 = ((forward / strike).ln() + 0.5 * var) / var.sqrt();
         let d2 = d1 - var.sqrt();
         notional * expiry * (forward * cumulative_normal(d1) - strike * cumulative_normal(d2))

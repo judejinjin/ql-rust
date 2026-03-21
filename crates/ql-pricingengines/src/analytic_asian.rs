@@ -173,7 +173,7 @@ pub fn asian_geometric_continuous_avg_strike(
     // Price: e^{-r*T} * (ω * S * e^{b*T} * N(ω*d1) - ω * S * e^{b_A*T} * N(ω*d2))
     //   where the "strike" is G_T ≈ S * e^{b_A*T}
     let b_a = b / 2.0 - s * s / 12.0;
-    let npv = spot * (-q * t).exp()
+    let _npv = spot * (-q * t).exp()
         * (omega * ((b_r + sigma_r * sigma_r / 2.0) * t).exp() * nd.cdf(omega * d1)
             - omega * (b_a * t).exp() * nd.cdf(omega * d2))
         * (-q * t).exp().powi(-1) // cancel dividend factor already in spot term
@@ -205,9 +205,9 @@ pub fn asian_geometric_continuous_avg_strike(
 ///
 /// # Parameters
 /// - `t0` — time already elapsed (past averaging days / total averaging days * T);
-///           set to `0.0` for a freshly-started option.
+///   set to `0.0` for a freshly-started option.
 /// - `a`  — average already accumulated (running average); used only when `t0 > 0`;
-///           set to `0.0` for a freshly-started option.
+///   set to `0.0` for a freshly-started option.
 pub fn asian_turnbull_wakeman(
     spot: f64,
     strike: f64,
@@ -237,8 +237,8 @@ pub fn asian_turnbull_wakeman(
     // K* = (t / t_remaining) * K - (t0 / t_remaining) * a
     let k_eff = if t0 > 0.0 {
         let total_frac = t / t_remaining;
-        let k_eff = total_frac * strike - (t0 / t_remaining) * a;
-        k_eff
+        
+        total_frac * strike - (t0 / t_remaining) * a
     } else {
         strike
     };

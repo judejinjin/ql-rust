@@ -156,7 +156,7 @@ pub enum FilonKind {
 
 impl FilonIntegral {
     pub fn new(intervals: usize, kind: FilonKind) -> Self {
-        let intervals = if intervals % 2 == 0 {
+        let intervals = if intervals.is_multiple_of(2) {
             intervals.max(2)
         } else {
             (intervals + 1).max(2)

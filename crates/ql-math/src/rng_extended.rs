@@ -81,6 +81,7 @@ impl<R: UniformRng> BoxMullerGaussianRng<R> {
     }
 
     /// Generate a standard normal variate.
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> f64 {
         if let Some(z) = self.cached.take() {
             return z;
@@ -238,6 +239,7 @@ impl DiscrepancyStatistics {
         let mut term2 = 0.0;
         for point in &self.points {
             let mut prod = 1.0;
+            #[allow(clippy::needless_range_loop)]
             for j in 0..d {
                 prod *= (1.0 - point[j] * point[j]) / 2.0;
             }
@@ -449,6 +451,7 @@ impl SampledCurve {
             return d;
         }
         d[0] = (self.values[1] - self.values[0]) / (self.grid[1] - self.grid[0]);
+        #[allow(clippy::needless_range_loop)]
         for i in 1..n - 1 {
             d[i] = (self.values[i + 1] - self.values[i - 1]) / (self.grid[i + 1] - self.grid[i - 1]);
         }

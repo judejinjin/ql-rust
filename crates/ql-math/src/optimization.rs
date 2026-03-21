@@ -531,6 +531,7 @@ impl Bfgs {
                         let a1 = delta_ij - rho_bfgs * s[i] * y[j];
                         let a2 = delta_ij - rho_bfgs * y[i] * s[j];
                         let mut sum = 0.0;
+                        #[allow(clippy::needless_range_loop)]
                         for k in 0..n {
                             for l in 0..n {
                                 sum += a1 * h[k][l] * a2;

@@ -28,6 +28,7 @@ pub struct FdAsianResult {
 /// - `n_time` — number of time steps (default ~200)
 /// - `is_call` — true for call, false for put
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::needless_range_loop)]
 pub fn fd_asian(
     spot: f64,
     strike: f64,
@@ -35,7 +36,7 @@ pub fn fd_asian(
     q: f64,
     sigma: f64,
     t: f64,
-    n_fixings: usize,
+    _n_fixings: usize,
     n_space: usize,
     n_time: usize,
     is_call: bool,

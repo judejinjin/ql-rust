@@ -95,7 +95,7 @@ fn bs_barrier_price(
         - phi * strike * df_d * h_ratio.powf(2.0 * mu) * cumulative_normal(eta * (y1 - sigma * t.sqrt()));
     let d = phi * spot * df_f * h_ratio.powf(2.0 * (mu + 1.0)) * cumulative_normal(eta * y2)
         - phi * strike * df_d * h_ratio.powf(2.0 * mu) * cumulative_normal(eta * (y2 - sigma * t.sqrt()));
-    let e = rebate * df_d * (
+    let _e = rebate * df_d * (
         cumulative_normal(eta * (x2 - sigma * t.sqrt()))
         - h_ratio.powf(2.0 * mu) * cumulative_normal(eta * (y2 - sigma * t.sqrt()))
     );
@@ -191,10 +191,10 @@ pub fn vanna_volga_barrier(
     // Vanna = dVega/dSpot = vega * (1 - d1/(sigma*sqrt(t))) / spot approximately
     // Actually: d²V/dSdσ = -Vega * d2 / (S * σ * √t)
     // Volga = d²V/dσ² = Vega * d1 * d2 / σ
-    let vanna_k = if sigma_atm * t.sqrt() > 1e-12 {
+    let _vanna_k = if sigma_atm * t.sqrt() > 1e-12 {
         -vega_k * d2 / (spot * sigma_atm * t.sqrt())
     } else { 0.0 };
-    let volga_k = if sigma_atm > 1e-12 {
+    let _volga_k = if sigma_atm > 1e-12 {
         vega_k * d1 * d2 / sigma_atm
     } else { 0.0 };
 
@@ -234,12 +234,12 @@ pub fn vanna_volga_barrier(
     }
 
     // VV adjustment for the vanilla option
-    let vv_adj_vanilla: f64 = (0..3).map(|i| w[i] * overhedge[i]).sum();
+    let _vv_adj_vanilla: f64 = (0..3).map(|i| w[i] * overhedge[i]).sum();
 
     // For barrier options, apply the survival probability weighting (no-touch probability)
     // Vanna-Volga first-order: scale by the ratio of BS barrier price to BS vanilla price
     let bs_vanilla = bs_price(spot, strike, r_d, r_f, sigma_atm, t, is_call);
-    let touch_ratio = if bs_vanilla.abs() > 1e-12 {
+    let _touch_ratio = if bs_vanilla.abs() > 1e-12 {
         (bs_bar / bs_vanilla).clamp(0.0, 1.0)
     } else {
         0.0
@@ -264,7 +264,7 @@ pub fn vanna_volga_barrier(
     let p_up = {
         let bs_up = bs_barrier_price(spot + eps, strike, barrier, rebate, r_d, r_f, sigma_atm, t, barrier_type, is_call);
         let van_up = bs_price(spot + eps, strike, r_d, r_f, sigma_atm, t, is_call);
-        let tr_up = if van_up.abs() > 1e-12 { (bs_up / van_up).clamp(0.0, 1.0) } else { 0.0 };
+        let _tr_up = if van_up.abs() > 1e-12 { (bs_up / van_up).clamp(0.0, 1.0) } else { 0.0 };
         let mut adj = 0.0;
         for i in 0..3 {
             let bs_bar_i = bs_barrier_price(spot + eps, k_pillars[i], barrier, 0.0, r_d, r_f, sigma_atm, t, barrier_type, true);
@@ -277,7 +277,7 @@ pub fn vanna_volga_barrier(
     let p_dn = {
         let bs_dn = bs_barrier_price(spot - eps, strike, barrier, rebate, r_d, r_f, sigma_atm, t, barrier_type, is_call);
         let van_dn = bs_price(spot - eps, strike, r_d, r_f, sigma_atm, t, is_call);
-        let tr_dn = if van_dn.abs() > 1e-12 { (bs_dn / van_dn).clamp(0.0, 1.0) } else { 0.0 };
+        let _tr_dn = if van_dn.abs() > 1e-12 { (bs_dn / van_dn).clamp(0.0, 1.0) } else { 0.0 };
         let mut adj = 0.0;
         for i in 0..3 {
             let bs_bar_i = bs_barrier_price(spot - eps, k_pillars[i], barrier, 0.0, r_d, r_f, sigma_atm, t, barrier_type, true);

@@ -2,6 +2,22 @@
 
 All notable changes to the ql-rust project are documented in this file.
 
+## [0.3.1] — 2025-06-19
+
+### Code Quality: Clippy-Clean Workspace + Further Deduplication
+
+#### Clippy audit — zero warnings with `-D warnings`
+- Fixed 240+ clippy warnings across all 17 crates
+- Categories resolved: float precision (106), assignment ops (16), boolean simplification (15), loop indexing (30+), manual clamp (10+), deprecated `gen()` → `random()`, dead code, doc formatting, type complexity, manual slice copy, too-many-arguments
+- Strategy: auto-fix pass first (`cargo clippy --fix`), then manual fixes for remaining issues
+- Numerical code loops preserved with `#[allow(clippy::needless_range_loop)]` where indexed form is clearer
+
+#### Additional f64 → generic deduplication
+- `margrabe_exchange` now delegates to `margrabe_exchange_generic::<f64>`
+- `bs_vega` now delegates to `bs_vega_generic::<f64>`
+- `sabr_volatility` now delegates to `sabr_vol_generic::<f64>` (keeps input assertions)
+- Total deduplicated: 9 functions (6 prior + 3 new)
+
 ## [0.3.0] — 2026-03-03
 
 ### AAD-Complete: 94 Generic Engines + Full AD Integration

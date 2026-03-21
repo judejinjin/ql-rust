@@ -137,6 +137,7 @@ impl GjrGarchModel {
     /// Returns `(log_returns, variances)` where each vector has `n_steps` entries.
     ///
     /// `z` must be a pre-generated vector of i.i.d. N(0,1) draws of length `n_steps`.
+    #[allow(clippy::needless_range_loop)]
     pub fn simulate_path(&self, n_steps: usize, z: &[f64]) -> (Vec<f64>, Vec<f64>) {
         assert!(z.len() >= n_steps);
         let r_daily = self.risk_free_rate / 252.0;
@@ -206,7 +207,7 @@ impl GjrGarchModel {
         let a = 1e-6;
         let b_lim = 100.0;
         let nq = n_quad.max(64);
-        let h_step = (b_lim - a) / (nq as f64);
+        let _h_step = (b_lim - a) / (nq as f64);
 
         let p1 = self.integrate_cf(log_s0_k, n_steps, r_daily, a, b_lim, nq, 1.0);
         let p2 = self.integrate_cf(log_s0_k, n_steps, r_daily, a, b_lim, nq, 0.0);

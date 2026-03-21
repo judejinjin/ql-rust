@@ -8,7 +8,6 @@
 use std::f64::consts::PI;
 use ql_core::errors::{QLError, QLResult};
 use ql_instruments::OptionType;
-use ql_math::distributions::cumulative_normal;
 
 // ===========================================================================
 // Heston PDF Engine
@@ -31,7 +30,7 @@ fn heston_log_cf(
     tau: f64, kappa: f64, theta: f64, sigma: f64, rho: f64, v0: f64,
 ) -> (f64, f64) {
     // Complex arithmetic helpers
-    let (a_re, a_im) = (kappa - rho * sigma * u_im, rho * sigma * u_re);
+    let (_a_re, _a_im) = (kappa - rho * sigma * u_im, rho * sigma * u_re);
     // b² = (ρσiu + κ)² + σ²(iu + u²)
     // a = κ - ρσ(iu)  =>  a_re = κ + ρσ·u_im, a_im = -ρσ·u_re
     // Wait, let me be more careful with the standard Heston CF:
@@ -114,8 +113,8 @@ fn heston_log_cf(
     let ln_frac_im = frac_im.atan2(frac_re);
 
     let kt_s2 = kappa * theta * s2_inv;
-    let big_c_re = kt_s2 * ((num_re * tau - 2.0 * ln_frac_re));
-    let big_c_im = kt_s2 * ((num_im * tau - 2.0 * ln_frac_im));
+    let big_c_re = kt_s2 * (num_re * tau - 2.0 * ln_frac_re);
+    let big_c_im = kt_s2 * (num_im * tau - 2.0 * ln_frac_im);
 
     // log φ = C + D·v₀
     (big_c_re + big_d_re * v0, big_c_im + big_d_im * v0)
@@ -194,7 +193,7 @@ pub fn heston_pdf_price(
         // Actually in Heston: φ₁(u) = φ(u-i) / φ(-i)
         // φ(-i) = exp(C(-i,T) + D(-i,T)·v0)
         // Simpler: normalize at the end by dividing by fwd
-        let num1_re = e_re * cf1_re - e_im * cf1_im;
+        let _num1_re = e_re * cf1_re - e_im * cf1_im;
         let num1_im = e_re * cf1_im + e_im * cf1_re;
         p1_sum += num1_im / u * du;
 
@@ -240,6 +239,7 @@ pub struct ExpFitHestonResult {
 }
 
 /// Gauss-Laguerre nodes and weights for n=32 (for exponential fitting).
+#[allow(dead_code)]
 fn gauss_laguerre_32() -> Vec<(f64, f64)> {
     // Nodes and weights for ∫₀^∞ e^{-x} f(x) dx ≈ Σ wᵢ f(xᵢ)
     // Standard 32-point Gauss-Laguerre quadrature
@@ -255,10 +255,10 @@ fn gauss_laguerre_32() -> Vec<(f64, f64)> {
         (5.90395849898971, 0.00366640292695),
         (7.35812673318624, 0.00093690362235),
         (8.98294092421146, 0.00019689358333),
-        (10.78301863254540, 0.00003395237785),
+        (10.783_018_632_545_4, 0.00003395237785),
         (12.76368805661768, 0.00000477478068),
         (14.93113975953519, 0.00000054264075),
-        (17.29261891256410, 0.00000004941209),
+        (17.292_618_912_564_1, 0.00000004941209),
         (19.85594260469277, 0.00000000356804),
         (22.63047088816964, 0.00000000020124),
         (25.62791093993284, 0.00000000000873),
@@ -267,15 +267,15 @@ fn gauss_laguerre_32() -> Vec<(f64, f64)> {
         (36.11861655651911, 2.0e-16),
         (40.19127083413528, 5.0e-18),
         (44.60599413498137, 8.0e-20),
-        (49.40871441578380, 8.0e-22),
+        (49.408_714_415_783_8, 8.0e-22),
         (54.65785933631284, 6.0e-24),
         (60.43047102962906, 2.0e-26),
         (66.83509595089002, 6.0e-29),
-        (74.03280081043150, 8.0e-32),
+        (74.032_800_810_431_5, 8.0e-32),
         (82.29567521039788, 4.0e-35),
         (92.15338560862009, 6.0e-39),
-        (104.81613468179470, 1.0e-43),
-        (124.26433481638310, 1.0e-50),
+        (104.816_134_681_794_7, 1.0e-43),
+        (124.264_334_816_383_1, 1.0e-50),
     ]
 }
 

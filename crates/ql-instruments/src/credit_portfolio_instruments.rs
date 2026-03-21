@@ -3,7 +3,7 @@
 //! Reference: QuantLib credit/ — SyntheticCDO, NthToDefault, CdsOption.
 
 use serde::{Deserialize, Serialize};
-use ql_time::{Date, Month};
+use ql_time::Date;
 
 use crate::credit_default_swap::CdsProtectionSide;
 
@@ -346,6 +346,7 @@ pub struct CdsOptionResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ql_time::Month;
 
     #[test]
     fn test_homogeneous_pool() {

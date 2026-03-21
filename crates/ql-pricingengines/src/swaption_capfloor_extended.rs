@@ -1203,7 +1203,7 @@ pub type LatticePayoffFn = Box<dyn Fn(f64, f64) -> f64>;
 /// - `maturity` — final time
 /// - `n_steps` — number of tree steps
 /// - `payoff_fn` — function returning exercise value at `(time, short_rate)`;
-///                 the engine takes the max of continuation and exercise
+///   the engine takes the max of continuation and exercise
 /// - `is_american` — if true, exercise at every step; if false, only at maturity
 pub fn lattice_short_rate_engine(
     a: f64,
@@ -1396,6 +1396,7 @@ impl BoxMullerState {
         if let Some(z) = self.spare.take() {
             return z;
         }
+        #[allow(clippy::never_loop)]
         loop {
             let u1 = self.next_uniform().max(1e-30);
             let u2 = self.next_uniform();

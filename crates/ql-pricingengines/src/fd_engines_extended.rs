@@ -6,8 +6,8 @@
 
 use serde::{Deserialize, Serialize};
 
-use ql_methods::fdm_meshers::{concentrating_1d_mesher, Mesher1d};
-use ql_methods::fdm_operators::{build_bs_operator, crank_nicolson_step, TripleBandOp};
+use ql_methods::fdm_meshers::concentrating_1d_mesher;
+use ql_methods::fdm_operators::{build_bs_operator, crank_nicolson_step};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // G168: FdSimpleBSSwingEngine — FD swing option under BS
@@ -42,6 +42,7 @@ pub struct FdSwingResult {
 /// - `is_call`: true for call, false for put
 /// - `n_grid`: number of spatial grid points
 /// - `n_steps`: number of time steps
+#[allow(clippy::needless_range_loop)]
 pub fn fd_simple_bs_swing(
     spot: f64,
     strike: f64,
@@ -201,6 +202,7 @@ pub struct ExercisePeriod {
 /// - `is_call`: true for call payoffs
 /// - `n_grid`: spatial grid points
 /// - `n_steps_per_period`: time steps per period
+#[allow(clippy::needless_range_loop)]
 pub fn fd_multi_period(
     spot: f64,
     r: f64,

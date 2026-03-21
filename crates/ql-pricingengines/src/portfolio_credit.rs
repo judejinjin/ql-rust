@@ -145,7 +145,7 @@ fn regularised_incomplete_beta(x: f64, a: f64, b: f64) -> f64 {
 }
 
 fn lentz_cf(x: f64, a: f64, b: f64) -> f64 {
-    let mut f = 1.0;
+    let mut f;
     let mut c = 1.0;
     let mut d = 1.0 - (a + b) * x / (a + 1.0);
     if d.abs() < 1e-30 { d = 1e-30; }
@@ -224,6 +224,7 @@ pub struct ContagionResult {
 /// - `epsilon`   — contagion infection probability per surviving name
 /// - `n_paths`   — Monte Carlo paths
 /// - `seed`      — RNG seed
+#[allow(clippy::needless_range_loop)]
 pub fn infectious_default_mc(
     n_names: usize,
     lambda: f64,
@@ -242,7 +243,7 @@ pub fn infectious_default_mc(
 
         // Phase 1: independent defaults
         for i in 0..n_names {
-            if rng.gen::<f64>() < lambda {
+            if rng.random::<f64>() < lambda {
                 defaulted[i] = true;
             }
         }
@@ -251,7 +252,7 @@ pub fn infectious_default_mc(
         let primaries: Vec<usize> = (0..n_names).filter(|&i| defaulted[i]).collect();
         for _ in &primaries {
             for i in 0..n_names {
-                if !defaulted[i] && rng.gen::<f64>() < epsilon {
+                if !defaulted[i] && rng.random::<f64>() < epsilon {
                     defaulted[i] = true;
                 }
             }

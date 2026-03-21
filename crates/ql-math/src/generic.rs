@@ -90,7 +90,7 @@ pub fn inverse_normal_cdf(p: f64) -> f64 {
         -3.969683028665376e+01,
          2.209460984245205e+02,
         -2.759285104469687e+02,
-         1.383577518672690e+02,
+         1.383_577_518_672_69e2,
         -3.066479806614716e+01,
          2.506628277459239e+00,
     ];
@@ -198,7 +198,7 @@ pub fn linear_interp<T: Number>(xs: &[f64], ys: &[f64], x: T) -> T {
 pub fn log_linear_interp<T: Number>(ts: &[f64], dfs: &[f64], t: T) -> T {
     debug_assert!(ts.len() == dfs.len() && ts.len() >= 2);
     let log_dfs: Vec<f64> = dfs.iter().map(|d| d.ln()).collect();
-    let log_df = linear_interp(&ts, &log_dfs, t);
+    let log_df = linear_interp(ts, &log_dfs, t);
     log_df.exp()
 }
 
@@ -219,8 +219,8 @@ pub fn log_linear_interp<T: Number>(ts: &[f64], dfs: &[f64], t: T) -> T {
 /// ```
 pub fn bivariate_normal_cdf<T: Number>(x: T, y: T, rho: f64) -> T {
     // Gauss-Legendre 3-point weights & abscissae (on [-1,1])
-    const W: [f64; 3] = [0.1713244923791702, 0.3607615730481386, 0.4679139345726910];
-    const XI: [f64; 3] = [0.9324695142031521, 0.6612093864662645, 0.2386191860831969];
+    const W: [f64; 3] = [0.1713244923791702, 0.3607615730481386, 0.467_913_934_572_691];
+    const XI: [f64; 3] = [0.932_469_514_203_152, 0.6612093864662645, 0.2386191860831969];
 
     let dh = T::zero() - x;
     let dk = T::zero() - y;
@@ -236,7 +236,7 @@ pub fn bivariate_normal_cdf<T: Number>(x: T, y: T, rho: f64) -> T {
                 let sn_f64 = (asr * (sign * XI[i] + 1.0) / 2.0).sin();
                 let sn = T::from_f64(sn_f64);
                 let one_minus_sn2 = T::from_f64(1.0 - sn_f64 * sn_f64);
-                bvn = bvn + T::from_f64(W[i])
+                bvn += T::from_f64(W[i])
                     * (T::zero() - (hs - sn * dh * dk) / one_minus_sn2).exp();
             }
         }
@@ -253,7 +253,7 @@ pub fn bivariate_normal_cdf<T: Number>(x: T, y: T, rho: f64) -> T {
             // ρ close to +1: use Drezner (1990) high-correlation formula
             // BVN(x,y;ρ) ≈ Φ(min(x,y)) - correction
             let two = T::from_f64(2.0);
-            let sqrt2pi = T::from_f64(std::f64::consts::TAU.sqrt());
+            let _sqrt2pi = T::from_f64(std::f64::consts::TAU.sqrt());
 
             // Transformation: hk = sqrt(2*(1-ρ)), compute in high-accuracy region
             let onemr = (1.0 - rho).max(0.0);
@@ -262,7 +262,7 @@ pub fn bivariate_normal_cdf<T: Number>(x: T, y: T, rho: f64) -> T {
                 return normal_cdf(if x.to_f64() < y.to_f64() { x } else { y });
             }
 
-            let hk = onemr.sqrt();
+            let _hk = onemr.sqrt();
             let hs = (dh * dh + dk * dk) / two;
             let asr = rho.asin();
 
@@ -272,7 +272,7 @@ pub fn bivariate_normal_cdf<T: Number>(x: T, y: T, rho: f64) -> T {
                     let sn_f64 = (asr * (sign * XI[i] + 1.0) / 2.0).sin();
                     let sn = T::from_f64(sn_f64);
                     let one_minus_sn2 = T::from_f64(1.0 - sn_f64 * sn_f64);
-                    bvn = bvn + T::from_f64(W[i])
+                    bvn += T::from_f64(W[i])
                         * (T::zero() - (hs - sn * dh * dk) / one_minus_sn2).exp();
                 }
             }

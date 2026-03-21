@@ -559,6 +559,7 @@ impl SequenceStatistics {
         // Compute delta from old mean (before this sample is incorporated)
         let old_means: Vec<f64> = self.stats.iter().map(|s| s.mean()).collect();
         // Update per-dimension stats
+        #[allow(clippy::needless_range_loop)]
         for i in 0..self.dim {
             self.stats[i].add(sample[i]);
         }
@@ -631,6 +632,7 @@ impl SequenceStatistics {
             return None;
         }
         let mut mat = vec![vec![0.0f64; self.dim]; self.dim];
+        #[allow(clippy::needless_range_loop)]
         for i in 0..self.dim {
             for j in 0..self.dim {
                 mat[i][j] = self.covariance(i, j).unwrap_or(0.0);
@@ -647,6 +649,7 @@ impl SequenceStatistics {
             return None;
         }
         let mut mat = vec![vec![0.0f64; self.dim]; self.dim];
+        #[allow(clippy::needless_range_loop)]
         for i in 0..self.dim {
             for j in 0..self.dim {
                 mat[i][j] = self.correlation(i, j).unwrap_or(if i == j { 1.0 } else { 0.0 });

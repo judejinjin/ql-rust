@@ -65,7 +65,7 @@ fn bivariate_normal_cdf(a: f64, b: f64, rho: f64) -> f64 {
     }).sum();
     let integral = sum * rho_limit.asin() / (2.0 * two_pi);
 
-    (nd.cdf(a) * nd.cdf(b) + integral).max(0.0).min(1.0)
+    (nd.cdf(a) * nd.cdf(b) + integral).clamp(0.0, 1.0)
 }
 
 // ===========================================================================
@@ -235,6 +235,7 @@ pub struct TwoAssetCorrelationResult {
 /// - `rho` — correlation between log-returns
 /// - `t` — time to expiry
 /// - `is_call` — true: pays (S1-K1)+ * 1{S2>K2}; false: pays (K1-S1)+ * 1{S2<K2}
+#[allow(clippy::too_many_arguments)]
 pub fn two_asset_correlation(
     s1: f64,
     s2: f64,
@@ -252,9 +253,7 @@ pub fn two_asset_correlation(
     if t < 1e-12 {
         let p = if is_call {
             if s2 > k2 { (s1 - k1).max(0.0) } else { 0.0 }
-        } else {
-            if s2 < k2 { (k1 - s1).max(0.0) } else { 0.0 }
-        };
+        } else if s2 < k2 { (k1 - s1).max(0.0) } else { 0.0 };
         return TwoAssetCorrelationResult { npv: p, delta1: 0.0, delta2: 0.0 };
     }
 

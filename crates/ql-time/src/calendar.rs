@@ -983,7 +983,7 @@ fn china_is_business_day(date: Date) -> bool {
     // Labour Day (May 1)
     if m == Month::May && d == 1 { return false; }
     // National Day (Oct 1-3 base, often extended to 7 with workday swaps)
-    if m == Month::October && d >= 1 && d <= 3 { return false; }
+    if m == Month::October && (1..=3).contains(&d) { return false; }
 
     // ---- Lunar holidays (2020–2035) ----
     // Spring Festival / Chinese New Year (4 days: day of + 3)
@@ -1447,7 +1447,7 @@ fn hong_kong_is_business_day(date: Date) -> bool {
     let d = date.day_of_month();
     let m = date.month();
     let y = date.year();
-    let wd = date.weekday();
+    let _wd = date.weekday();
 
     // New Year
     if m == Month::January && d == 1 { return false; }
@@ -2524,11 +2524,10 @@ fn philippines_is_business_day(date: Date) -> bool {
     // New Year
     if m == Month::January && d == 1 { return false; }
     // Chinese New Year (public holiday since 2012)
-    if y >= 2012 {
-        if is_lunar_holiday(date, lunar_new_year(y), &[0]) {
+    if y >= 2012
+        && is_lunar_holiday(date, lunar_new_year(y), &[0]) {
             return false;
         }
-    }
     // EDSA Revolution (Feb 25)
     if m == Month::February && d == 25 { return false; }
     // Easter: Holy Thursday + Good Friday + Black Saturday
@@ -2569,22 +2568,22 @@ fn is_malaysia_hari_raya_aidilfitri(date: Date) -> bool {
     let m = date.month() as u32;
     let d = date.day_of_month();
     match y {
-        2020 => (m == 5 && d == 24) || (m == 5 && d == 25),
-        2021 => (m == 5 && d == 13) || (m == 5 && d == 14),
-        2022 => (m == 5 && d == 2)  || (m == 5 && d == 3),
-        2023 => (m == 4 && d == 22) || (m == 4 && d == 23),
-        2024 => (m == 4 && d == 10) || (m == 4 && d == 11),
+        2020 => m == 5 && (d == 24 || d == 25),
+        2021 => m == 5 && (d == 13 || d == 14),
+        2022 => m == 5 && (d == 2 || d == 3),
+        2023 => m == 4 && (d == 22 || d == 23),
+        2024 => m == 4 && (d == 10 || d == 11),
         2025 => (m == 3 && d == 31) || (m == 4 && d == 1),
-        2026 => (m == 3 && d == 20) || (m == 3 && d == 21),
-        2027 => (m == 3 && d == 10) || (m == 3 && d == 11),
-        2028 => (m == 2 && d == 27) || (m == 2 && d == 28),
-        2029 => (m == 2 && d == 15) || (m == 2 && d == 16),
-        2030 => (m == 2 && d == 4)  || (m == 2 && d == 5),
-        2031 => (m == 1 && d == 24) || (m == 1 && d == 25),
-        2032 => (m == 1 && d == 14) || (m == 1 && d == 15),
-        2033 => (m == 1 && d == 2)  || (m == 1 && d == 3),
-        2034 => (m == 12 && d == 23) || (m == 12 && d == 24),
-        2035 => (m == 12 && d == 12) || (m == 12 && d == 13),
+        2026 => m == 3 && (d == 20 || d == 21),
+        2027 => m == 3 && (d == 10 || d == 11),
+        2028 => m == 2 && (d == 27 || d == 28),
+        2029 => m == 2 && (d == 15 || d == 16),
+        2030 => m == 2 && (d == 4 || d == 5),
+        2031 => m == 1 && (d == 24 || d == 25),
+        2032 => m == 1 && (d == 14 || d == 15),
+        2033 => m == 1 && (d == 2 || d == 3),
+        2034 => m == 12 && (d == 23 || d == 24),
+        2035 => m == 12 && (d == 12 || d == 13),
         _ => false,
     }
 }

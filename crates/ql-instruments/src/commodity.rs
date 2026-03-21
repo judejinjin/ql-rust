@@ -190,6 +190,7 @@ pub fn price_commodity_swap(
     let mut sum_df = 0.0;
     let mut sum_fwd = 0.0;
 
+    #[allow(clippy::needless_range_loop)]
     for i in 0..n {
         let fwd = curve.forward_price(swap.payment_dates[i]);
         let df = discount_factors[i];

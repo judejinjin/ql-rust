@@ -16,9 +16,7 @@
 use ql_time::{Calendar, Date, DayCounter};
 
 use crate::term_structure::TermStructure;
-use crate::inflation_term_structure::{
-    ZeroInflationTermStructure, YoYInflationTermStructure,
-};
+use crate::inflation_term_structure::YoYInflationTermStructure;
 
 // ===========================================================================
 // ZeroCouponInflationSwapHelper
@@ -279,6 +277,7 @@ mod tests {
     use super::*;
     use approx::assert_abs_diff_eq;
     use ql_time::Month;
+    use crate::inflation_term_structure::ZeroInflationTermStructure;
 
     #[test]
     fn zc_inflation_helper_creation() {

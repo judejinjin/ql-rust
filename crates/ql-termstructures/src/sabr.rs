@@ -39,56 +39,12 @@ pub fn sabr_volatility(
     );
     assert!(nu >= 0.0, "Nu must be non-negative");
 
-    // ATM case
-    if (strike - forward).abs() < 1e-12 * forward {
-        return sabr_atm_vol(forward, expiry, alpha, beta, rho, nu);
-    }
-
-    let one_minus_beta = 1.0 - beta;
-    let fk = forward * strike;
-    let fk_beta = fk.powf(one_minus_beta);
-    let log_fk = (forward / strike).ln();
-
-    // z = (nu / alpha) * (FK)^((1-β)/2) * ln(F/K)
-    let z = (nu / alpha) * fk_beta.sqrt() * log_fk;
-
-    // x(z) = ln[(√(1 - 2ρz + z²) + z - ρ) / (1 - ρ)]
-    let x_z = if nu.abs() < 1e-12 {
-        1.0
-    } else {
-        let sqrt_term = (1.0 - 2.0 * rho * z + z * z).sqrt();
-        let numerator = sqrt_term + z - rho;
-        let denominator = 1.0 - rho;
-        if numerator.abs() < 1e-12 {
-            1.0
-        } else {
-            z / (numerator / denominator).ln()
-        }
-    };
-
-    // Leading term: alpha / [(FK)^((1-β)/2) * (1 + (1-β)²/24 * ln²(F/K) + (1-β)⁴/1920 * ln⁴(F/K))]
-    let fk_mid = fk.powf(one_minus_beta / 2.0);
-    let log2 = log_fk * log_fk;
-    let log4 = log2 * log2;
-    let denom = fk_mid
-        * (1.0
-            + one_minus_beta * one_minus_beta / 24.0 * log2
-            + one_minus_beta.powi(4) / 1920.0 * log4);
-
-    let leading = alpha / denom;
-
-    // Correction term:
-    // 1 + T * [(1-β)²/24 * α²/(FK)^(1-β) + ¼ * ρβνα/(FK)^((1-β)/2) + (2-3ρ²)/24 * ν²]
-    let correction = 1.0
-        + expiry
-            * (one_minus_beta * one_minus_beta / 24.0 * alpha * alpha / fk_beta
-                + 0.25 * rho * beta * nu * alpha / fk_mid
-                + (2.0 - 3.0 * rho * rho) / 24.0 * nu * nu);
-
-    leading * x_z * correction
+    // Delegate to the generic implementation (AD-ready).
+    crate::generic::sabr_vol_generic::<f64>(strike, forward, expiry, alpha, beta, rho, nu)
 }
 
 /// ATM SABR volatility (simplified formula when F = K).
+#[allow(dead_code)]
 fn sabr_atm_vol(
     forward: f64,
     expiry: f64,

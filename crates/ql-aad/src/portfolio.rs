@@ -133,7 +133,7 @@ impl Portfolio {
             for inst in &self.instruments {
                 let inst_npv: AReal = npv(&inst.cashflows, &curve);
                 inst_npvs.push(inst_npv.val);
-                total = total + inst_npv * AReal::from_f64(inst.weight);
+                total += inst_npv * AReal::from_f64(inst.weight);
             }
 
             // Single adjoint pass for the entire portfolio

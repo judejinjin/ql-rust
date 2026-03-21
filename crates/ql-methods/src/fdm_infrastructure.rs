@@ -47,6 +47,7 @@ impl FdmLinearOpLayout {
     }
 
     /// Convert flat index to multi-dimensional coordinates.
+    #[allow(clippy::needless_range_loop)]
     pub fn to_coords(&self, flat: usize) -> Vec<usize> {
         let mut coords = vec![0; self.dim.len()];
         let mut remaining = flat;
@@ -127,6 +128,7 @@ impl FdmBackwardSolver {
     }
 
     /// Solve backward with a 1D operator and optional step condition.
+    #[allow(clippy::type_complexity)]
     pub fn solve(
         &self,
         op: &TripleBandOp,
@@ -195,6 +197,7 @@ impl Fdm1DimSolver {
     }
 
     /// Solve backward from terminal values.
+    #[allow(clippy::type_complexity)]
     pub fn solve(
         &self,
         terminal: &[f64],
@@ -253,6 +256,7 @@ impl FdmNDimSolver {
     }
 
     /// Solve via sequential operator splitting (Lie-Trotter).
+    #[allow(clippy::needless_range_loop)]
     pub fn solve(&self, terminal: &[f64]) -> Vec<f64> {
         let dt = self.desc.maturity / self.desc.n_time_steps as f64;
         let sizes = self.desc.mesher.sizes();
@@ -372,6 +376,7 @@ impl FdmDividendHandler {
     /// Apply dividend jump to solution vector on a log-spot grid.
     ///
     /// Shifts values: V(x) → V(x − ln(1 − D/S_i)) via interpolation.
+    #[allow(clippy::needless_range_loop)]
     pub fn apply(&self, values: &mut [f64], grid: &Mesher1d, t: f64) {
         for (k, &dt) in self.dividend_times.iter().enumerate() {
             if (dt - t).abs() < self.tolerance {
@@ -652,6 +657,7 @@ fn chi2_density_core(x: f64, nu: f64) -> f64 {
 }
 
 /// Simple ln(Γ(x)) via Stirling for x > 0.
+#[allow(clippy::needless_range_loop)]
 fn ln_gamma(x: f64) -> f64 {
     if x <= 0.0 {
         return f64::INFINITY;
@@ -659,14 +665,14 @@ fn ln_gamma(x: f64) -> f64 {
     // Use Lanczos approximation
     let g = 7.0;
     let c = [
-        0.99999999999980993,
+        0.999_999_999_999_809_9,
         676.5203681218851,
         -1259.1392167224028,
-        771.32342877765313,
-        -176.61502916214059,
+        771.323_428_777_653_1,
+        -176.615_029_162_140_6,
         12.507343278686905,
         -0.13857109526572012,
-        9.9843695780195716e-6,
+        9.984_369_578_019_572e-6,
         1.5056327351493116e-7,
     ];
     if x < 0.5 {
@@ -717,6 +723,7 @@ impl FdmSimpleStorageCondition {
     /// For each grid point (representing spot price S), the optimal action is:
     /// - Inject (buy) if continuation value at (inv + Δ) − S·Δ exceeds V(inv)
     /// - Withdraw (sell) if V(inv − Δ) + S·Δ exceeds V(inv)
+    #[allow(clippy::needless_range_loop)]
     pub fn apply(&self, values: &mut [f64], spot_grid: &Mesher1d) {
         let n = values.len().min(spot_grid.size());
         for i in 0..n {
@@ -818,6 +825,7 @@ impl FdmSnapshotCondition {
 /// Composite of multiple step conditions applied sequentially.
 ///
 /// Each condition is represented as a boxed closure: `Fn(&mut [f64], f64)`.
+#[allow(clippy::type_complexity)]
 pub struct FdmStepConditionComposite {
     pub conditions: Vec<Box<dyn Fn(&mut [f64], f64)>>,
 }
@@ -830,6 +838,7 @@ impl FdmStepConditionComposite {
     }
 
     /// Add a step condition.
+    #[allow(clippy::type_complexity)]
     pub fn add(&mut self, cond: Box<dyn Fn(&mut [f64], f64)>) {
         self.conditions.push(cond);
     }
@@ -1408,7 +1417,7 @@ fn inv_normal_cdf(p: f64) -> f64 {
         -3.969683028665376e+01,
         2.209460984245205e+02,
         -2.759285104469687e+02,
-        1.383577518672690e+02,
+        1.383_577_518_672_69e2,
         -3.066479806614716e+01,
         2.506628277459239e+00,
     ];

@@ -200,7 +200,7 @@ pub fn global_bootstrap(
             let step = grad / (grad.abs() + lambda_lm);
             zero_rates[j] = old_r - 0.001 * step;
             // Keep rates positive and bounded
-            zero_rates[j] = zero_rates[j].max(-0.05).min(0.50);
+            zero_rates[j] = zero_rates[j].clamp(-0.05, 0.50);
         }
     }
 

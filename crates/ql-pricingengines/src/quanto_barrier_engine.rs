@@ -212,7 +212,7 @@ fn barrier_closed_form(
         - phi * strike * df_d * h_ratio.powf(2.0 * mu) * cumulative_normal(eta * (y1 - sig_sqrt_t));
     let term_d = phi * spot * df_f * h_ratio.powf(2.0 * (mu + 1.0)) * cumulative_normal(eta * y2)
         - phi * strike * df_d * h_ratio.powf(2.0 * mu) * cumulative_normal(eta * (y2 - sig_sqrt_t));
-    let term_e = rebate * df_d * (
+    let _term_e = rebate * df_d * (
         cumulative_normal(eta * (x2 - sig_sqrt_t))
         - h_ratio.powf(2.0 * mu) * cumulative_normal(eta * (y2 - sig_sqrt_t))
     );

@@ -38,6 +38,7 @@ use crate::lmm::{LmmConfig, LmmCurveState, LmmResult, evolve_one_step};
 /// ```
 ///
 /// This is positive (convex correction) and grows with index `i`.
+#[allow(clippy::needless_range_loop)]
 pub fn spot_measure_drift(config: &LmmConfig, i: usize, forwards: &[f64]) -> f64 {
     let n = config.n_rates;
     let mut mu = 0.0;
@@ -217,6 +218,7 @@ pub fn lmm_cms_rate(
 /// - `strike`         — fixed rate of the swap
 /// - `n_paths`        — number of Monte Carlo paths
 /// - `seed`           — random seed
+#[allow(clippy::needless_range_loop)]
 pub fn lmm_bermudan_swaption_price(
     config: &LmmConfig,
     exercise_start: usize,
@@ -363,6 +365,7 @@ fn ols_quadratic_predict(x: &[f64], y: &[f64], x_pred: &[f64]) -> Vec<f64> {
 }
 
 /// Solve 3×3 linear system A*x = b via Gaussian elimination.
+#[allow(clippy::needless_range_loop)]
 fn solve_3x3(a: &[[f64; 3]; 3], b: &[f64; 3]) -> [f64; 3] {
     let mut m = [[0.0f64; 4]; 3];
     for i in 0..3 {
@@ -436,7 +439,7 @@ impl RebonatVolSurface {
         // 16-point Gauss-Legendre nodes/weights on [0, 1]
         const NODES: [f64; 8] = [
             0.0950125098360663, 0.2816035507792589, 0.4580167776572274,
-            0.6178762444026437, 0.7554044083550030, 0.8656312023341769,
+            0.6178762444026437, 0.755_404_408_355_003, 0.8656312023341769,
             0.9445750230732326, 0.9894009349916499,
         ];
         const WEIGHTS: [f64; 8] = [

@@ -505,6 +505,7 @@ pub fn mc_barrier_vanilla_hybrid(
     let mut sum_rho = 0.0;
     let mut sum_div_rho = 0.0;
 
+    #[allow(clippy::needless_range_loop)]
     for _ in 0..num_paths {
         // Pre-generate random numbers
         let z_values: Vec<f64> = (0..num_steps)

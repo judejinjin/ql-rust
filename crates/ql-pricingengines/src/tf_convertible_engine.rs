@@ -199,7 +199,7 @@ pub fn price_tf_convertible(
                         // Issuer calls: holder gets max(call_price, conv_value)
                         let soft_callable = provision
                             .trigger_price
-                            .map_or(true, |trigger| s_node >= trigger);
+                            .is_none_or(|trigger| s_node >= trigger);
 
                         if soft_callable && continuation > provision.price {
                             // Issuer calls; holder can still convert

@@ -38,6 +38,7 @@ pub struct FdBsBarrierResult {
 /// - `n_space` — spatial grid size
 /// - `n_time` — time steps
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::needless_range_loop)]
 pub fn fd_bs_barrier(
     spot: f64,
     strike: f64,
@@ -203,7 +204,7 @@ pub fn fd_bs_barrier(
 
     // Delta by FD
     let delta = if idx > 0 && idx < n {
-        let ds = (x[idx + 1].exp() - x[idx - 1].exp());
+        let ds = x[idx + 1].exp() - x[idx - 1].exp();
         (u[idx + 1] - u[idx - 1]) / ds
     } else {
         0.0
@@ -231,6 +232,7 @@ pub fn fd_bs_barrier(
 /// The rebate option pays a fixed amount when (and only when) the barrier
 /// is crossed. This is the pure rebate component of a barrier option.
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::needless_range_loop)]
 pub fn fd_bs_rebate(
     spot: f64,
     r: f64,

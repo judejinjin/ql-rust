@@ -222,12 +222,12 @@ fn invert_black_call(fwd: f64, strike: f64, c: f64, t: f64) -> f64 {
         let d1 = ((fwd / strike).ln() + 0.5 * sigma * sigma * t) / (sigma * sqrt_t);
         let d2 = d1 - sigma * sqrt_t;
         let price = fwd * cumulative_normal(d1) - strike * cumulative_normal(d2);
-        let vega = fwd * cumulative_normal(d1).min(0.9999).max(0.0001)
+        let vega = fwd * cumulative_normal(d1).clamp(0.0001, 0.9999)
             * (-0.5 * d1 * d1).exp() / (2.0 * PI).sqrt() * sqrt_t;
         let diff = price - c;
         if diff.abs() < 1e-12 || vega.abs() < 1e-15 { break; }
         sigma -= diff / vega;
-        sigma = sigma.max(1e-6).min(5.0);
+        sigma = sigma.clamp(1e-6, 5.0);
     }
     sigma
 }

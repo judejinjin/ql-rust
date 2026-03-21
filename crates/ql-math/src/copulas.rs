@@ -395,13 +395,13 @@ pub fn amh_tau_from_theta(theta: f64) -> f64 {
         return 0.0;
     }
     let t2 = theta * theta;
-    let dilog_part = if (1.0 - theta).abs() < 1e-14 {
+    
+    if (1.0 - theta).abs() < 1e-14 {
         // Limit: when θ→1, τ → 1 − 2ln2/3 ≈ 0.5363
         1.0 - 2.0 * 2.0_f64.ln() / 3.0
     } else {
         1.0 - (2.0 / (3.0 * theta)) * (1.0 - 2.0 * (1.0 - theta).powi(2) * (1.0 - theta).ln() / t2)
-    };
-    dilog_part
+    }
 }
 
 /// Hüsler-Reiss copula — extreme-value copula.
