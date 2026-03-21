@@ -12,7 +12,7 @@
 //! - Haug, E.G. (2007), *The Complete Guide to Option Pricing Formulas*,
 //!   Chapter 6.
 
-use ql_math::distributions::cumulative_normal;
+use crate::generic::chooser_generic;
 
 /// Result from a chooser option pricing.
 #[derive(Debug, Clone)]
@@ -51,27 +51,7 @@ pub fn chooser_price(
     t_choose: f64,
     t_expiry: f64,
 ) -> ChooserResult {
-    debug_assert!(t_choose > 0.0 && t_choose <= t_expiry);
-
-    let sqrt_t = t_expiry.sqrt();
-    let sqrt_tc = t_choose.sqrt();
-
-    let d1 = ((spot / strike).ln() + (r - q + 0.5 * vol * vol) * t_expiry) / (vol * sqrt_t);
-    let d2 = d1 - vol * sqrt_t;
-
-    // y terms use t_choose
-    let y1 = ((spot / strike).ln() + (r - q) * t_expiry + 0.5 * vol * vol * t_choose)
-        / (vol * sqrt_tc);
-    let y2 = y1 - vol * sqrt_tc;
-
-    let df_q_t = (-q * t_expiry).exp();
-    let df_r_t = (-r * t_expiry).exp();
-    let df_r_tc = (-r * t_choose).exp();
-
-    // Rubinstein decomposition
-    let npv = spot * df_q_t * cumulative_normal(d1) - strike * df_r_t * cumulative_normal(d2)
-        - spot * df_q_t * cumulative_normal(-y1) + strike * df_r_tc * cumulative_normal(-y2);
-
+    let npv = chooser_generic(spot, strike, r, q, vol, t_choose, t_expiry);
     ChooserResult { npv }
 }
 

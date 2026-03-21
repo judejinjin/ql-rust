@@ -271,3 +271,42 @@ pub use ql_persistence::EmbeddedStore;
 
 // Re-export serde_json for convenience (instrument_data uses Value)
 pub use serde_json;
+
+// Generic AD-compatible engines — all functions are generic over `T: Number`.
+// When called with `f64` they produce identical results to the f64-only engines above.
+// When called with `Dual`, `DualVec<N>`, or `AReal` (from `ql-aad`), all arithmetic
+// propagates partial derivatives automatically.
+pub mod generic {
+    //! AD-compatible generic pricing engines, term structures, and methods.
+    //!
+    //! All functions in this module are generic over `T: ql_core::Number`,
+    //! enabling automatic differentiation (forward-mode `Dual`/`DualVec<N>`,
+    //! reverse-mode `AReal`) when paired with the `ql-aad` crate.
+    //!
+    //! # Example (with `f64`)
+    //!
+    //! ```
+    //! use ql_rust::generic::bs_european_generic;
+    //!
+    //! let res = bs_european_generic(100.0_f64, 100.0, 0.05, 0.0, 0.20, 1.0, true);
+    //! assert!((res.npv - 10.45).abs() < 0.1);
+    //! ```
+
+    // --- Pricing engines ---
+    pub use ql_pricingengines::generic::*;
+
+    // --- Math layer ---
+    pub use ql_math::generic::{
+        normal_cdf, normal_pdf, bivariate_normal_cdf,
+        black_scholes_generic, discount_factor,
+    };
+
+    // --- Term structures ---
+    pub use ql_termstructures::generic::*;
+
+    // --- Numerical methods ---
+    pub use ql_methods::generic::*;
+}
+
+// Re-export the Number trait so users can write `use ql_rust::Number;`
+pub use ql_core::Number;

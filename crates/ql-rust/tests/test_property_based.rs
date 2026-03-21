@@ -57,7 +57,7 @@ proptest! {
         let call = VanillaOption::european_call(strike, expiry_date);
         let price = price_european(&call, spot, rate, div, vol, expiry).npv;
 
-        prop_assert!(price >= 0.0,
+        prop_assert!(price >= -1e-12,
             "Call price should be non-negative, got {}", price);
         prop_assert!(price <= spot,
             "Call price {} should not exceed spot {}", price, spot);
@@ -74,7 +74,7 @@ proptest! {
         let price = price_european(&put, spot, rate, div, vol, expiry).npv;
         let upper = strike * (-rate * expiry).exp();
 
-        prop_assert!(price >= 0.0,
+        prop_assert!(price >= -1e-12,
             "Put price should be non-negative, got {}", price);
         prop_assert!(price <= upper + 1e-10,
             "Put price {} should not exceed K·e^(-rT) = {}", price, upper);

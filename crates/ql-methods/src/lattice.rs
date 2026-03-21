@@ -4,6 +4,7 @@
 //! European and American option pricing.
 
 use tracing::info_span;
+use crate::generic::binomial_crr_generic;
 
 /// Result from a lattice calculation.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -49,93 +50,12 @@ pub fn binomial_crr(
     num_steps: usize,
 ) -> LatticeResult {
     let _span = info_span!("binomial_crr", num_steps, is_american).entered();
-    let dt = time_to_expiry / num_steps as f64;
-    let df = (-r * dt).exp(); // discount factor per step
-    let u = (vol * dt.sqrt()).exp(); // up factor
-    let d = 1.0 / u; // down factor
-    let growth = ((r - q) * dt).exp();
-    let p = (growth - d) / (u - d); // risk-neutral probability of up move
-
-    let omega: f64 = if is_call { 1.0 } else { -1.0 };
-
-    // Build terminal payoffs: at step N, node j has spot = S₀ · u^j · d^(N-j)
-    let n = num_steps;
-    let mut values = vec![0.0; n + 1];
-
-    for (j, val) in values.iter_mut().enumerate().take(n + 1) {
-        let s_t = spot * u.powi(j as i32) * d.powi((n - j) as i32);
-        *val = (omega * (s_t - strike)).max(0.0);
-    }
-
-    // For Greeks, save values at steps n, n-1, n-2
-    let mut val_step_1 = [0.0; 3]; // values at step 1 (3 nodes needed for gamma)
-    let mut val_step_2 = [0.0; 3]; // values at step 2
-
-    // Backward induction
-    for step in (0..n).rev() {
-        let mut new_values = vec![0.0; step + 1];
-        for j in 0..=step {
-            let continuation = df * (p * values[j + 1] + (1.0 - p) * values[j]);
-
-            new_values[j] = if is_american {
-                let s_node = spot * u.powi(j as i32) * d.powi((step - j) as i32);
-                let intrinsic = (omega * (s_node - strike)).max(0.0);
-                continuation.max(intrinsic)
-            } else {
-                continuation
-            };
-        }
-
-        if step == 2 && n >= 3 {
-            val_step_2[0] = new_values[0]; // S*d²
-            val_step_2[1] = new_values[1]; // S
-            val_step_2[2] = new_values[2]; // S*u²
-        }
-        if step == 1 {
-            val_step_1[0] = new_values[0]; // S*d
-            val_step_1[1] = new_values[1]; // S*u
-        }
-
-        values = new_values;
-    }
-
-    let npv = values[0];
-
-    // Greeks from the tree
-    // Delta = (V(Su) - V(Sd)) / (Su - Sd) from step 1
-    let su = spot * u;
-    let sd = spot * d;
-    let delta = if n >= 1 {
-        (val_step_1[1] - val_step_1[0]) / (su - sd)
-    } else {
-        0.0
-    };
-
-    // Gamma from step 2
-    let gamma = if n >= 3 {
-        let su2 = spot * u * u;
-        let sd2 = spot * d * d;
-        let s_mid = spot; // middle node at step 2
-
-        let delta_up = (val_step_2[2] - val_step_2[1]) / (su2 - s_mid);
-        let delta_down = (val_step_2[1] - val_step_2[0]) / (s_mid - sd2);
-        (delta_up - delta_down) / (0.5 * (su2 - sd2))
-    } else {
-        0.0
-    };
-
-    // Theta: (V(t+dt) - V(t)) / dt, using the center node at step 2
-    let theta = if n >= 3 {
-        (val_step_2[1] - npv) / (2.0 * dt)
-    } else {
-        0.0
-    };
-
+    let res = binomial_crr_generic(spot, strike, r, q, vol, time_to_expiry, is_call, is_american, num_steps);
     LatticeResult {
-        npv,
-        delta,
-        gamma,
-        theta,
+        npv: res.npv,
+        delta: res.delta,
+        gamma: res.gamma,
+        theta: res.theta,
     }
 }
 

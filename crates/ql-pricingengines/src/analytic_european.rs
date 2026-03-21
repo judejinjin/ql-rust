@@ -4,8 +4,9 @@
 //! Black-Scholes closed-form solution.
 
 use ql_instruments::{OptionType, VanillaOption};
-use ql_math::distributions::NormalDistribution;
 use tracing::info_span;
+
+use crate::generic::bs_european_generic;
 
 /// Results from the analytic European engine.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -56,69 +57,16 @@ pub fn price_european(
     time_to_expiry: f64,
 ) -> AnalyticEuropeanResults {
     let _span = info_span!("price_european", spot, volatility, time_to_expiry).entered();
-    // Validate that this is a European option with PlainVanilla payoff
     let strike = option.strike();
-    let omega = option.option_type().sign(); // +1 call, -1 put
-
-    if time_to_expiry <= 0.0 {
-        // Expired option: intrinsic value only
-        let intrinsic = (omega * (spot - strike)).max(0.0);
-        return AnalyticEuropeanResults {
-            npv: intrinsic,
-            delta: if omega * (spot - strike) > 0.0 { omega } else { 0.0 },
-            gamma: 0.0,
-            vega: 0.0,
-            theta: 0.0,
-            rho: 0.0,
-        };
-    }
-
-    let t = time_to_expiry;
-    let sigma = volatility;
-    let r = risk_free_rate;
-    let q = dividend_yield;
-    let sqrt_t = t.sqrt();
-
-    // d1, d2
-    let d1 = ((spot / strike).ln() + (r - q + 0.5 * sigma * sigma) * t) / (sigma * sqrt_t);
-    let d2 = d1 - sigma * sqrt_t;
-
-    let n = NormalDistribution::standard();
-    let nd1 = n.cdf(omega * d1);
-    let nd2 = n.cdf(omega * d2);
-    let npdf_d1 = n.pdf(d1);
-
-    let df_q = (-q * t).exp(); // discount factor for dividends
-    let df_r = (-r * t).exp(); // discount factor for risk-free rate
-
-    // NPV
-    let npv = omega * (spot * df_q * nd1 - strike * df_r * nd2);
-
-    // Delta: ∂V/∂S
-    let delta = omega * df_q * nd1;
-
-    // Gamma: ∂²V/∂S²
-    let gamma = df_q * npdf_d1 / (spot * sigma * sqrt_t);
-
-    // Vega: ∂V/∂σ  (scaled to 1% = 0.01)
-    let vega = spot * df_q * npdf_d1 * sqrt_t * 0.01;
-
-    // Theta: ∂V/∂t (per calendar day = 1/365)
-    let theta_continuous = -spot * df_q * npdf_d1 * sigma / (2.0 * sqrt_t)
-        - omega * r * strike * df_r * nd2
-        + omega * q * spot * df_q * nd1;
-    let theta = theta_continuous / 365.0;
-
-    // Rho: ∂V/∂r (scaled to 1% = 0.01)
-    let rho = omega * strike * t * df_r * nd2 * 0.01;
-
+    let is_call = option.option_type().sign() > 0.0;
+    let res = bs_european_generic(spot, strike, risk_free_rate, dividend_yield, volatility, time_to_expiry, is_call);
     AnalyticEuropeanResults {
-        npv,
-        delta,
-        gamma,
-        vega,
-        theta,
-        rho,
+        npv: res.npv,
+        delta: res.delta,
+        gamma: res.gamma,
+        vega: res.vega,
+        theta: res.theta,
+        rho: res.rho,
     }
 }
 
@@ -133,36 +81,15 @@ pub fn black_scholes_price(
     t: f64,
     option_type: OptionType,
 ) -> AnalyticEuropeanResults {
-    use ql_math::distributions::NormalDistribution;
-
-    let omega = option_type.sign();
-    if t <= 0.0 {
-        let intrinsic = (omega * (spot - strike)).max(0.0);
-        return AnalyticEuropeanResults {
-            npv: intrinsic,
-            delta: 0.0,
-            gamma: 0.0,
-            vega: 0.0,
-            theta: 0.0,
-            rho: 0.0,
-        };
-    }
-    let sqrt_t = t.sqrt();
-    let d1 = ((spot / strike).ln() + (r - q + 0.5 * vol * vol) * t) / (vol * sqrt_t);
-    let d2 = d1 - vol * sqrt_t;
-    let n = NormalDistribution::standard();
-    let nd1 = n.cdf(omega * d1);
-    let nd2 = n.cdf(omega * d2);
-    let df_q = (-q * t).exp();
-    let df_r = (-r * t).exp();
-    let npv = omega * (spot * df_q * nd1 - strike * df_r * nd2);
+    let is_call = option_type.sign() > 0.0;
+    let res = bs_european_generic(spot, strike, r, q, vol, t, is_call);
     AnalyticEuropeanResults {
-        npv,
-        delta: 0.0,
-        gamma: 0.0,
-        vega: 0.0,
-        theta: 0.0,
-        rho: 0.0,
+        npv: res.npv,
+        delta: res.delta,
+        gamma: res.gamma,
+        vega: res.vega,
+        theta: res.theta,
+        rho: res.rho,
     }
 }
 

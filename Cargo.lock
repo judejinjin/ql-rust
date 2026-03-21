@@ -1353,6 +1353,7 @@ dependencies = [
  "approx",
  "criterion",
  "proptest",
+ "ql-aad",
  "ql-cashflows",
  "ql-core",
  "ql-currencies",

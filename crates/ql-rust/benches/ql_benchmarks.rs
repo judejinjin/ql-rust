@@ -4,6 +4,10 @@
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
 
+use ql_aad::dual::Dual;
+use ql_aad::dual_vec::DualVec;
+use ql_aad::tape::{adjoint_tl, with_tape, AReal};
+use ql_aad::Number;
 use ql_cashflows::fixed_leg;
 use ql_indexes::IborIndex;
 use ql_instruments::{FixedRateBond, OptionType, VanillaOption, SwapType, VanillaSwap};
@@ -20,6 +24,10 @@ use ql_pricingengines::{
     merton_jump_diffusion, bates_price_flat,
     GaussianCopulaLHP, cds_option_black,
     double_barrier_knockout, chooser_price, cliquet_price,
+};
+use ql_pricingengines::generic::{
+    bs_european_generic, barone_adesi_whaley_generic, merton_jd_generic,
+    chooser_generic,
 };
 use ql_termstructures::{
     DepositRateHelper, FlatForward, NelsonSiegelFitting, PiecewiseYieldCurve,
@@ -1197,6 +1205,251 @@ fn bench_feed_publish_10_subscribers(c: &mut Criterion) {
     });
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// AD (Automatic Differentiation) benchmark group
+// ══════════════════════════════════════════════════════════════════════════════
+//
+// Compares f64 (baseline) vs forward-mode Dual (single Greek) vs
+// forward-mode DualVec<5> (all Greeks in one pass) vs reverse-mode AReal
+// for key generic engines.
+
+fn bench_ad_bs_european(c: &mut Criterion) {
+    let mut group = c.benchmark_group("ad_bs_european");
+
+    group.bench_function("f64", |b| {
+        b.iter(|| {
+            bs_european_generic::<f64>(
+                black_box(100.0), black_box(100.0),
+                black_box(0.05), black_box(0.0),
+                black_box(0.20), black_box(1.0), true,
+            )
+        })
+    });
+
+    group.bench_function("Dual_delta", |b| {
+        b.iter(|| {
+            bs_european_generic(
+                Dual::new(black_box(100.0), 1.0),
+                Dual::constant(black_box(100.0)),
+                Dual::constant(black_box(0.05)),
+                Dual::constant(black_box(0.0)),
+                Dual::constant(black_box(0.20)),
+                Dual::constant(black_box(1.0)),
+                true,
+            )
+        })
+    });
+
+    group.bench_function("DualVec5_all_greeks", |b| {
+        b.iter(|| {
+            type D5 = DualVec<5>;
+            bs_european_generic(
+                D5::variable(black_box(100.0), 0),
+                D5::constant(black_box(100.0)),
+                D5::variable(black_box(0.05), 1),
+                D5::variable(black_box(0.0), 2),
+                D5::variable(black_box(0.20), 3),
+                D5::variable(black_box(1.0), 4),
+                true,
+            )
+        })
+    });
+
+    group.bench_function("AReal_reverse", |b| {
+        b.iter(|| {
+            let npv = with_tape(|tape| {
+                let s = tape.input(black_box(100.0));
+                let k = tape.input(black_box(100.0));
+                let r = tape.input(black_box(0.05));
+                let q = tape.input(black_box(0.0));
+                let v = tape.input(black_box(0.20));
+                let t = AReal::from_f64(black_box(1.0));
+                bs_european_generic(s, k, r, q, v, t, true).npv
+            });
+            adjoint_tl(npv)
+        })
+    });
+
+    group.finish();
+}
+
+fn bench_ad_baw_american(c: &mut Criterion) {
+    let mut group = c.benchmark_group("ad_baw_american");
+
+    group.bench_function("f64", |b| {
+        b.iter(|| {
+            barone_adesi_whaley_generic::<f64>(
+                black_box(100.0), black_box(100.0),
+                black_box(0.05), black_box(0.02),
+                black_box(0.20), black_box(1.0), false,
+            )
+        })
+    });
+
+    group.bench_function("Dual_delta", |b| {
+        b.iter(|| {
+            barone_adesi_whaley_generic(
+                Dual::new(black_box(100.0), 1.0),
+                Dual::constant(black_box(100.0)),
+                Dual::constant(black_box(0.05)),
+                Dual::constant(black_box(0.02)),
+                Dual::constant(black_box(0.20)),
+                Dual::constant(black_box(1.0)),
+                false,
+            )
+        })
+    });
+
+    group.bench_function("DualVec5_all_greeks", |b| {
+        b.iter(|| {
+            type D5 = DualVec<5>;
+            barone_adesi_whaley_generic(
+                D5::variable(black_box(100.0), 0),
+                D5::constant(black_box(100.0)),
+                D5::variable(black_box(0.05), 1),
+                D5::variable(black_box(0.02), 2),
+                D5::variable(black_box(0.20), 3),
+                D5::variable(black_box(1.0), 4),
+                false,
+            )
+        })
+    });
+
+    group.bench_function("AReal_reverse", |b| {
+        b.iter(|| {
+            let npv = with_tape(|tape| {
+                let s = tape.input(black_box(100.0));
+                let k = tape.input(black_box(100.0));
+                let r = tape.input(black_box(0.05));
+                let q = tape.input(black_box(0.02));
+                let v = tape.input(black_box(0.20));
+                let t = AReal::from_f64(black_box(1.0));
+                barone_adesi_whaley_generic(s, k, r, q, v, t, false).npv
+            });
+            adjoint_tl(npv)
+        })
+    });
+
+    group.finish();
+}
+
+fn bench_ad_merton_jd(c: &mut Criterion) {
+    let mut group = c.benchmark_group("ad_merton_jd");
+
+    group.bench_function("f64", |b| {
+        b.iter(|| {
+            merton_jd_generic::<f64>(
+                black_box(100.0), black_box(100.0),
+                black_box(0.05), black_box(0.0),
+                black_box(0.15), black_box(1.0),
+                black_box(0.5), black_box(-0.1), black_box(0.15),
+                true,
+            )
+        })
+    });
+
+    group.bench_function("Dual_delta", |b| {
+        b.iter(|| {
+            merton_jd_generic(
+                Dual::new(black_box(100.0), 1.0),
+                Dual::constant(black_box(100.0)),
+                Dual::constant(black_box(0.05)),
+                Dual::constant(black_box(0.0)),
+                Dual::constant(black_box(0.15)),
+                Dual::constant(black_box(1.0)),
+                Dual::constant(black_box(0.5)),
+                Dual::constant(black_box(-0.1)),
+                Dual::constant(black_box(0.15)),
+                true,
+            )
+        })
+    });
+
+    group.bench_function("DualVec5_all_greeks", |b| {
+        b.iter(|| {
+            type D5 = DualVec<5>;
+            merton_jd_generic(
+                D5::variable(black_box(100.0), 0),
+                D5::constant(black_box(100.0)),
+                D5::variable(black_box(0.05), 1),
+                D5::variable(black_box(0.0), 2),
+                D5::variable(black_box(0.15), 3),
+                D5::constant(black_box(1.0)),
+                D5::constant(black_box(0.5)),
+                D5::constant(black_box(-0.1)),
+                D5::variable(black_box(0.15), 4),
+                true,
+            )
+        })
+    });
+
+    group.bench_function("AReal_reverse", |b| {
+        b.iter(|| {
+            let npv = with_tape(|tape| {
+                let s = tape.input(black_box(100.0));
+                let k = tape.input(black_box(100.0));
+                let r = tape.input(black_box(0.05));
+                let q = tape.input(black_box(0.0));
+                let vol = tape.input(black_box(0.15));
+                let t = AReal::from_f64(black_box(1.0));
+                let lam = tape.input(black_box(0.5));
+                let nu = tape.input(black_box(-0.1));
+                let delta = tape.input(black_box(0.15));
+                merton_jd_generic(s, k, r, q, vol, t, lam, nu, delta, true).npv
+            });
+            adjoint_tl(npv)
+        })
+    });
+
+    group.finish();
+}
+
+fn bench_ad_chooser(c: &mut Criterion) {
+    let mut group = c.benchmark_group("ad_chooser");
+
+    group.bench_function("f64", |b| {
+        b.iter(|| {
+            chooser_generic::<f64>(
+                black_box(50.0), black_box(50.0),
+                black_box(0.08), black_box(0.0),
+                black_box(0.25), black_box(0.25), black_box(0.50),
+            )
+        })
+    });
+
+    group.bench_function("Dual_delta", |b| {
+        b.iter(|| {
+            chooser_generic(
+                Dual::new(black_box(50.0), 1.0),
+                Dual::constant(black_box(50.0)),
+                Dual::constant(black_box(0.08)),
+                Dual::constant(black_box(0.0)),
+                Dual::constant(black_box(0.25)),
+                Dual::constant(black_box(0.25)),
+                Dual::constant(black_box(0.50)),
+            )
+        })
+    });
+
+    group.bench_function("AReal_reverse", |b| {
+        b.iter(|| {
+            let npv = with_tape(|tape| {
+                let s = tape.input(black_box(50.0));
+                let k = tape.input(black_box(50.0));
+                let r = tape.input(black_box(0.08));
+                let q = tape.input(black_box(0.0));
+                let vol = tape.input(black_box(0.25));
+                let tc = AReal::from_f64(black_box(0.25));
+                let te = AReal::from_f64(black_box(0.50));
+                chooser_generic(s, k, r, q, vol, tc, te)
+            });
+            adjoint_tl(npv)
+        })
+    });
+
+    group.finish();
+}
+
 criterion_group!(
     benches,
     bench_bs_pricing,
@@ -1257,5 +1510,10 @@ criterion_group!(
     bench_reactive_portfolio_invalidate_reprice,
     bench_feed_publish_1_subscriber,
     bench_feed_publish_10_subscribers,
+    // -- AD (automatic differentiation) benchmarks --
+    bench_ad_bs_european,
+    bench_ad_baw_american,
+    bench_ad_merton_jd,
+    bench_ad_chooser,
 );
 criterion_main!(benches);

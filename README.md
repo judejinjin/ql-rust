@@ -3,7 +3,7 @@
 A modern Rust reimplementation of the [QuantLib](https://www.quantlib.org/) quantitative finance library.
 
 [![Build](https://img.shields.io/badge/build-passing-brightgreen)]()
-[![Tests](https://img.shields.io/badge/tests-1350_passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-3028_passing-brightgreen)]()
 [![Rust](https://img.shields.io/badge/rust-2021_edition-orange)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
 
@@ -14,7 +14,8 @@ A modern Rust reimplementation of the [QuantLib](https://www.quantlib.org/) quan
 - **Zero-cost abstractions** — Rust's type system and ownership model prevent common errors at compile time
 - **High performance** — BS pricing + Greeks in ~200 ns, curve bootstrap in ~1 ms
 - **Thread safety** — All core types are `Send + Sync`; Monte Carlo engine uses Rayon for parallel path generation
-- **Modular architecture** — 16 focused crates; depend on only what you need
+- **Modular architecture** — 17 focused crates; depend on only what you need
+- **Automatic differentiation** — Forward-mode (`Dual`, `DualVec<N>`) and reverse-mode (`AReal`) AD via the `Number` trait; 100+ generic engines support exact Greeks without finite-difference bumping
 - **Embedded persistence** — Trade booking, lifecycle events, and versioning via redb (no external DB required)
 
 ## Quick Start
@@ -129,6 +130,10 @@ println!("CRR European call: {:.4}", crr.npv);
 │                  │  lattice, FDM meshers & operators         │
 ├──────────────────┼───────────────────────────────────────────┤
 │  ql-pricingengines│ Analytic BS, swap/bond/swaption pricing  │
+│                  │  + 100 generic engines (T: Number)        │
+├──────────────────┼───────────────────────────────────────────┤
+│  ql-aad          │  Automatic differentiation: Dual, DualVec,│
+│                  │  AReal (tape), Number trait               │
 ├──────────────────┼───────────────────────────────────────────┤
 │  ql-models       │  Heston, Hull-White, Vasicek, CIR, G2,   │
 │                  │  Bates, Black-Karasinski, LMM             │
@@ -174,6 +179,7 @@ println!("CRR European call: {:.4}", crr.npv);
 | **ql-processes** | Stochastic processes | `GeneralizedBlackScholesProcess`, `HestonProcess`, `HullWhiteProcess` |
 | **ql-models** | Calibrated models | `HestonModel`, `HullWhiteModel`, `VasicekModel`, `CIRModel`, `G2Model` |
 | **ql-pricingengines** | Analytic pricing engines | `price_european`, `price_swap`, `barone_adesi_whaley`, `mc_basket` |
+| **ql-aad** | Automatic differentiation | `Dual`, `DualVec<N>`, `AReal`, `Number` trait |
 | **ql-methods** | Numerical pricing methods | `mc_european`, `fd_black_scholes`, `fd_heston_solve` |
 | **ql-persistence** | Trade storage & lifecycle | `Trade`, `EmbeddedStore`, `ObjectStore` |
 | **ql-cli** | Command-line interface | Binary: `ql-cli` |
@@ -264,16 +270,19 @@ NelsonSiegelFitting, Schedule, AnalyticEuropeanResults, CreditDefaultSwap, and D
 ## Testing
 
 ```bash
-# Run all 1350 tests
+# Run all 3028 tests
 cargo test --workspace
 
 # Run integration tests only
 cargo test -p ql-rust --tests
 
+# Run AD integration tests (26 first-order + 7 higher-order Greeks)
+cargo test -p ql-rust --test test_ad_generic_engines
+
 # Run property-based tests (proptest)
 cargo test -p ql-rust --test test_property_based
 
-# Run benchmarks
+# Run benchmarks (including AD performance comparisons)
 cargo bench -p ql-rust
 ```
 
@@ -281,10 +290,11 @@ cargo bench -p ql-rust
 
 | Category | Count | Description |
 |----------|-------|-------------|
-| Unit tests | 1110 | Per-crate functionality |
-| Integration tests | 50 | Cross-crate pipelines (options, swaps, yield curve, American, multi-asset, short-rate, cashflows, E2E workflows) |
+| Unit tests | ~2700 | Per-crate functionality |
+| Integration tests | 80+ | Cross-crate pipelines (options, swaps, yield curve, American, multi-asset, short-rate, cashflows, E2E workflows) |
+| AD integration tests | 33 | AD types (Dual, DualVec, AReal) through generic engines + higher-order Greeks (gamma, vanna, volga, charm) |
 | Property-based tests | 11 | Mathematical invariants via proptest (put-call parity, bounds, monotonicity) |
-| Doc-tests | 19 | Verified examples on public APIs |
+| Doc-tests | 50+ | Verified examples on public APIs |
 | Calendar validation | 124 | Holiday verification (TARGET, NYSE, UK) against known dates |
 | Golden cross-validation | 36 | BS, American, Nelson-Siegel, short-rate, FD, credit, LMM, CMS, advanced curves |
 
@@ -321,6 +331,68 @@ cargo bench -p ql-rust
 | `gaussian_copula_cdo_tranche` | CDO equity tranche expected loss (LHP) |
 | `cds_option_black` | CDS option via Black's formula |
 
+### AD Performance Benchmarks
+
+These benchmarks compare f64 (baseline) against forward-mode `Dual` (single Greek),
+forward-mode `DualVec<5>` (5 Greeks in one pass), and reverse-mode `AReal` (all partials)
+for the same generic engine call.
+
+| Benchmark | f64 | Dual | DualVec&lt;5&gt; | AReal |
+|-----------|----:|-----:|----------:|------:|
+| BS European | ~70 ns | ~120 ns (1.7×) | ~260 ns (3.7×) | ~2.5 µs (35×) |
+| BAW American | ~1.4 µs | ~2.1 µs (1.5×) | ~3.4 µs (2.4×) | ~37 µs (26×) |
+| Merton JD | ~1.0 µs | ~1.8 µs (1.8×) | ~3.4 µs (3.3×) | ~33 µs (32×) |
+| Chooser | ~70 ns | ~118 ns (1.7×) | — | ~3.5 µs (50×) |
+
+Run: `cargo bench -p ql-rust -- ad_`
+
+## Automatic Differentiation (AAD)
+
+The `ql-aad` crate provides exact, tape-free algorithmic differentiation through the
+`Number` trait. All 100+ generic engines in `ql-pricingengines::generic` and
+`ql-methods::generic` accept any `T: Number`, enabling:
+
+- **`Dual`** — forward-mode, single derivative seed (one Greek per pass)
+- **`DualVec<N>`** — forward-mode, N derivative seeds (N Greeks in one pass)
+- **`AReal`** — reverse-mode, tape-based (all partials in one backward sweep)
+- **`f64`** — zero-overhead when no derivatives are needed
+
+```rust
+use ql_aad::{Dual, DualVec};
+use ql_pricingengines::generic::bs_european_generic;
+
+// Forward-mode: exact delta in a single pass
+let spot = Dual::new(100.0, 1.0);  // seed = 1.0 → ∂/∂spot
+let res = bs_european_generic(
+    spot,
+    Dual::constant(100.0),  // strike
+    Dual::constant(0.05),   // r
+    Dual::constant(0.0),    // q
+    Dual::constant(0.20),   // vol
+    Dual::constant(1.0),    // T
+    true,                   // is_call
+);
+let price = res.npv.val;   // 10.45...
+let delta = res.npv.dot;   // 0.637...  (exact, no bumping)
+
+// Multi-seed: all 5 Greeks in one pass
+type D5 = DualVec<5>;
+let res = bs_european_generic(
+    D5::variable(100.0, 0),  // ∂/∂spot
+    D5::constant(100.0),
+    D5::variable(0.05, 1),   // ∂/∂r
+    D5::variable(0.0, 2),    // ∂/∂q
+    D5::variable(0.20, 3),   // ∂/∂vol
+    D5::variable(1.0, 4),    // ∂/∂T
+    true,
+);
+// res.npv.dot == [delta, rho, ∂V/∂q, vega, ∂V/∂T]
+```
+
+Higher-order Greeks (gamma, vanna, volga) are computed via FD-on-AD: a central finite
+difference on the exact first-order AD derivative. See `tests/test_ad_generic_engines.rs`
+for examples.
+
 ## Building
 
 ```bash
@@ -356,7 +428,8 @@ ql-rust/
     ├── ql-instruments/     # Financial instruments
     ├── ql-processes/       # Stochastic processes
     ├── ql-models/          # Calibrated models
-    ├── ql-pricingengines/  # Analytic pricing
+    ├── ql-pricingengines/  # Analytic pricing (+ 100 generic engines)
+    ├── ql-aad/             # Automatic differentiation (Dual, DualVec, AReal)
     ├── ql-methods/         # MC, FD, lattice
     ├── ql-persistence/     # Trade store (redb)
     ├── ql-rust/            # Facade crate + integration tests + benchmarks

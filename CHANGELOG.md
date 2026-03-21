@@ -2,6 +2,44 @@
 
 All notable changes to the ql-rust project are documented in this file.
 
+## [0.3.0] — 2026-03-03
+
+### AAD-Complete: 94 Generic Engines + Full AD Integration
+
+#### Generic `T: Number` pricing engines (INFRA-1 through INFRA-10)
+- `ql_pricingengines::generic` — 100+ generic engines parameterised over `T: Number`, covering all 94 AD gaps (AD-1 through AD-94) from the AAD proposal
+- Engines span: Black-Scholes, Black-76, Bachelier, BAW American, Merton jump-diffusion, chooser, Kirk spread, Margrabe exchange, lookback, Asian geometric, variance swap, quanto, CDS midpoint, compound, power, Stulz max-call, HW bond option, forward-start, and many more
+- `ql_math::generic` — AD-compatible `normal_cdf`, `normal_pdf`, `bivariate_normal_cdf`, `black_scholes_generic`, `discount_factor`
+- `ql_termstructures::generic` — `GenericYieldCurve<T>` trait, `FlatCurve<T>`, `InterpDiscountCurve<T>`, `InterpZeroCurve<T>`, `nelson_siegel_discount`, `svensson_discount`
+- `ql_methods::generic` — generic finite-difference and tree methods
+
+#### f64 → generic deduplication
+- `price_european` and `black_scholes_price` now delegate to `bs_european_generic::<f64>`
+- `barone_adesi_whaley` delegates to `barone_adesi_whaley_generic::<f64>`
+- `merton_jump_diffusion` delegates to `merton_jd_generic::<f64>`
+- `chooser_price` delegates to `chooser_generic::<f64>`
+- `binomial_crr` delegates to `binomial_crr_generic::<f64>`
+- Eliminates code duplication; bug fixes in generic engines benefit both paths
+
+#### AD integration tests (33 tests)
+- Forward-mode `Dual` tests: BS delta/vega, Black-76, Bachelier, BAW, caplet, Kirk spread, Margrabe, Asian geometric, lookback, HW bond option, power option, Stulz max-call, forward-start, CDS midpoint yield sensitivity
+- Multi-seed `DualVec<N>` tests: BS all-Greeks-in-one-pass (5 partials), Black swaption, Merton jump-diffusion, variance swap
+- Reverse-mode `AReal` tests: BS all-Greeks via tape adjoint, chooser, bond PV rate sensitivity, swap PV discount sensitivity, Nelson-Siegel curve parameter sensitivity
+- Higher-order Greeks (FD-on-AD): gamma, vanna, volga, charm — validated against BS closed-form and pure second-order FD
+- BAW gamma FD-on-AD vs pure FD; DualVec & AReal gamma consistency
+- All derivatives validated against central finite differences (bump=1e-5, tol≤1e-3)
+- `f64` parity test: `bs_european_generic::<f64>` matches known BS analytical values
+
+#### AD benchmarks (Criterion)
+- `ad_bs_european`: f64 vs Dual (1.7×) vs DualVec<5> (3.7×) vs AReal (35×)
+- `ad_baw_american`: f64 vs Dual (1.5×) vs DualVec<5> (2.4×) vs AReal (26×)
+- `ad_merton_jd`: f64 vs Dual (1.8×) vs DualVec<5> (3.3×) vs AReal (32×)
+- `ad_chooser`: f64 vs Dual (1.7×) vs AReal (50×)
+
+#### Facade re-exports
+- `ql_rust::generic` module re-exports all generic engines, math, term structures, and methods
+- `ql_rust::Number` re-exports the core `Number` trait
+
 ## [0.2.1] — 2026-02-23
 
 ### Phase 25: Reactive Pricing Infrastructure
