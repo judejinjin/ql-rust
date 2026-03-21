@@ -7,8 +7,6 @@
 //! - [`quanto_adjustment`] — Adjust BS parameters for quanto pricing.
 //! - [`QuantoTermStructure`] — A yield term structure with quanto adjustment.
 
-use ql_math::distributions::cumulative_normal;
-
 /// Parameters for a quanto adjustment.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct QuantoAdjustment {
@@ -132,21 +130,17 @@ pub fn quanto_vanilla(
     is_call: bool,
     fx_rate: f64,
 ) -> QuantoVanillaResult {
-    let omega = if is_call { 1.0 } else { -1.0 };
+    // Delegate pricing to the generic implementation (AD-ready).
+    let price = crate::generic::quanto_vanilla_generic::<f64>(
+        spot, strike, r_foreign, r_domestic, q, sigma_s, sigma_fx, rho_s_fx, t, is_call, fx_rate,
+    );
+
+    // Compute the extra fields from the quanto adjustment.
     let adj = quanto_adjustment(spot, r_foreign, r_domestic, q, sigma_s, sigma_fx, rho_s_fx, t);
 
-    let fwd = adj.forward_adjusted;
-    let df = (-r_domestic * t).exp();
-    let sqrt_t = t.sqrt();
-
-    let d1 = ((fwd / strike).ln() + 0.5 * sigma_s * sigma_s * t) / (sigma_s * sqrt_t);
-    let d2 = d1 - sigma_s * sqrt_t;
-
-    let price = df * omega * (fwd * cumulative_normal(omega * d1) - strike * cumulative_normal(omega * d2));
-
     QuantoVanillaResult {
-        price: (price * fx_rate).max(0.0),
-        forward_adjusted: fwd,
+        price,
+        forward_adjusted: adj.forward_adjusted,
         q_adjusted: adj.q_adjusted,
     }
 }

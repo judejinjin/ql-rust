@@ -682,36 +682,47 @@ fn npv_generic<T: Number>(amounts: &[f64], times: &[f64], rate: T) -> T {
 /// - `s1`, `s2` — current prices of the two assets
 /// - `strike` — spread strike
 /// - `r` — risk-free rate
+/// - `q1`, `q2` — continuous dividend yields
 /// - `vol1`, `vol2` — volatilities
 /// - `rho` — correlation between the two assets
 /// - `t` — time to expiry
+#[allow(clippy::too_many_arguments)]
 pub fn kirk_spread_generic<T: Number>(
     s1: T,
     s2: T,
     strike: T,
     r: T,
+    q1: T,
+    q2: T,
     vol1: T,
     vol2: T,
     rho: T,
     t: T,
 ) -> T {
     let zero = T::zero();
-    let _half = T::half();
 
     if t.to_f64() <= 0.0 {
         let payoff = s1 - s2 - strike;
         return if payoff.to_f64() > 0.0 { payoff } else { zero };
     }
 
-    // Kirk's approximation: treat as a BS call on S1 with modified vol
-    let f2 = s2 + strike; // approximate denominator
-    let ratio = s2 / f2;
-    let sigma_kirk = (vol1 * vol1 - T::from_f64(2.0) * rho * vol1 * vol2 * ratio
-        + vol2 * vol2 * ratio * ratio)
+    // Work in forward-space (standard Kirk)
+    let f1 = s1 * ((r - q1) * t).exp();
+    let f2 = s2 * ((r - q2) * t).exp();
+
+    let frac = f2 / (f2 + strike);
+    let sigma_spread = (vol1 * vol1 - T::from_f64(2.0) * rho * vol1 * vol2 * frac
+        + vol2 * vol2 * frac * frac)
         .sqrt();
 
-    // BS call on S1 with strike = S2 + K, vol = sigma_kirk
-    black_scholes_generic(s1, f2, r, zero, sigma_kirk, t, true)
+    let sqrt_t = t.sqrt();
+    let d1 = ((f1 / (f2 + strike)).ln() + T::half() * sigma_spread * sigma_spread * t)
+        / (sigma_spread * sqrt_t);
+    let d2 = d1 - sigma_spread * sqrt_t;
+
+    let df = (zero - r * t).exp();
+    let price = df * (f1 * normal_cdf(d1) - (f2 + strike) * normal_cdf(d2));
+    if price.to_f64() > 0.0 { price } else { zero }
 }
 
 // ===========================================================================
@@ -952,7 +963,7 @@ mod tests {
     #[test]
     fn kirk_spread_positive() {
         let v: f64 = kirk_spread_generic(
-            100.0, 90.0, 5.0, 0.05, 0.20, 0.25, 0.5, 1.0,
+            100.0, 90.0, 5.0, 0.05, 0.0, 0.0, 0.20, 0.25, 0.5, 1.0,
         );
         assert!(v > 0.0, "kirk = {v}");
     }
@@ -961,7 +972,7 @@ mod tests {
     fn kirk_spread_deep_itm() {
         // S1 much larger than S2 + K → intrinsic dominated
         let v: f64 = kirk_spread_generic(
-            200.0, 50.0, 10.0, 0.05, 0.20, 0.25, 0.5, 1.0,
+            200.0, 50.0, 10.0, 0.05, 0.0, 0.0, 0.20, 0.25, 0.5, 1.0,
         );
         let intrinsic = 200.0 - 50.0 - 10.0;
         assert!(v >= intrinsic * 0.9, "deep ITM kirk = {v}");
@@ -2749,7 +2760,7 @@ pub fn operator_splitting_spread_generic<T: Number>(
     num_iter: usize,
 ) -> T {
     // Start with Kirk's approximation, then refine
-    let mut price = kirk_spread_generic(s1, s2, strike, r, vol1, vol2, rho, t);
+    let mut price = kirk_spread_generic(s1, s2, strike, r, _q1, _q2, vol1, vol2, rho, t);
 
     // Iterative refinement via operator splitting
     for _ in 0..num_iter {

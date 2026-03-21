@@ -215,23 +215,18 @@ pub fn bjerksund_stensland(
         };
     }
 
-    // BJS uses put-call transformation:
-    // American put(S,K,r,q) = American call(K,S,q,r)
-    let (s, x, rf, dy) = if is_call {
-        (spot, strike, r, q)
-    } else {
-        (strike, spot, q, r)
-    };
-
-    let npv_call = bjs93_call_value(s, x, rf, dy, vol, t);
+    // Delegate NPV to the generic implementation (AD-ready).
+    let npv = crate::generic::bjerksund_stensland_generic::<f64>(spot, strike, r, q, vol, t, is_call);
 
     let euro = bs_price(spot, strike, r, q, vol, t, is_call);
-    let intrinsic = (omega * (spot - strike)).max(0.0);
-    let npv = npv_call.max(euro).max(intrinsic);
-
     let premium = (npv - euro).max(0.0);
 
-    // Compute critical price
+    // Compute critical price locally from the trigger formula.
+    let (x, rf, dy) = if is_call {
+        (strike, r, q)
+    } else {
+        (spot, q, r)
+    };
     let sig2 = vol * vol;
     let beta_val = (0.5 - dy / sig2) + ((dy / sig2 - 0.5).powi(2) + 2.0 * rf / sig2).sqrt();
     let b_inf = (beta_val / (beta_val - 1.0)) * x;
@@ -245,85 +240,6 @@ pub fn bjerksund_stensland(
         early_exercise_premium: premium,
         critical_price: critical.max(0.0),
     }
-}
-
-/// BJS 1993: American call value.
-fn bjs93_call_value(s: f64, x: f64, r: f64, q: f64, vol: f64, t: f64) -> f64 {
-    let sig2 = vol * vol;
-
-    // β = (1/2 - q/σ²) + sqrt((q/σ² - 1/2)² + 2r/σ²)
-    let half_minus = 0.5 - q / sig2;
-    let beta = half_minus + (half_minus * half_minus + 2.0 * r / sig2).sqrt();
-
-    // B_∞ = (β/(β-1)) * X
-    let b_inf = (beta / (beta - 1.0)) * x;
-
-    // B_0 = max(X, (r/(r-q))*X)
-    let b0 = if (r - q).abs() < 1e-15 {
-        x
-    } else {
-        x.max((r / (r - q)) * x)
-    };
-
-    // Trigger level
-    let ht = -(r - q) * t + 2.0 * vol * t.sqrt();
-    let trigger = b0 + (b_inf - b0) * (1.0 - (-ht).exp());
-
-    if s >= trigger {
-        return s - x;
-    }
-
-    // α = (B - X) * B^{-β}
-    let alpha = (trigger - x) * trigger.powf(-beta);
-
-    // BJS formula:
-    // C = α*(S^β) - α*φ(S,T,β,B,B) + φ(S,T,1,B,B) - φ(S,T,1,X,B) - X*φ(S,T,0,B,B) + X*φ(S,T,0,X,B)
-    let p1 = alpha * s.powf(beta);
-    let p2 = alpha * bjs_phi_fn(s, t, beta, trigger, trigger, r, q, vol);
-    let p3 = bjs_phi_fn(s, t, 1.0, trigger, trigger, r, q, vol);
-    let p4 = bjs_phi_fn(s, t, 1.0, x, trigger, r, q, vol);
-    let p5 = x * bjs_phi_fn(s, t, 0.0, trigger, trigger, r, q, vol);
-    let p6 = x * bjs_phi_fn(s, t, 0.0, x, trigger, r, q, vol);
-
-    let val = p1 - p2 + p3 - p4 - p5 + p6;
-    val.max(0.0)
-}
-
-/// BJS φ function:
-/// φ(S,T,γ,H,I) = e^λ · S^γ · [N(-d) - (I/S)^κ · N(-d₂)]
-///
-/// where:
-/// - λ = -rT + γ·b·T + ½γ(γ-1)σ²T     (b = r - q)
-/// - d = [ln(S/H) + (b + (γ-½)σ²)T] / (σ√T)
-/// - κ = 2b/σ² + (2γ - 1)
-/// - d₂ = [ln(I²/(S·H)) + (b + (γ-½)σ²)T] / (σ√T)
-#[allow(clippy::too_many_arguments)]
-fn bjs_phi_fn(
-    s: f64,
-    t: f64,
-    gamma: f64,
-    h: f64,
-    big_i: f64,
-    r: f64,
-    q: f64,
-    vol: f64,
-) -> f64 {
-    if t <= 0.0 || s <= 0.0 || h <= 0.0 || big_i <= 0.0 {
-        return 0.0;
-    }
-
-    let n = NormalDistribution::standard();
-    let sig2 = vol * vol;
-    let b = r - q;
-    let sqrt_t = t.sqrt();
-
-    let lambda = -r * t + gamma * b * t + 0.5 * gamma * (gamma - 1.0) * sig2 * t;
-    let kappa = 2.0 * b / sig2 + (2.0 * gamma - 1.0);
-
-    let d1 = ((s / h).ln() + (b + (gamma - 0.5) * sig2) * t) / (vol * sqrt_t);
-    let d2 = ((big_i * big_i / (s * h)).ln() + (b + (gamma - 0.5) * sig2) * t) / (vol * sqrt_t);
-
-    lambda.exp() * s.powf(gamma) * (n.cdf(-d1) - (big_i / s).powf(kappa) * n.cdf(-d2))
 }
 
 // ===========================================================================

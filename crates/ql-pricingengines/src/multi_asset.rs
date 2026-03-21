@@ -274,24 +274,10 @@ pub fn kirk_spread_call(
     rho: f64,
     time_to_expiry: f64,
 ) -> f64 {
-    let t = time_to_expiry;
-    let n = NormalDistribution::standard();
-
-    let f1 = s1 * ((r - q1) * t).exp();
-    let f2 = s2 * ((r - q2) * t).exp();
-
-    let frac = f2 / (f2 + strike);
-
-    let sigma_spread =
-        (vol1 * vol1 - 2.0 * rho * vol1 * vol2 * frac + vol2 * vol2 * frac * frac).sqrt();
-
-    let d1 = ((f1 / (f2 + strike)).ln() + 0.5 * sigma_spread * sigma_spread * t)
-        / (sigma_spread * t.sqrt());
-    let d2 = d1 - sigma_spread * t.sqrt();
-
-    let df = (-r * t).exp();
-    let price = df * (f1 * n.cdf(d1) - (f2 + strike) * n.cdf(d2));
-    price.max(0.0)
+    // Delegate to the generic implementation (AD-ready).
+    crate::generic::kirk_spread_generic::<f64>(
+        s1, s2, strike, r, q1, q2, vol1, vol2, rho, time_to_expiry,
+    )
 }
 
 /// Kirk's approximation for a European put on the spread S₁ − S₂.

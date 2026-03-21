@@ -302,7 +302,7 @@ fn black_caplet_dual_delta() {
 
 // =========================================================================
 // 9. Kirk spread option — Dual
-// Signature: kirk_spread_generic(s1, s2, strike, r, vol1, vol2, rho, t) -> T
+// Signature: kirk_spread_generic(s1, s2, strike, r, q1, q2, vol1, vol2, rho, t) -> T
 // Note: no is_call bool — always prices the spread call
 // =========================================================================
 
@@ -316,6 +316,8 @@ fn kirk_spread_dual_delta() {
         Dual::constant(90.0),
         Dual::constant(5.0),
         Dual::constant(0.05),
+        Dual::constant(0.0),
+        Dual::constant(0.0),
         Dual::constant(0.20),
         Dual::constant(0.25),
         Dual::constant(0.5),
@@ -324,7 +326,7 @@ fn kirk_spread_dual_delta() {
     let ad_delta = price.dot;
 
     let fd_delta = central_fd(
-        |s| kirk_spread_generic(s, 90.0, 5.0, 0.05, 0.20, 0.25, 0.5, 1.0),
+        |s| kirk_spread_generic(s, 90.0, 5.0, 0.05, 0.0, 0.0, 0.20, 0.25, 0.5, 1.0),
         s1, bump,
     );
 

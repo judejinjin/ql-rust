@@ -26,21 +26,6 @@ pub struct AsianResult {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Internal helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-#[inline]
-fn bs_price(fwd: f64, strike: f64, sigma_a: f64, t: f64, r: f64, omega: f64) -> f64 {
-    let nd = NormalDistribution::standard();
-    if sigma_a * t.sqrt() < 1e-14 {
-        return (-r * t).exp() * (omega * (fwd - strike)).max(0.0);
-    }
-    let d1 = (fwd / strike).ln() / (sigma_a * t.sqrt()) + 0.5 * sigma_a * t.sqrt();
-    let d2 = d1 - sigma_a * t.sqrt();
-    (-r * t).exp() * omega * (fwd * nd.cdf(omega * d1) - strike * nd.cdf(omega * d2))
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // 1. Continuous Geometric Average Price — Kemna & Vorst (1990)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -75,20 +60,21 @@ pub fn asian_geometric_continuous_avg_price(
     time_to_expiry: f64,
     option_type: OptionType,
 ) -> AsianResult {
-    let omega = option_type.sign();
     let r = risk_free_rate;
-    let b = r - dividend_yield; // cost of carry
+    let b = r - dividend_yield;
     let s = volatility;
     let t = time_to_expiry;
+    let is_call = matches!(option_type, OptionType::Call);
 
-    // Adjusted parameters for the geometric average
+    // Delegate NPV to the generic implementation (AD-ready).
+    let npv = crate::generic::asian_geometric_continuous_generic::<f64>(
+        spot, strike, r, dividend_yield, s, t, is_call,
+    );
+
+    // Compute the extra fields locally.
     let b_a = b / 2.0 - s * s / 12.0;
     let sigma_a = s / 3.0_f64.sqrt();
-
-    // Forward of the geometric average
-    let fwd = spot * ((b_a) * t).exp();
-
-    let npv = bs_price(fwd, strike, sigma_a, t, r, omega);
+    let fwd = spot * (b_a * t).exp();
 
     AsianResult { npv, effective_vol: sigma_a, effective_forward: fwd }
 }
@@ -113,25 +99,23 @@ pub fn asian_geometric_discrete_avg_price(
     n: usize,
     option_type: OptionType,
 ) -> AsianResult {
-    let omega = option_type.sign();
     let r = risk_free_rate;
     let b = r - dividend_yield;
     let s = volatility;
     let t = time_to_expiry;
     let n_f = n.max(2) as f64;
+    let is_call = matches!(option_type, OptionType::Call);
 
-    // Exact discrete geometric average variance
-    // σ_A² = σ² * (n+1)(2n+1) / (6n²)
+    // Delegate NPV to the generic implementation (AD-ready).
+    let npv = crate::generic::asian_geometric_discrete_generic::<f64>(
+        spot, strike, r, dividend_yield, s, t, n, is_call,
+    );
+
+    // Compute the extra fields locally.
     let sigma_a_sq = s * s * (n_f + 1.0) * (2.0 * n_f + 1.0) / (6.0 * n_f * n_f);
     let sigma_a = sigma_a_sq.sqrt();
-
-    // Adjusted cost of carry: b_A = (b - σ²/2) * (n+1)/(2n) + σ_A²/2
     let b_a = (b - s * s / 2.0) * (n_f + 1.0) / (2.0 * n_f) + sigma_a_sq / 2.0;
-
-    // Forward of the discrete geometric average
     let fwd = spot * (b_a * t).exp();
-
-    let npv = bs_price(fwd, strike, sigma_a, t, r, omega);
 
     AsianResult { npv, effective_vol: sigma_a, effective_forward: fwd }
 }

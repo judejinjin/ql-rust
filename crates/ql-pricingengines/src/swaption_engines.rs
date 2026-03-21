@@ -44,16 +44,15 @@ pub fn black_swaption(
         };
     }
 
+    let is_payer = matches!(swaption.swaption_type, SwaptionType::Payer);
+
+    // Delegate NPV to the generic implementation (AD-ready).
+    let npv = crate::generic::black_swaption_generic::<f64>(a, f, k, sigma, t, is_payer);
+
+    // Compute vega locally (one extra PDF call).
     let n = NormalDistribution::standard();
     let sqrt_t = t.sqrt();
     let d1 = ((f / k).ln() + 0.5 * sigma * sigma * t) / (sigma * sqrt_t);
-    let d2 = d1 - sigma * sqrt_t;
-
-    let npv = match swaption.swaption_type {
-        SwaptionType::Payer => a * (f * n.cdf(d1) - k * n.cdf(d2)),
-        SwaptionType::Receiver => a * (k * n.cdf(-d2) - f * n.cdf(-d1)),
-    };
-
     let vega = a * f * n.pdf(d1) * sqrt_t;
 
     SwaptionResult { npv, vega }
@@ -88,12 +87,16 @@ pub fn bachelier_swaption(
         };
     }
 
+    let is_payer = matches!(swaption.swaption_type, SwaptionType::Payer);
+
+    // Delegate NPV to the generic implementation (AD-ready).
+    let npv = crate::generic::bachelier_swaption_generic::<f64>(a, f, k, sigma, t, is_payer);
+
+    // Compute vega locally.
     let n = NormalDistribution::standard();
     let sqrt_t = t.sqrt();
     let omega = swaption.swaption_type.sign();
     let d = omega * (f - k) / (sigma * sqrt_t);
-
-    let npv = a * (omega * (f - k) * n.cdf(d) + sigma * sqrt_t * n.pdf(d));
     let vega = a * sqrt_t * n.pdf(d);
 
     SwaptionResult { npv, vega }
