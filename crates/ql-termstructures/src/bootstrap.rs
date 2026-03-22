@@ -271,13 +271,13 @@ impl PiecewiseYieldCurve {
             let n = times.len();
 
             // Objective: find df_pillar such that implied_quote == market_quote
-            let times_clone = times.clone();
-            let dfs_clone = dfs.clone();
+            // Use a shared trial buffer to avoid per-iteration Vec clones.
+            let trial_dfs = std::cell::RefCell::new(dfs.clone());
 
             let objective = |df: f64| -> f64 {
-                let mut trial_dfs = dfs_clone.clone();
-                trial_dfs[n - 1] = df;
-                helper.implied_quote(&times_clone, &trial_dfs, day_counter, reference_date) - market_quote
+                let mut buf = trial_dfs.borrow_mut();
+                buf[n - 1] = df;
+                helper.implied_quote(&times, &buf, day_counter, reference_date) - market_quote
             };
 
             // Bracket: discount factor should be between 0.001 and 2.0
@@ -369,6 +369,7 @@ impl TermStructure for PiecewiseYieldCurve {
 }
 
 impl YieldTermStructure for PiecewiseYieldCurve {
+    #[inline]
     fn discount_impl(&self, t: f64) -> f64 {
         if t <= 0.0 {
             return 1.0;
@@ -385,6 +386,7 @@ impl YieldTermStructure for PiecewiseYieldCurve {
 ///
 /// If `t` is before the first node, extrapolate flat at the first df.
 /// If `t` is after the last node, extrapolate log-linearly from the last segment.
+#[inline]
 pub(crate) fn interpolate_log_linear(times: &[f64], dfs: &[f64], t: f64) -> f64 {
     if times.is_empty() || dfs.is_empty() {
         return 1.0;

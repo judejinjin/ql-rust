@@ -33,12 +33,14 @@ pub trait YieldTermStructure: TermStructure {
     fn discount_impl(&self, t: f64) -> f64;
 
     /// Discount factor at a given date.
+    #[inline]
     fn discount(&self, date: Date) -> f64 {
         let t = self.time_from_reference(date);
         self.discount_impl(t)
     }
 
     /// Discount factor at a given time (years from reference).
+    #[inline]
     fn discount_t(&self, t: f64) -> f64 {
         self.discount_impl(t)
     }

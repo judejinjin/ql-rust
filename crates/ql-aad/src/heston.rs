@@ -85,6 +85,7 @@ fn gl_integrate<F: Fn(f64) -> f64>(f: F, a: f64, b: f64) -> f64 {
 ///
 /// The integration variable `phi` is `f64` (not differentiated), but all model
 /// parameters carry derivatives.
+#[inline]
 #[allow(clippy::too_many_arguments)]
 pub fn heston_cf_generic<T: Number>(
     phi: f64,
@@ -140,6 +141,7 @@ pub fn heston_cf_generic<T: Number>(
 /// All model parameters are `T: Number`; the integration points and
 /// mechanics stay `f64`. Derivatives flow through the CF at each
 /// quadrature node.
+#[inline]
 #[allow(clippy::too_many_arguments)]
 pub fn heston_price_generic<T: Number>(
     spot: T,

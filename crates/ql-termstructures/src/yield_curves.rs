@@ -92,6 +92,7 @@ impl TermStructure for FlatForward {
 }
 
 impl YieldTermStructure for FlatForward {
+    #[inline]
     fn discount_impl(&self, t: f64) -> f64 {
         self.rate.discount_factor(t).unwrap_or(1.0)
     }

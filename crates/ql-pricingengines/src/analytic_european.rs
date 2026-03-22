@@ -48,6 +48,7 @@ pub struct AnalyticEuropeanResults {
 /// assert!((res.npv - 10.45).abs() < 0.1);
 /// assert!(res.delta > 0.0); // call delta positive
 /// ```
+#[inline]
 pub fn price_european(
     option: &VanillaOption,
     spot: f64,
@@ -72,6 +73,7 @@ pub fn price_european(
 
 /// Lightweight Black-Scholes price (NPV only, no Greeks) for use by
 /// exotic engines that don't need a full `VanillaOption` instrument.
+#[inline]
 pub fn black_scholes_price(
     spot: f64,
     strike: f64,

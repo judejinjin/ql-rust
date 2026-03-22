@@ -81,6 +81,7 @@ pub struct BsEuropeanResult<T: Number> {
 /// assert!((res.npv - 10.4506).abs() < 0.05);
 /// assert!((res.delta - 0.6368).abs() < 0.01);
 /// ```
+#[inline]
 #[allow(clippy::too_many_arguments)]
 pub fn bs_european_generic<T: Number>(
     spot: T,
@@ -169,6 +170,7 @@ pub fn bs_european_generic<T: Number>(
 /// - `vol`: Black volatility
 /// - `t`: time to expiry in years
 /// - `is_call`: call or put
+#[inline]
 pub fn black76_generic<T: Number>(
     forward: T,
     strike: T,
@@ -207,6 +209,7 @@ pub fn black76_generic<T: Number>(
 /// where d = (F − K) / (σ√T), F = S · e^{(r−q)T}.
 ///
 /// Useful for negative rates, spreads, and normal-vol quoted instruments.
+#[inline]
 pub fn bachelier_generic<T: Number>(
     spot: T,
     strike: T,
@@ -272,6 +275,7 @@ pub struct BawResult<T: Number> {
 /// assert!(res.npv > 0.0);
 /// assert!(res.early_exercise_premium >= 0.0);
 /// ```
+#[inline]
 #[allow(clippy::too_many_arguments)]
 pub fn barone_adesi_whaley_generic<T: Number>(
     spot: T,
@@ -460,6 +464,7 @@ pub struct MertonJdResult<T: Number> {
 /// );
 /// assert!(res.npv > 0.0);
 /// ```
+#[inline]
 #[allow(clippy::too_many_arguments)]
 pub fn merton_jd_generic<T: Number>(
     spot: T,
@@ -537,6 +542,7 @@ pub fn merton_jd_generic<T: Number>(
 /// let npv = chooser_generic(50.0_f64, 50.0, 0.08, 0.0, 0.25, 0.25, 0.50);
 /// assert!(npv > 0.0);
 /// ```
+#[inline]
 pub fn chooser_generic<T: Number>(
     spot: T,
     strike: T,

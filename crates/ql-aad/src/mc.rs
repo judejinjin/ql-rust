@@ -226,10 +226,15 @@ pub fn mc_heston_aad(
     let mut sum_npv = 0.0;
     let mut sum_npv_sq = 0.0;
 
+    // Pre-allocate random number buffers outside the path loop to avoid
+    // per-path heap allocations.
+    let mut z1_vec = Vec::with_capacity(num_steps);
+    let mut z2_vec = Vec::with_capacity(num_steps);
+
     for _ in 0..num_paths {
-        // Pre-generate all random numbers for this path (f64)
-        let mut z1_vec = Vec::with_capacity(num_steps);
-        let mut z2_vec = Vec::with_capacity(num_steps);
+        // Reuse pre-allocated buffers
+        z1_vec.clear();
+        z2_vec.clear();
         for _ in 0..num_steps {
             let z1: f64 = StandardNormal.sample(&mut rng);
             let z2_indep: f64 = StandardNormal.sample(&mut rng);

@@ -2,6 +2,41 @@
 
 All notable changes to the ql-rust project are documented in this file.
 
+## [0.3.8] — 2025-07-14
+
+### Performance Hardening — 6–23% faster across yield curve, pricing, and AD paths
+
+#### `#[inline]` annotations on hot generic functions (12 functions, 5 files)
+- **Pricing generics**: `bs_european_generic`, `black76_generic`, `bachelier_generic`, `barone_adesi_whaley_generic`, `merton_jd_generic`, `chooser_generic`
+- **Heston generics**: `heston_cf_generic`, `heston_price_generic`
+- **Wrappers**: `price_european`, `black_scholes_price`
+- **Yield curve path**: `FlatForward::discount_impl`, `YieldTermStructure::discount()`, `discount_t()`, `PiecewiseYieldCurve::discount_impl`, `interpolate_log_linear`
+
+#### Bootstrap solver Vec-clone elimination
+- Replaced per-solver-iteration `Vec::clone()` with `RefCell`-based in-place mutation
+- Impact: N×~100 full Vec clones per curve → N clones total (one per pillar)
+
+#### MC AAD per-path allocation elimination
+- Pre-allocate z-vectors outside the path loop in `mc_heston_aad_price`
+- Impact: eliminates 2 heap allocations per MC path (millions for 50K+ paths)
+
+#### Measured improvements (criterion, median)
+| Benchmark | Change |
+|---|---|
+| `flat_forward_discount_t` | **−23%** (18.5 → 14.2 ns) |
+| `vanilla_swap_pricing` | **−20%** (330 → 296 ns) |
+| `yield_curve_bootstrap` | **−22%** (19.6 → 16.0 µs) |
+| `ad_baw_american/f64` | **−19%** (1.63 → 1.32 µs) |
+| `variance_swap_1y` | **−16%** (14.1 → 11.9 ns) |
+| `american_qd_plus_put` | **−13%** (9.5 → 8.3 µs) |
+| `equity_risk_ladder` | **−11%** (1.09 µs → 965 ns) |
+| `kirk_spread_call` | **−9%** (102 → 92.7 ns) |
+| `fixed_rate_bond_pricing` | **−8%** (249 → 229 ns) |
+| `cds_option_black` | **−7%** (55.7 → 51.7 ns) |
+| `mc_basket_3_asset_50k` | **−6%** (3.14 → 2.96 ms) |
+
+- 3,119 tests passing, zero clippy warnings
+
 ## [0.3.7] — 2025-06-20
 
 ### Python Integration Tests — 319 pytest cases covering all 84 bindings
