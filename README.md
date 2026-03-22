@@ -282,6 +282,9 @@ cargo test -p ql-rust --test test_ad_generic_engines
 # Run property-based tests (proptest)
 cargo test -p ql-rust --test test_property_based
 
+# Run Python integration tests (319 tests — requires venv + maturin)
+cd crates/ql-python && source .venv/bin/activate && pytest tests/ -v
+
 # Run benchmarks (including AD performance comparisons)
 cargo bench -p ql-rust
 ```
@@ -294,6 +297,7 @@ cargo bench -p ql-rust
 | Integration tests | 80+ | Cross-crate pipelines (options, swaps, yield curve, American, multi-asset, short-rate, cashflows, E2E workflows) |
 | AD integration tests | 33 | AD types (Dual, DualVec, AReal) through generic engines + higher-order Greeks (gamma, vanna, volga, charm) |
 | Property-based tests | 11 | Mathematical invariants via proptest (put-call parity, bounds, monotonicity) |
+| Python integration tests | 319 | End-to-end PyO3 binding tests — equity, rates, credit, exotics, MC, FD, tree, HW, Bates, risk, vol surfaces |
 | Doc-tests | 50+ | Verified examples on public APIs |
 | Calendar validation | 124 | Holiday verification (TARGET, NYSE, UK) against known dates |
 | Golden cross-validation | 36 | BS, American, Nelson-Siegel, short-rate, FD, credit, LMM, CMS, advanced curves |

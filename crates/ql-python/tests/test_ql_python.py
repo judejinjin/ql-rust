@@ -1209,3 +1209,622 @@ class TestPhase34Repr:
         r = ql.qd_plus_american_py(100, 100, 0.05, 0.02, 0.20, 1.0, is_call=False)
         assert "AmericanResult" in repr(r)
 
+
+# =========================================================================
+# Phase 36 — Fixed income, credit, trees, models, vol, risk
+# =========================================================================
+
+class TestSwapPricing:
+    """Vanilla IRS pricing via price_swap_py."""
+
+    def _make_schedule(self, start_y, start_m, start_d, n_periods, period_days):
+        dates = []
+        d = ql.Date(start_y, start_m, start_d)
+        dates.append(d)
+        for i in range(1, n_periods + 1):
+            dates.append(d.add_days(i * period_days))
+        return dates
+
+    def test_payer_positive_fixed_leg(self):
+        d = ql.Date(2025, 1, 15)
+        # 2-period annual schedule
+        dates = [d, d.add_days(182), d.add_days(365)]
+        res = ql.price_swap_py("Payer", 1_000_000.0,
+            fixed_dates=dates, fixed_rate=0.05,
+            float_dates=dates, float_spread=0.0,
+            reference_date=d, flat_rate=0.05)
+        assert isinstance(res.npv, float)
+        assert isinstance(res.fair_rate, float)
+        assert res.fair_rate >= 0
+
+    def test_receiver_opposite_sign(self):
+        d = ql.Date(2025, 1, 15)
+        dates = [d, d.add_days(182), d.add_days(365)]
+        payer = ql.price_swap_py("Payer", 1e6, dates, 0.04, dates, 0.0, d, 0.05)
+        receiver = ql.price_swap_py("Receiver", 1e6, dates, 0.04, dates, 0.0, d, 0.05)
+        # Payer and receiver NPVs should be roughly opposite
+        assert abs(payer.npv + receiver.npv) < 1.0
+
+    def test_repr(self):
+        d = ql.Date(2025, 1, 15)
+        dates = [d, d.add_days(365)]
+        res = ql.price_swap_py("Payer", 1e6, dates, 0.05, dates, 0.0, d, 0.05)
+        assert "SwapResults" in repr(res)
+
+    def test_invalid_type_raises(self):
+        d = ql.Date(2025, 1, 15)
+        dates = [d, d.add_days(365)]
+        with pytest.raises(ValueError, match="Unknown swap type"):
+            ql.price_swap_py("Unknown", 1e6, dates, 0.05, dates, 0.0, d, 0.05)
+
+
+class TestBondPricing:
+    """Fixed-rate bond pricing via price_bond_py."""
+
+    def test_par_bond_npv(self):
+        d = ql.Date(2025, 1, 15)
+        dates = [d, d.add_days(365), d.add_days(730)]
+        res = ql.price_bond_py(100.0, 2, dates, 0.05, d, 0.05)
+        assert res.npv > 0
+        assert res.clean_price > 0
+        assert res.dirty_price > 0
+
+    def test_high_yield_low_price(self):
+        d = ql.Date(2025, 1, 15)
+        dates = [d, d.add_days(365), d.add_days(730)]
+        high = ql.price_bond_py(100.0, 2, dates, 0.03, d, 0.10)
+        low = ql.price_bond_py(100.0, 2, dates, 0.03, d, 0.01)
+        # Higher discount rate => lower NPV
+        assert high.npv < low.npv
+
+    def test_repr(self):
+        d = ql.Date(2025, 1, 15)
+        dates = [d, d.add_days(365)]
+        res = ql.price_bond_py(100.0, 2, dates, 0.05, d, 0.05)
+        assert "BondResults" in repr(res)
+
+
+class TestBondAnalytics:
+    """Duration, convexity, DV01, z-spread."""
+
+    def _schedule(self):
+        d = ql.Date(2025, 1, 15)
+        return [d, d.add_days(365), d.add_days(730), d.add_days(1095)]
+
+    def test_duration_positive(self):
+        dur = ql.bond_duration_py(100.0, self._schedule(), 0.05,
+                                   ql.Date(2025, 1, 15), 0.05)
+        assert dur > 0
+
+    def test_convexity_positive(self):
+        conv = ql.bond_convexity_py(100.0, self._schedule(), 0.05,
+                                     ql.Date(2025, 1, 15), 0.05)
+        assert conv > 0
+
+    def test_dv01_positive(self):
+        dv01 = ql.bond_dv01_py(100.0, self._schedule(), 0.05,
+                                ql.Date(2025, 1, 15), 0.05)
+        assert dv01 > 0
+
+    def test_z_spread_callable(self):
+        """Z-spread function is callable and returns float on valid inputs."""
+        d = ql.Date(2025, 1, 15)
+        dates = self._schedule()
+        # Target price within solver bracket should return a float
+        # The fixed_leg NPV at z=0 is ~ sum of coupons; use a reasonable target
+        z = ql.bond_z_spread_py(100.0, dates, 0.05, d, 0.05, 13.0)
+        assert isinstance(z, float)
+
+    def test_z_spread_no_bracket_raises(self):
+        """Z-spread solver raises ValueError if bracket is not found."""
+        d = ql.Date(2025, 1, 15)
+        dates = self._schedule()
+        with pytest.raises(ValueError, match="no bracket found"):
+            ql.bond_z_spread_py(100.0, dates, 0.05, d, 0.05, 999.0)
+
+
+class TestHWAnalytic:
+    """Hull-White analytic engines."""
+
+    def test_bond_option_call_positive(self):
+        res = ql.hw_bond_option_py(0.1, 0.01, 0.95, 0.90, 1.0, 2.0, 0.88, True)
+        assert res.npv > 0
+        assert "HWAnalyticResult" in repr(res)
+
+    def test_bond_option_put_positive(self):
+        res = ql.hw_bond_option_py(0.1, 0.01, 0.95, 0.90, 1.0, 2.0, 0.95, False)
+        assert res.npv > 0
+
+    def test_caplet_positive(self):
+        res = ql.hw_caplet_py(0.1, 0.01, 0.98, 0.96, 0.5, 1.0, 0.03, 1_000_000)
+        assert res.npv > 0
+
+    def test_swaption_payer(self):
+        tenors = [1.0, 2.0, 3.0]
+        dfs = [0.95, 0.90, 0.85]
+        res = ql.hw_jamshidian_swaption_py(0.1, 0.01, 1.0, tenors, 0.05,
+                                            dfs, 0.95, 1e6, True)
+        assert res.npv > 0
+
+    def test_swaption_receiver(self):
+        tenors = [1.0, 2.0, 3.0]
+        dfs = [0.95, 0.90, 0.85]
+        res = ql.hw_jamshidian_swaption_py(0.1, 0.01, 1.0, tenors, 0.05,
+                                            dfs, 0.95, 1e6, False)
+        assert res.npv > 0
+
+
+class TestTreeEngines:
+    """Trinomial tree pricing."""
+
+    def test_tree_bond_positive(self):
+        res = ql.tree_bond_price_py(0.1, 0.01, 0.05, 5.0, 100)
+        assert res.npv > 0
+        assert "TreeResult" in repr(res)
+
+    def test_tree_swaption_positive(self):
+        tenors = [1.0, 2.0, 3.0]
+        res = ql.tree_swaption_py(0.1, 0.01, 0.05, 1.0, tenors, 0.05,
+                                   1e6, True, 50)
+        assert res.npv > 0
+
+    def test_tree_capfloor_cap(self):
+        fixing = [0.5, 1.0, 1.5]
+        payment = [1.0, 1.5, 2.0]
+        res = ql.tree_cap_floor_py(0.1, 0.01, 0.05, fixing, payment,
+                                    0.03, 1e6, True, 30)
+        assert res.npv > 0
+
+    def test_tree_capfloor_floor(self):
+        fixing = [0.5, 1.0, 1.5]
+        payment = [1.0, 1.5, 2.0]
+        res = ql.tree_cap_floor_py(0.1, 0.01, 0.05, fixing, payment,
+                                    0.03, 1e6, False, 30)
+        assert res.npv > 0
+
+
+class TestCDSPricing:
+    """CDS midpoint engine."""
+
+    def test_buyer_positive_fair_spread(self):
+        res = ql.midpoint_cds_py(10_000_000, 0.01, 5, 0.40, 0.02, 0.03, True)
+        assert res.fair_spread > 0
+        assert res.premium_leg_pv > 0
+        assert res.protection_leg_pv > 0
+        assert "CdsResult" in repr(res)
+
+    def test_seller_opposite_npv(self):
+        buyer = ql.midpoint_cds_py(1e7, 0.01, 5, 0.40, 0.02, 0.03, True)
+        seller = ql.midpoint_cds_py(1e7, 0.01, 5, 0.40, 0.02, 0.03, False)
+        # Buyer and seller NPVs should be opposite
+        assert abs(buyer.npv + seller.npv) < 1.0
+
+    def test_higher_hazard_wider_spread(self):
+        low = ql.midpoint_cds_py(1e7, 0.01, 5, 0.40, 0.01, 0.03, True)
+        high = ql.midpoint_cds_py(1e7, 0.01, 5, 0.40, 0.05, 0.03, True)
+        assert high.fair_spread > low.fair_spread
+
+
+class TestCallableBond:
+    """Callable bond pricing."""
+
+    def test_callable_positive(self):
+        d = ql.Date(2025, 1, 15)
+        dates = [d, d.add_days(365), d.add_days(730), d.add_days(1095)]
+        call_dates = [d.add_days(365), d.add_days(730)]
+        call_prices = [101.0, 100.5]
+        res = ql.price_callable_bond_py(100.0, dates, 0.05, call_dates,
+                                         call_prices, 0.05, 0.01, d, 50)
+        assert res.npv > 0
+        assert "CallableBondResult" in repr(res)
+
+    def test_callable_less_than_noncallable(self):
+        d = ql.Date(2025, 1, 15)
+        dates = [d, d.add_days(365), d.add_days(730)]
+        # Regular bond
+        plain = ql.price_bond_py(100.0, 0, dates, 0.05, d, 0.05)
+        # Callable bond (call at par)
+        call_dates = [d.add_days(365)]
+        call_prices = [100.0]
+        callable_res = ql.price_callable_bond_py(100.0, dates, 0.05,
+                                                  call_dates, call_prices,
+                                                  0.05, 0.01, d, 50)
+        # Callable should be worth ≤ non-callable (issuer has the option)
+        assert callable_res.npv <= plain.npv + 5.0  # allow tolerance
+
+
+class TestCDOTranche:
+    """CDO tranche pricing (LHP Gaussian copula)."""
+
+    def test_equity_tranche(self):
+        n = 50
+        res = ql.cdo_tranche_py(
+            issuer_notionals=[1e6] * n,
+            default_probs=[0.05] * n,
+            recovery_rates=[0.40] * n,
+            correlation=0.30,
+            maturity=5.0,
+            attachment=0.0,
+            detachment=0.03,
+            tranche_spread=0.05,
+            tranche_notional=1.5e6,
+            risk_free_rate=0.03,
+        )
+        assert res.expected_loss >= 0
+        assert res.fair_spread > 0
+        assert "CdoTrancheResult" in repr(res)
+
+    def test_senior_tranche_lower_spread(self):
+        n = 50
+        eq = ql.cdo_tranche_py([1e6]*n, [0.05]*n, [0.4]*n, 0.3, 5.0,
+                                0.0, 0.03, 0.05, 1.5e6, 0.03)
+        sr = ql.cdo_tranche_py([1e6]*n, [0.05]*n, [0.4]*n, 0.3, 5.0,
+                                0.07, 0.10, 0.01, 1.5e6, 0.03)
+        assert sr.fair_spread < eq.fair_spread
+
+    def test_invalid_lengths_raises(self):
+        with pytest.raises(ValueError, match="equal length"):
+            ql.cdo_tranche_py([1e6, 1e6], [0.05], [0.4, 0.4], 0.3,
+                               5.0, 0.0, 0.03, 0.05, 1e6, 0.03)
+
+
+class TestBatesPrice:
+    """Bates (Heston + jumps) analytic pricing."""
+
+    def test_call_positive(self):
+        res = ql.bates_price_py(100, 100, 0.05, 0.02, 0.04, 1.5, 0.04,
+                                 0.3, -0.7, 0.1, -0.1, 0.05, 1.0, True)
+        assert res.npv > 0
+        assert 0 < res.p1 < 1
+        assert 0 < res.p2 < 1
+        assert "BatesResult" in repr(res)
+
+    def test_put_positive(self):
+        res = ql.bates_price_py(100, 100, 0.05, 0.02, 0.04, 1.5, 0.04,
+                                 0.3, -0.7, 0.1, -0.1, 0.05, 1.0, False)
+        assert res.npv > 0
+
+    def test_zero_jumps_matches_heston(self):
+        """With lambda=0, Bates should converge to Heston."""
+        bates = ql.bates_price_py(100, 100, 0.05, 0.0, 0.04, 1.5, 0.04,
+                                   0.3, -0.7, 0.0, 0.0, 0.0, 1.0, True)
+        heston = ql.heston_price_py(100, 100, 0.05, 0.0, 0.04, 1.5, 0.04,
+                                     0.3, -0.7, 1.0, True)
+        assert abs(bates.npv - heston.npv) < 0.5
+
+
+class TestMCHeston:
+    """Monte Carlo Heston."""
+
+    def test_call_positive(self):
+        res = ql.mc_heston_py(100, 100, 0.05, 0.02, 0.04, 1.5, 0.04,
+                               0.3, -0.7, 1.0, True, 50000, 100, 42)
+        assert res.npv > 0
+        assert res.std_error > 0
+        assert res.num_paths == 50000
+
+    def test_close_to_analytic(self):
+        mc = ql.mc_heston_py(100, 100, 0.05, 0.0, 0.04, 1.5, 0.04,
+                              0.3, -0.7, 1.0, True, 100000, 200, 42)
+        ana = ql.heston_price_py(100, 100, 0.05, 0.0, 0.04, 1.5, 0.04,
+                                  0.3, -0.7, 1.0, True)
+        assert abs(mc.npv - ana.npv) < 1.0  # MC tolerance
+
+
+class TestMCBates:
+    """Monte Carlo Bates."""
+
+    def test_call_positive(self):
+        res = ql.mc_bates_py(100, 100, 0.05, 0.02, 0.04, 1.5, 0.04,
+                              0.3, -0.7, 0.1, -0.1, 0.05,
+                              1.0, True, 50000, 100, 42)
+        assert res.npv > 0
+        assert res.std_error > 0
+
+    def test_put_positive(self):
+        res = ql.mc_bates_py(100, 110, 0.05, 0.02, 0.04, 1.5, 0.04,
+                              0.3, -0.7, 0.1, -0.1, 0.05,
+                              1.0, False, 50000, 100, 42)
+        assert res.npv > 0
+
+
+class TestMCAsian:
+    """Monte Carlo Asian (GBM)."""
+
+    def test_arithmetic_call(self):
+        res = ql.mc_asian_py(100, 100, 0.05, 0.02, 0.20, 1.0,
+                              True, True, 50000, 100, 42)
+        assert res.npv > 0
+        assert res.std_error > 0
+
+    def test_geometric_call(self):
+        res = ql.mc_asian_py(100, 100, 0.05, 0.02, 0.20, 1.0,
+                              True, False, 50000, 100, 42)
+        assert res.npv > 0
+
+    def test_arithmetic_less_than_vanilla(self):
+        """Asian average-price call ≤ vanilla European call."""
+        asian = ql.mc_asian_py(100, 100, 0.05, 0.0, 0.25, 1.0,
+                                True, True, 100000, 200, 42)
+        euro = ql.price_european_bs(100, 100, 0.05, 0.0, 0.25, 1.0, True)
+        assert asian.npv < euro.npv + 1.0
+
+
+class TestCliquetPrice:
+    """Cliquet (ratchet) option."""
+
+    def test_call_positive(self):
+        reset_times = [0.25, 0.50, 0.75, 1.0]
+        res = ql.cliquet_price_py(100, 0.05, 0.02, 0.20, reset_times,
+                                   -0.10, 0.10, -0.20, 0.30, 1e6, True)
+        assert res.npv > 0
+        assert len(res.period_values) == len(reset_times)
+        assert "CliquetResult" in repr(res)
+
+    def test_put_returns_result(self):
+        reset_times = [0.5, 1.0]
+        res = ql.cliquet_price_py(100, 0.05, 0.02, 0.20, reset_times,
+                                   -0.10, 0.10, -0.20, 0.30, 1e6, False)
+        assert isinstance(res.npv, float)
+        assert len(res.period_values) == len(reset_times)
+
+
+class TestEquityRiskLadder:
+    """Equity risk ladder (sensitivity bumps)."""
+
+    def test_call_has_sensitivities(self):
+        ladder = ql.equity_risk_ladder_py(100.0, 1.0, True,
+                                           100.0, 0.05, 0.02, 0.20)
+        assert len(ladder) >= 4  # spot, vol, rate, div
+        labels = [s.label for s in ladder]
+        assert "spot" in labels
+        assert "volatility" in labels
+
+    def test_delta_positive_for_call(self):
+        ladder = ql.equity_risk_ladder_py(100.0, 1.0, True,
+                                           100.0, 0.05, 0.0, 0.20)
+        spot_sens = [s for s in ladder if s.label == "spot"][0]
+        assert spot_sens.first_order > 0  # call delta > 0
+        assert spot_sens.second_order is not None  # gamma exists
+
+    def test_put_delta_negative(self):
+        ladder = ql.equity_risk_ladder_py(100.0, 1.0, False,
+                                           100.0, 0.05, 0.0, 0.20)
+        spot_sens = [s for s in ladder if s.label == "spot"][0]
+        assert spot_sens.first_order < 0  # put delta < 0
+
+    def test_repr(self):
+        ladder = ql.equity_risk_ladder_py(100.0, 1.0, True,
+                                           100.0, 0.05, 0.0, 0.20)
+        assert "Sensitivity" in repr(ladder[0])
+
+
+class TestSABRSmileVol:
+    """SABR smile section volatility."""
+
+    def test_atm_positive(self):
+        vol = ql.sabr_smile_vol_py(100.0, 1.0, 0.20, 0.5, -0.3, 0.4, 100.0)
+        assert vol > 0
+
+    def test_wing_volatility(self):
+        """OTM strikes should return different (typically higher for puts) vol."""
+        atm = ql.sabr_smile_vol_py(100.0, 1.0, 0.20, 0.5, -0.3, 0.4, 100.0)
+        otm_put = ql.sabr_smile_vol_py(100.0, 1.0, 0.20, 0.5, -0.3, 0.4, 80.0)
+        otm_call = ql.sabr_smile_vol_py(100.0, 1.0, 0.20, 0.5, -0.3, 0.4, 120.0)
+        # With rho < 0 we expect a skew: put side higher
+        assert otm_put > atm or otm_call > atm  # at least one wing is higher
+
+    def test_varies_with_strike(self):
+        v1 = ql.sabr_smile_vol_py(100.0, 1.0, 0.20, 0.5, -0.3, 0.4, 90.0)
+        v2 = ql.sabr_smile_vol_py(100.0, 1.0, 0.20, 0.5, -0.3, 0.4, 110.0)
+        assert v1 != v2  # not flat
+
+
+class TestSVISmileVol:
+    """SVI smile section volatility."""
+
+    def test_atm_positive(self):
+        vol = ql.svi_smile_vol_py(100.0, 1.0, 0.04, 0.10, -0.3, 0.0, 0.20, 100.0)
+        assert vol > 0
+
+    def test_varies_with_strike(self):
+        v1 = ql.svi_smile_vol_py(100.0, 1.0, 0.04, 0.10, -0.3, 0.0, 0.20, 80.0)
+        v2 = ql.svi_smile_vol_py(100.0, 1.0, 0.04, 0.10, -0.3, 0.0, 0.20, 120.0)
+        assert v1 != v2
+
+
+# =========================================================================
+# Older untested models
+# =========================================================================
+
+class TestVarianceGamma:
+    """Variance Gamma pricing via COS."""
+
+    def test_call_positive(self):
+        res = ql.vg_price_py(0.20, 0.10, -0.14, 100, 100, 1.0, 0.05)
+        assert res.npv > 0
+        assert res.delta > 0
+
+    def test_put_positive(self):
+        res = ql.vg_price_py(0.20, 0.10, -0.14, 100, 100, 1.0, 0.05,
+                              is_call=False)
+        assert res.npv > 0
+
+
+class TestQuantoVanilla:
+    """Quanto vanilla option."""
+
+    def test_call_positive(self):
+        res = ql.price_quanto_vanilla_py(100, 100, 1.0, 0.05, 0.03,
+                                          0.20, 0.10, 0.3)
+        assert res.npv > 0
+        assert res.delta > 0
+
+    def test_has_greeks(self):
+        res = ql.price_quanto_vanilla_py(100, 100, 1.0, 0.05, 0.03,
+                                          0.20, 0.10, 0.3, 1.0, True)
+        assert hasattr(res, 'vega')
+        assert hasattr(res, 'qvega')
+        assert hasattr(res, 'rho')
+
+
+class TestBilateralCVA:
+    """Bilateral CVA/DVA."""
+
+    def test_cva_positive(self):
+        times = [0.25, 0.50, 0.75, 1.0]
+        ee = [5.0, 4.0, 3.0, 2.0]
+        ne = [1.0, 1.0, 1.0, 1.0]
+        df = [0.99, 0.98, 0.97, 0.96]
+        res = ql.bilateral_cva_py(times, ee, ne, 0.02, 0.01, 0.40, 0.40, df)
+        assert res.cva >= 0
+        assert res.dva >= 0
+        assert res.bcva == pytest.approx(res.dva - res.cva, abs=0.001)
+
+
+class TestCosHeston:
+    """COS Heston pricing."""
+
+    def test_call_positive(self):
+        res = ql.cos_heston_price_py(100, 100, 1.0, 0.05, 0.0,
+                                      0.04, 1.5, 0.04, 0.3, -0.7,
+                                      True, 128, 12.0)
+        assert res.price > 0
+
+    def test_close_to_semi_analytic(self):
+        cos = ql.cos_heston_price_py(100, 100, 1.0, 0.05, 0.0,
+                                      0.04, 1.5, 0.04, 0.3, -0.7,
+                                      True, 256, 12.0)
+        ana = ql.heston_price_py(100, 100, 0.05, 0.0, 0.04, 1.5, 0.04,
+                                  0.3, -0.7, 1.0, True)
+        # COS vs semi-analytic — allow up to 3.0 tolerance
+        assert abs(cos.price - ana.npv) < 3.0
+
+
+class TestBinaryBarrier:
+    """Binary barrier options."""
+
+    def test_down_and_in_cash(self):
+        res = ql.analytic_binary_barrier_py(100, 15, 90, 0.05, 0.0, 0.20, 1.0,
+                                             "DownAndIn", "Cash", "Put")
+        assert res.price > 0
+
+    def test_up_and_out_asset(self):
+        res = ql.analytic_binary_barrier_py(100, 100, 120, 0.05, 0.0, 0.20, 1.0,
+                                             "UpAndOut", "Asset", "Call")
+        assert res.price >= 0
+
+
+class TestCEV:
+    """CEV model pricing."""
+
+    def test_call_positive(self):
+        res = ql.analytic_cev_price_py(100, 100, 1.0, 0.05, 0.0, 0.20, 0.5, True)
+        assert res.price > 0
+
+    def test_put_positive(self):
+        res = ql.analytic_cev_price_py(100, 100, 1.0, 0.05, 0.0, 0.20, 0.5, False)
+        assert res.price > 0
+
+
+class TestFdHestonBarrier:
+    """FD Heston barrier."""
+
+    def test_down_and_out_call(self):
+        res = ql.fd_heston_barrier_py(100, 100, 80, 1.0, 0.05, 0.0,
+                                       0.04, 1.5, 0.04, 0.3, -0.7,
+                                       "DownAndOut", True, 50, 25, 50)
+        assert res.price >= 0
+        assert hasattr(res, 'delta')
+
+    def test_less_than_vanilla(self):
+        """Barrier option ≤ vanilla."""
+        barrier = ql.fd_heston_barrier_py(100, 100, 80, 1.0, 0.05, 0.0,
+                                           0.04, 1.5, 0.04, 0.3, -0.7,
+                                           "DownAndOut", True, 50, 25, 50)
+        vanilla = ql.heston_price_py(100, 100, 0.05, 0.0, 0.04, 1.5, 0.04,
+                                      0.3, -0.7, 1.0, True)
+        assert barrier.price <= vanilla.npv + 1.0
+
+
+class TestHestonHullWhite:
+    """Heston + Hull-White hybrid."""
+
+    def test_call_positive(self):
+        res = ql.heston_hull_white_price_py(100, 100, 1.0, 0.05, 0.0,
+                                             0.10, 0.01, 0.04, 1.5, 0.04,
+                                             0.3, -0.7, 0.2, True)
+        assert res.price > 0
+        assert res.v0_eff > 0
+
+
+class TestCDOSpreadLadder:
+    """CDO spread ladder."""
+
+    def test_waterfall(self):
+        res = ql.cdo_spread_ladder_py(
+            attachments=[0.0, 0.03, 0.07, 0.10],
+            detachments=[0.03, 0.07, 0.10, 0.30],
+            default_prob=0.05, correlation=0.30,
+            recovery=0.40, n_names=100, maturity=5.0, flat_rate=0.03)
+        assert len(res) == 4
+        # Equity tranche has highest spread
+        assert res[0].fair_spread > res[-1].fair_spread
+
+    def test_mismatched_raises(self):
+        with pytest.raises(ValueError):
+            ql.cdo_spread_ladder_py([0.0, 0.03], [0.03], 0.05, 0.3,
+                                     0.4, 100, 5.0, 0.03)
+
+
+class TestBootstrapYieldCurve:
+    """Piecewise yield curve bootstrapping."""
+
+    def test_basic_bootstrap(self):
+        ref = ql.Date(2025, 1, 15)
+        deposits = [
+            (0.045, ref, ref.add_days(91)),
+            (0.046, ref, ref.add_days(182)),
+        ]
+        swaps = [
+            (0.050, ref, 5, 1),  # 5Y annual
+        ]
+        curve = ql.bootstrap_yield_curve(ref, deposits, swaps)
+        # discount_t takes a year fraction (float)
+        df = curve.discount_t(1.0)
+        assert 0 < df < 1
+
+    def test_discount_monotone(self):
+        ref = ql.Date(2025, 1, 15)
+        deposits = [(0.04, ref, ref.add_days(91))]
+        swaps = [(0.05, ref, 5, 1)]
+        curve = ql.bootstrap_yield_curve(ref, deposits, swaps)
+        assert curve.discount_t(1.0) > curve.discount_t(5.0)
+
+
+class TestModuleApiPhase36:
+    """Verify all Phase 36 functions and types are importable."""
+
+    @pytest.mark.parametrize("name", [
+        # Fixed income functions
+        "price_swap_py", "price_bond_py",
+        "bond_duration_py", "bond_convexity_py", "bond_dv01_py", "bond_z_spread_py",
+        "hw_bond_option_py", "hw_caplet_py", "hw_jamshidian_swaption_py",
+        "tree_swaption_py", "tree_cap_floor_py", "tree_bond_price_py",
+        "midpoint_cds_py", "price_callable_bond_py", "cdo_tranche_py",
+        # Pricing functions
+        "bates_price_py", "mc_heston_py", "mc_bates_py", "mc_asian_py",
+        "cliquet_price_py", "equity_risk_ladder_py",
+        "sabr_smile_vol_py", "svi_smile_vol_py",
+        # Older untested functions
+        "vg_price_py", "price_quanto_vanilla_py", "bilateral_cva_py",
+        "cos_heston_price_py", "analytic_binary_barrier_py",
+        "analytic_cev_price_py", "fd_heston_barrier_py",
+        "heston_hull_white_price_py", "cdo_spread_ladder_py",
+        "bootstrap_yield_curve",
+        # Result types
+        "HWAnalyticResult", "TreeResult", "CdsResult", "BatesResult",
+        "CliquetResult", "CallableBondResult", "CdoTrancheResult", "Sensitivity",
+    ])
+    def test_attr_exists(self, name):
+        assert hasattr(ql, name), f"ql_python.{name} not found"

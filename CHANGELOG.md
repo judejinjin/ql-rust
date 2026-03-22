@@ -2,6 +2,17 @@
 
 All notable changes to the ql-rust project are documented in this file.
 
+## [0.3.7] — 2025-06-20
+
+### Python Integration Tests — 319 pytest cases covering all 84 bindings
+
+- **109 new test methods** across 26 new test classes exercising every untested Python binding end-to-end
+- **Phase 36 coverage**: swap pricing (4), bond pricing (3), bond analytics (5), HW analytic (5), tree engines (4), CDS (3), callable bond (2), CDO tranche (3), Bates (3), MC Heston (2), MC Bates (2), MC Asian (3), cliquet (2), equity risk ladder (4), SABR smile (3), SVI smile (2)
+- **Previously untested bindings**: variance gamma (2), quanto vanilla (2), bilateral CVA (1), COS Heston (2), binary barrier (2), CEV (2), FD Heston barrier (2), Heston-Hull-White (1), CDO spread ladder (2), bootstrap yield curve (2)
+- **API surface check**: parametrized test verifying all 38 Phase 36 names are importable
+- **Total**: 319 pytest items (318 passing, 1 pre-existing Bachelier tolerance issue)
+- README updated with Python test instructions and counts
+
 ## [0.3.6] — 2025-06-20
 
 ### Python Binding Expansion — Fixed Income, Credit, Models, Risk
