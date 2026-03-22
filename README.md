@@ -3,7 +3,7 @@
 A modern Rust reimplementation of the [QuantLib](https://www.quantlib.org/) quantitative finance library.
 
 [![Build](https://img.shields.io/badge/build-passing-brightgreen)]()
-[![Tests](https://img.shields.io/badge/tests-3035_passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-3119_passing-brightgreen)]()
 [![Rust](https://img.shields.io/badge/rust-2021_edition-orange)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
 
@@ -270,7 +270,7 @@ NelsonSiegelFitting, Schedule, AnalyticEuropeanResults, CreditDefaultSwap, and D
 ## Testing
 
 ```bash
-# Run all 3035 tests
+# Run all 3119 tests
 cargo test --workspace
 
 # Run integration tests only

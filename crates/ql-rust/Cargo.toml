@@ -31,6 +31,7 @@ redb = ["ql-persistence/redb"]
 approx = { workspace = true }
 tempfile = { workspace = true }
 proptest = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
 criterion = { workspace = true }
 ql-aad = { workspace = true }

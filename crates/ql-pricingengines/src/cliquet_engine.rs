@@ -20,7 +20,7 @@ use ql_instruments::OptionType;
 use crate::analytic_european;
 
 /// Result from a cliquet option pricing.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[must_use]
 pub struct CliquetResult {
     /// Net present value.

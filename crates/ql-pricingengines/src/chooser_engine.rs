@@ -15,7 +15,7 @@
 use crate::generic::chooser_generic;
 
 /// Result from a chooser option pricing.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[must_use]
 pub struct ChooserResult {
     /// Net present value of the chooser option.

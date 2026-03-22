@@ -18,7 +18,7 @@ use ql_instruments::OptionType;
 use crate::analytic_european;
 
 /// Result of a double-barrier pricing.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[must_use]
 pub struct DoubleBarrierResult {
     /// Net present value.
