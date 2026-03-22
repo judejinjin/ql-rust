@@ -183,7 +183,7 @@ println!("CRR European call: {:.4}", crr.npv);
 | **ql-methods** | Numerical pricing methods | `mc_european`, `fd_black_scholes`, `fd_heston_solve` |
 | **ql-persistence** | Trade storage & lifecycle | `Trade`, `EmbeddedStore`, `ObjectStore` |
 | **ql-cli** | Command-line interface | Binary: `ql-cli` |
-| **ql-python** | Python bindings (PyO3) | 59 functions, 25 result types — equity, rates, exotics, MC, FD, tree engines |
+| **ql-python** | Python bindings (PyO3) | 84 functions, 38 result types — equity, rates, credit, exotics, MC, FD, tree, HW, Bates, risk |
 | **ql-rust** | Façade re-exporting all crates | — |
 
 ## Supported Instruments

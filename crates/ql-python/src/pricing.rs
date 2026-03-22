@@ -32,12 +32,18 @@ use ql_pricingengines::longstaff_schwartz::{mc_american_longstaff_schwartz, LSMB
 use ql_pricingengines::mc_asian::mc_asian_arithmetic_price;
 use ql_pricingengines::generic::{black76_generic, bachelier_generic, black_swaption_generic, bachelier_swaption_generic, black_caplet_generic};
 use ql_instruments::quanto_option::{QuantoVanillaOption, price_quanto_vanilla};
-use ql_methods::mc_engines::{mc_european, mc_barrier};
+use ql_methods::mc_engines::{mc_european, mc_barrier, mc_heston, mc_bates, mc_asian};
 use ql_methods::finite_differences::fd_black_scholes;
 use ql_methods::lattice::binomial_crr;
 use ql_models::HestonModel;
 use ql_models::VarianceGammaModel;
+use ql_models::bates_model::BatesModel;
 use ql_termstructures::sabr::sabr_volatility;
+use ql_termstructures::sabr::SabrSmileSection;
+use ql_termstructures::svi::SviSmileSection;
+use ql_pricingengines::analytic_bates::bates_price;
+use ql_pricingengines::cliquet_engine::cliquet_price;
+use ql_pricingengines::sensitivity::{equity_risk_ladder, EquityMarketParams};
 
 // New engines (QuantLib parity gap items 2-9)
 use ql_pricingengines::analytic_asian::{
@@ -66,6 +72,8 @@ use crate::types::{
     PyTwoAssetCorrelationResult, PyExtensibleOptionResult,
     // Phase 34 result types
     PyMertonJdResult, PyVarianceSwapResult, PyMcAsianArithResult,
+    // Phase 36 result types — models, risk, vol
+    PyBatesResult, PyCliquetResult, PySensitivity,
 };
 
 // ---------------------------------------------------------------------------
@@ -1773,4 +1781,218 @@ pub fn mc_asian_arithmetic_py(
 ) -> PyMcAsianArithResult {
     let res = mc_asian_arithmetic_price(spot, strike, r, q, sigma, t, n_fixings, n_paths, is_call, Some(seed));
     PyMcAsianArithResult { price: res.price, std_error: res.std_error }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 36: Bates (Heston + jumps) analytic pricing
+// ---------------------------------------------------------------------------
+
+/// Price a European option using the **Bates model** (Heston + Merton jumps).
+///
+/// Parameters:
+///   s0, strike, r, q — spot, strike, risk-free rate, dividend yield
+///   v0, kappa, theta, sigma, rho — Heston parameters
+///   lambda_, nu, delta — jump intensity, mean, and vol
+///   t — time to expiry (years)
+///   is_call — True for call, False for put
+///
+/// Returns a ``BatesResult`` with npv, p1, p2.
+#[pyfunction]
+#[pyo3(signature = (s0, strike, r, q, v0, kappa, theta, sigma, rho, lambda_, nu, delta, t, is_call=true))]
+#[allow(clippy::too_many_arguments)]
+pub fn bates_price_py(
+    s0: f64, strike: f64, r: f64, q: f64,
+    v0: f64, kappa: f64, theta: f64, sigma: f64, rho: f64,
+    lambda_: f64, nu: f64, delta: f64, t: f64, is_call: bool,
+) -> PyBatesResult {
+    let model = BatesModel::new(s0, r, q, v0, kappa, theta, sigma, rho, lambda_, nu, delta);
+    let res = bates_price(&model, strike, t, is_call);
+    PyBatesResult { npv: res.npv, p1: res.p1, p2: res.p2 }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 36: MC Heston
+// ---------------------------------------------------------------------------
+
+/// Price a European option via **Monte Carlo** on the Heston SV model.
+///
+/// Returns an ``MCResult`` with npv, std_error, num_paths.
+#[pyfunction]
+#[pyo3(signature = (spot, strike, r, q, v0, kappa, theta, sigma, rho, t, is_call=true, num_paths=100_000, num_steps=200, seed=42))]
+#[allow(clippy::too_many_arguments)]
+pub fn mc_heston_py(
+    spot: f64, strike: f64, r: f64, q: f64,
+    v0: f64, kappa: f64, theta: f64, sigma: f64, rho: f64,
+    t: f64, is_call: bool, num_paths: usize, num_steps: usize, seed: u64,
+) -> PyMCResult {
+    let opt_type = if is_call { OptionType::Call } else { OptionType::Put };
+    let res = mc_heston(spot, strike, r, q, v0, kappa, theta, sigma, rho, t, opt_type, num_paths, num_steps, seed);
+    PyMCResult { npv: res.npv, std_error: res.std_error, num_paths: res.num_paths }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 36: MC Bates
+// ---------------------------------------------------------------------------
+
+/// Price a European option via **Monte Carlo** on the Bates model (Heston + jumps).
+///
+/// Returns an ``MCResult`` with npv, std_error, num_paths.
+#[pyfunction]
+#[pyo3(signature = (spot, strike, r, q, v0, kappa, theta, sigma, rho, lambda_, nu, delta, t, is_call=true, num_paths=100_000, num_steps=200, seed=42))]
+#[allow(clippy::too_many_arguments)]
+pub fn mc_bates_py(
+    spot: f64, strike: f64, r: f64, q: f64,
+    v0: f64, kappa: f64, theta: f64, sigma: f64, rho: f64,
+    lambda_: f64, nu: f64, delta: f64,
+    t: f64, is_call: bool, num_paths: usize, num_steps: usize, seed: u64,
+) -> PyMCResult {
+    let opt_type = if is_call { OptionType::Call } else { OptionType::Put };
+    let res = mc_bates(spot, strike, r, q, v0, kappa, theta, sigma, rho, lambda_, nu, delta, t, opt_type, num_paths, num_steps, seed);
+    PyMCResult { npv: res.npv, std_error: res.std_error, num_paths: res.num_paths }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 36: MC Asian (GBM)
+// ---------------------------------------------------------------------------
+
+/// Price a European **Asian** option via Monte Carlo (geometric Brownian motion).
+///
+/// Parameters:
+///   spot, strike, r, q, vol, t — standard BS inputs
+///   is_call — True for call, False for put
+///   is_arithmetic — True for arithmetic average, False for geometric
+///   num_paths, num_steps, seed — MC parameters
+///
+/// Returns an ``MCResult`` with npv, std_error, num_paths.
+#[pyfunction]
+#[pyo3(signature = (spot, strike, r, q, vol, t, is_call=true, is_arithmetic=true, num_paths=100_000, num_steps=200, seed=42))]
+#[allow(clippy::too_many_arguments)]
+pub fn mc_asian_py(
+    spot: f64, strike: f64, r: f64, q: f64, vol: f64, t: f64,
+    is_call: bool, is_arithmetic: bool,
+    num_paths: usize, num_steps: usize, seed: u64,
+) -> PyMCResult {
+    let opt_type = if is_call { OptionType::Call } else { OptionType::Put };
+    let res = mc_asian(spot, strike, r, q, vol, t, opt_type, is_arithmetic, num_paths, num_steps, seed);
+    PyMCResult { npv: res.npv, std_error: res.std_error, num_paths: res.num_paths }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 36: Cliquet / ratchet option
+// ---------------------------------------------------------------------------
+
+/// Price a **cliquet (ratchet)** option with local and global caps/floors.
+///
+/// Parameters:
+///   spot — initial spot price
+///   r, q, vol — risk-free rate, dividend yield, volatility
+///   reset_times — list of reset times (years)
+///   local_floor, local_cap — per-period return bounds
+///   global_floor, global_cap — overall payoff bounds
+///   notional — contract notional
+///   is_call — True for call, False for put
+///
+/// Returns a ``CliquetResult`` with npv and period_values.
+#[pyfunction]
+#[pyo3(signature = (spot, r, q, vol, reset_times, local_floor, local_cap, global_floor, global_cap, notional, is_call=true))]
+#[allow(clippy::too_many_arguments)]
+pub fn cliquet_price_py(
+    spot: f64, r: f64, q: f64, vol: f64,
+    reset_times: Vec<f64>,
+    local_floor: f64, local_cap: f64,
+    global_floor: f64, global_cap: f64,
+    notional: f64, is_call: bool,
+) -> PyCliquetResult {
+    let opt_type = if is_call { OptionType::Call } else { OptionType::Put };
+    let res = cliquet_price(spot, r, q, vol, &reset_times, local_floor, local_cap, global_floor, global_cap, notional, opt_type);
+    PyCliquetResult { npv: res.npv, period_values: res.period_values }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 36: Equity risk ladder (sensitivity bumps)
+// ---------------------------------------------------------------------------
+
+/// Compute an equity **risk ladder** (delta, gamma, vega, rho, theta bumps).
+///
+/// Parameters:
+///   strike — option strike price
+///   expiry — time to expiry (years)
+///   is_call — True for call, False for put
+///   spot, r, q, vol — equity market parameters
+///
+/// Returns a list of ``Sensitivity`` objects.
+#[pyfunction]
+#[pyo3(signature = (strike, expiry, is_call, spot, r, q, vol))]
+#[allow(clippy::too_many_arguments)]
+pub fn equity_risk_ladder_py(
+    strike: f64, expiry: f64, is_call: bool,
+    spot: f64, r: f64, q: f64, vol: f64,
+) -> Vec<PySensitivity> {
+    // The equity_risk_ladder uses time_to_expiry from EquityMarketParams,
+    // so the Date in VanillaOption is not used for pricing. Use a placeholder.
+    let expiry_date = ql_time::Date::from_ymd(2026, ql_time::Month::January, 15);
+    let option = if is_call {
+        VanillaOption::european_call(strike, expiry_date)
+    } else {
+        VanillaOption::european_put(strike, expiry_date)
+    };
+    let params = EquityMarketParams {
+        spot, risk_free_rate: r, dividend_yield: q, volatility: vol, time_to_expiry: expiry,
+    };
+    let ladder = equity_risk_ladder(&option, &params);
+    ladder.into_iter().map(|s| PySensitivity {
+        label: s.label, bump: s.bump, base_npv: s.base_npv,
+        bumped_npv_up: s.bumped_npv_up, bumped_npv_down: s.bumped_npv_down,
+        first_order: s.first_order, second_order: s.second_order,
+    }).collect()
+}
+
+// ---------------------------------------------------------------------------
+// Phase 36: SABR smile volatility
+// ---------------------------------------------------------------------------
+
+/// Compute **SABR** implied volatility for a given strike and forward.
+///
+/// Parameters:
+///   forward — forward price
+///   expiry — time to expiry (years)
+///   alpha, beta, rho, nu — SABR parameters
+///   strike — option strike
+///
+/// Returns the SABR implied volatility (f64).
+#[pyfunction]
+#[pyo3(signature = (forward, expiry, alpha, beta, rho, nu, strike))]
+#[allow(clippy::too_many_arguments)]
+pub fn sabr_smile_vol_py(
+    forward: f64, expiry: f64,
+    alpha: f64, beta: f64, rho: f64, nu: f64,
+    strike: f64,
+) -> f64 {
+    let section = SabrSmileSection::new(forward, expiry, alpha, beta, rho, nu);
+    section.volatility(strike)
+}
+
+// ---------------------------------------------------------------------------
+// Phase 36: SVI smile volatility
+// ---------------------------------------------------------------------------
+
+/// Compute **SVI** implied volatility for a given strike and forward.
+///
+/// Parameters:
+///   forward — forward price
+///   expiry — time to expiry (years)
+///   a, b, rho, m, sigma — SVI parameters
+///   strike — option strike
+///
+/// Returns the SVI implied volatility (f64).
+#[pyfunction]
+#[pyo3(signature = (forward, expiry, a, b, rho, m, sigma, strike))]
+#[allow(clippy::too_many_arguments)]
+pub fn svi_smile_vol_py(
+    forward: f64, expiry: f64,
+    a: f64, b: f64, rho: f64, m: f64, sigma: f64,
+    strike: f64,
+) -> f64 {
+    let section = SviSmileSection::new(forward, expiry, a, b, rho, m, sigma);
+    section.volatility(strike)
 }

@@ -600,3 +600,162 @@ impl PyMcAsianArithResult {
             self.price, self.std_error)
     }
 }
+
+// ---------------------------------------------------------------------------
+// Phase 36: Expanded Python bindings — fixed income, credit, models, risk
+// ---------------------------------------------------------------------------
+
+/// Hull-White analytic result (bond option, caplet, swaption).
+#[pyclass(name = "HWAnalyticResult")]
+#[derive(Clone)]
+pub struct PyHWAnalyticResult {
+    #[pyo3(get)]
+    pub npv: f64,
+}
+
+#[pymethods]
+impl PyHWAnalyticResult {
+    fn __repr__(&self) -> String {
+        format!("HWAnalyticResult(npv={:.6})", self.npv)
+    }
+}
+
+/// Trinomial tree result.
+#[pyclass(name = "TreeResult")]
+#[derive(Clone)]
+pub struct PyTreeResult {
+    #[pyo3(get)]
+    pub npv: f64,
+}
+
+#[pymethods]
+impl PyTreeResult {
+    fn __repr__(&self) -> String {
+        format!("TreeResult(npv={:.6})", self.npv)
+    }
+}
+
+/// CDS pricing result (midpoint engine).
+#[pyclass(name = "CdsResult")]
+#[derive(Clone)]
+pub struct PyCdsResult {
+    #[pyo3(get)]
+    pub npv: f64,
+    #[pyo3(get)]
+    pub fair_spread: f64,
+    #[pyo3(get)]
+    pub premium_leg_pv: f64,
+    #[pyo3(get)]
+    pub protection_leg_pv: f64,
+}
+
+#[pymethods]
+impl PyCdsResult {
+    fn __repr__(&self) -> String {
+        format!("CdsResult(npv={:.6}, fair_spread={:.6})", self.npv, self.fair_spread)
+    }
+}
+
+/// Bates (Heston + jumps) pricing result.
+#[pyclass(name = "BatesResult")]
+#[derive(Clone)]
+pub struct PyBatesResult {
+    #[pyo3(get)]
+    pub npv: f64,
+    #[pyo3(get)]
+    pub p1: f64,
+    #[pyo3(get)]
+    pub p2: f64,
+}
+
+#[pymethods]
+impl PyBatesResult {
+    fn __repr__(&self) -> String {
+        format!("BatesResult(npv={:.6}, p1={:.6}, p2={:.6})", self.npv, self.p1, self.p2)
+    }
+}
+
+/// Cliquet / ratchet option result.
+#[pyclass(name = "CliquetResult")]
+#[derive(Clone)]
+pub struct PyCliquetResult {
+    #[pyo3(get)]
+    pub npv: f64,
+    #[pyo3(get)]
+    pub period_values: Vec<f64>,
+}
+
+#[pymethods]
+impl PyCliquetResult {
+    fn __repr__(&self) -> String {
+        format!("CliquetResult(npv={:.6}, periods={})", self.npv, self.period_values.len())
+    }
+}
+
+/// Callable bond pricing result.
+#[pyclass(name = "CallableBondResult")]
+#[derive(Clone)]
+pub struct PyCallableBondResult {
+    #[pyo3(get)]
+    pub npv: f64,
+    #[pyo3(get)]
+    pub oas_hint: f64,
+}
+
+#[pymethods]
+impl PyCallableBondResult {
+    fn __repr__(&self) -> String {
+        format!("CallableBondResult(npv={:.6}, oas_hint={:.6})", self.npv, self.oas_hint)
+    }
+}
+
+/// CDO tranche result (LHP model).
+#[pyclass(name = "CdoTrancheResult")]
+#[derive(Clone)]
+pub struct PyCdoTrancheResult {
+    #[pyo3(get)]
+    pub expected_loss: f64,
+    #[pyo3(get)]
+    pub fair_spread: f64,
+    #[pyo3(get)]
+    pub protection_leg: f64,
+    #[pyo3(get)]
+    pub premium_leg: f64,
+    #[pyo3(get)]
+    pub delta: f64,
+}
+
+#[pymethods]
+impl PyCdoTrancheResult {
+    fn __repr__(&self) -> String {
+        format!("CdoTrancheResult(fair_spread={:.6}, expected_loss={:.6})",
+            self.fair_spread, self.expected_loss)
+    }
+}
+
+/// Equity risk sensitivity.
+#[pyclass(name = "Sensitivity")]
+#[derive(Clone)]
+pub struct PySensitivity {
+    #[pyo3(get)]
+    pub label: String,
+    #[pyo3(get)]
+    pub bump: f64,
+    #[pyo3(get)]
+    pub base_npv: f64,
+    #[pyo3(get)]
+    pub bumped_npv_up: f64,
+    #[pyo3(get)]
+    pub bumped_npv_down: Option<f64>,
+    #[pyo3(get)]
+    pub first_order: f64,
+    #[pyo3(get)]
+    pub second_order: Option<f64>,
+}
+
+#[pymethods]
+impl PySensitivity {
+    fn __repr__(&self) -> String {
+        format!("Sensitivity(label='{}', first_order={:.6})", self.label, self.first_order)
+    }
+}

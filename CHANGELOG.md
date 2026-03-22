@@ -2,6 +2,33 @@
 
 All notable changes to the ql-rust project are documented in this file.
 
+## [0.3.6] — 2025-06-20
+
+### Python Binding Expansion — Fixed Income, Credit, Models, Risk
+
+#### New module: `fixed_income.rs` (15 functions)
+- **Swap pricing**: `price_swap_py` — vanilla IRS on flat yield curve via `VanillaSwap::from_schedules`
+- **Bond pricing**: `price_bond_py` — fixed-rate bond NPV, clean/dirty price, accrued interest
+- **Bond analytics**: `bond_duration_py`, `bond_convexity_py`, `bond_dv01_py`, `bond_z_spread_py`
+- **Hull-White analytic**: `hw_bond_option_py`, `hw_caplet_py`, `hw_jamshidian_swaption_py`
+- **Trinomial tree**: `tree_swaption_py`, `tree_cap_floor_py`, `tree_bond_price_py`
+- **Credit**: `midpoint_cds_py` (flat hazard/yield), `price_callable_bond_py`, `cdo_tranche_py` (LHP Gaussian copula)
+
+#### New pricing functions in `pricing.rs` (9 functions)
+- **Bates model**: `bates_price_py` — analytic Heston+jumps pricing
+- **Monte Carlo**: `mc_heston_py`, `mc_bates_py`, `mc_asian_py` — stochastic vol & Asian MC
+- **Cliquet**: `cliquet_price_py` — ratchet option with local/global caps & floors
+- **Risk**: `equity_risk_ladder_py` — delta, gamma, vega, rho bumps → `Vec<Sensitivity>`
+- **Vol surfaces**: `sabr_smile_vol_py`, `svi_smile_vol_py` — SABR & SVI implied vol
+
+#### New result types in `types.rs` (8 types)
+- `PyHWAnalyticResult`, `PyTreeResult`, `PyCdsResult`, `PyBatesResult`
+- `PyCliquetResult`, `PyCallableBondResult`, `PyCdoTrancheResult`, `PySensitivity`
+
+#### Totals
+- **84 Python functions** (was 59), **38 result types** (was 30)
+- 3,119 tests passing, zero clippy warnings
+
 ## [0.3.1] — 2025-06-19
 
 ### Code Quality: Clippy-Clean Workspace + Further Deduplication

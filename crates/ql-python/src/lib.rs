@@ -26,6 +26,7 @@ mod time;
 mod termstructures;
 mod instruments;
 mod pricing;
+mod fixed_income;
 
 use pyo3::prelude::*;
 
@@ -76,6 +77,15 @@ fn ql_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<types::PyMertonJdResult>()?;
     m.add_class::<types::PyVarianceSwapResult>()?;
     m.add_class::<types::PyMcAsianArithResult>()?;
+    // Phase 36 result types — fixed income, credit, models, risk
+    m.add_class::<types::PyHWAnalyticResult>()?;
+    m.add_class::<types::PyTreeResult>()?;
+    m.add_class::<types::PyCdsResult>()?;
+    m.add_class::<types::PyBatesResult>()?;
+    m.add_class::<types::PyCliquetResult>()?;
+    m.add_class::<types::PyCallableBondResult>()?;
+    m.add_class::<types::PyCdoTrancheResult>()?;
+    m.add_class::<types::PySensitivity>()?;
 
     // Pricing functions — analytic
     m.add_function(wrap_pyfunction!(pricing::price_european_bs, m)?)?;
@@ -148,6 +158,33 @@ fn ql_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(pricing::black_caplet_py, m)?)?;
     m.add_function(wrap_pyfunction!(pricing::mc_american_lsm_py, m)?)?;
     m.add_function(wrap_pyfunction!(pricing::mc_asian_arithmetic_py, m)?)?;
+
+    // Phase 36: Models, MC engines, vol surfaces, risk
+    m.add_function(wrap_pyfunction!(pricing::bates_price_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::mc_heston_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::mc_bates_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::mc_asian_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::cliquet_price_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::equity_risk_ladder_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::sabr_smile_vol_py, m)?)?;
+    m.add_function(wrap_pyfunction!(pricing::svi_smile_vol_py, m)?)?;
+
+    // Phase 36: Fixed income, credit, trees
+    m.add_function(wrap_pyfunction!(fixed_income::price_swap_py, m)?)?;
+    m.add_function(wrap_pyfunction!(fixed_income::price_bond_py, m)?)?;
+    m.add_function(wrap_pyfunction!(fixed_income::bond_duration_py, m)?)?;
+    m.add_function(wrap_pyfunction!(fixed_income::bond_convexity_py, m)?)?;
+    m.add_function(wrap_pyfunction!(fixed_income::bond_dv01_py, m)?)?;
+    m.add_function(wrap_pyfunction!(fixed_income::bond_z_spread_py, m)?)?;
+    m.add_function(wrap_pyfunction!(fixed_income::hw_bond_option_py, m)?)?;
+    m.add_function(wrap_pyfunction!(fixed_income::hw_caplet_py, m)?)?;
+    m.add_function(wrap_pyfunction!(fixed_income::hw_jamshidian_swaption_py, m)?)?;
+    m.add_function(wrap_pyfunction!(fixed_income::tree_swaption_py, m)?)?;
+    m.add_function(wrap_pyfunction!(fixed_income::tree_cap_floor_py, m)?)?;
+    m.add_function(wrap_pyfunction!(fixed_income::tree_bond_price_py, m)?)?;
+    m.add_function(wrap_pyfunction!(fixed_income::midpoint_cds_py, m)?)?;
+    m.add_function(wrap_pyfunction!(fixed_income::price_callable_bond_py, m)?)?;
+    m.add_function(wrap_pyfunction!(fixed_income::cdo_tranche_py, m)?)?;
 
     // Term structure bootstrapping
     m.add_function(wrap_pyfunction!(termstructures::bootstrap_yield_curve, m)?)?;
