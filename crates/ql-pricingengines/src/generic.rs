@@ -826,7 +826,7 @@ mod tests {
         let fwd = 100.0 * (0.05_f64).exp();
         let df = (-0.05_f64).exp();
         let parity = call - put - df * (fwd - 100.0);
-        assert!(parity.abs() < 1e-4, "Bachelier parity = {parity}");
+        assert!(parity.abs() < 1e-12, "Bachelier parity = {parity}");
     }
 
     // -----------------------------------------------------------------------

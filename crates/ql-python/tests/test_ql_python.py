@@ -858,13 +858,13 @@ class TestBachelier:
         assert p > 0
 
     def test_call_put_symmetry(self):
-        """Bachelier: C - P = (S - K) * exp(-r*t) approximately."""
+        """Bachelier: C - P = S*exp(-q*t) - K*exp(-r*t)."""
         import math
         S, K, r, q, vol, t = 100.0, 100.0, 0.05, 0.0, 20.0, 1.0
         c = ql.bachelier_py(S, K, r, q, vol, t, is_call=True)
         p = ql.bachelier_py(S, K, r, q, vol, t, is_call=False)
-        expected = (S - K) * math.exp(-(r - q) * t)
-        assert abs((c - p) - expected) < 0.1
+        expected = S * math.exp(-q * t) - K * math.exp(-r * t)
+        assert abs((c - p) - expected) < 1e-10
 
 
 class TestQDPlusAmerican:

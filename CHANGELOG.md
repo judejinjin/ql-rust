@@ -36,6 +36,8 @@ All notable changes to the ql-rust project are documented in this file.
 | `mc_basket_3_asset_50k` | **−6%** (3.14 → 2.96 ms) |
 
 - 3,119 tests passing, zero clippy warnings
+- Fixed Bachelier put-call parity test (wrong expected formula: used `(S−K)·e^{−rT}` instead of `S·e^{−qT} − K·e^{−rT}`)
+- All 319 Python tests now passing (was 318/319)
 
 ## [0.3.7] — 2025-06-20
 
@@ -45,7 +47,7 @@ All notable changes to the ql-rust project are documented in this file.
 - **Phase 36 coverage**: swap pricing (4), bond pricing (3), bond analytics (5), HW analytic (5), tree engines (4), CDS (3), callable bond (2), CDO tranche (3), Bates (3), MC Heston (2), MC Bates (2), MC Asian (3), cliquet (2), equity risk ladder (4), SABR smile (3), SVI smile (2)
 - **Previously untested bindings**: variance gamma (2), quanto vanilla (2), bilateral CVA (1), COS Heston (2), binary barrier (2), CEV (2), FD Heston barrier (2), Heston-Hull-White (1), CDO spread ladder (2), bootstrap yield curve (2)
 - **API surface check**: parametrized test verifying all 38 Phase 36 names are importable
-- **Total**: 319 pytest items (318 passing, 1 pre-existing Bachelier tolerance issue)
+- **Total**: 319 pytest items (318 passing, 1 Bachelier tolerance issue — fixed in v0.3.8)
 - README updated with Python test instructions and counts
 
 ## [0.3.6] — 2025-06-20
