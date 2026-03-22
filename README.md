@@ -3,7 +3,7 @@
 A modern Rust reimplementation of the [QuantLib](https://www.quantlib.org/) quantitative finance library.
 
 [![Build](https://img.shields.io/badge/build-passing-brightgreen)]()
-[![Tests](https://img.shields.io/badge/tests-3028_passing-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-3035_passing-brightgreen)]()
 [![Rust](https://img.shields.io/badge/rust-2021_edition-orange)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
 
@@ -183,7 +183,7 @@ println!("CRR European call: {:.4}", crr.npv);
 | **ql-methods** | Numerical pricing methods | `mc_european`, `fd_black_scholes`, `fd_heston_solve` |
 | **ql-persistence** | Trade storage & lifecycle | `Trade`, `EmbeddedStore`, `ObjectStore` |
 | **ql-cli** | Command-line interface | Binary: `ql-cli` |
-| **ql-python** | Python bindings (PyO3) | `Date`, `FlatForward`, `price_european_bs`, `mc_european_py` |
+| **ql-python** | Python bindings (PyO3) | 59 functions, 25 result types — equity, rates, exotics, MC, FD, tree engines |
 | **ql-rust** | Façade re-exporting all crates | — |
 
 ## Supported Instruments
@@ -270,7 +270,7 @@ NelsonSiegelFitting, Schedule, AnalyticEuropeanResults, CreditDefaultSwap, and D
 ## Testing
 
 ```bash
-# Run all 3028 tests
+# Run all 3035 tests
 cargo test --workspace
 
 # Run integration tests only
@@ -318,6 +318,19 @@ cargo bench -p ql-rust
 | `interpolation_cubic_spline_lookup` | Cubic spline interpolation point lookup |
 | `date_add_days` | Date + integer days arithmetic |
 | `day_counter_year_fraction` | Year fraction calculation |
+
+### Fuzz Testing
+
+14 fuzz targets covering pricing engines, numerical methods, date/schedule logic,
+interpolation, SABR volatility, and serde round-trips.
+
+```bash
+# List all fuzz targets
+cargo fuzz list
+
+# Run a specific target (e.g. American engines)
+cargo fuzz run fuzz_american -- -max_total_time=60
+```
 | `american_baw_put` | Barone-Adesi-Whaley American put |
 | `american_bjerksund_stensland_put` | Bjerksund-Stensland American put |
 | `american_qd_plus_put` | QD+ high-precision American put |

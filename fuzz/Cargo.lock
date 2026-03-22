@@ -409,6 +409,7 @@ version = "0.1.0"
 dependencies = [
  "ql-cashflows",
  "ql-core",
+ "ql-currencies",
  "ql-indexes",
  "ql-math",
  "ql-termstructures",
@@ -433,6 +434,7 @@ name = "ql-methods"
 version = "0.1.0"
 dependencies = [
  "nalgebra",
+ "ql-cashflows",
  "ql-core",
  "ql-instruments",
  "ql-math",

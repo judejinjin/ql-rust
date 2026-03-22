@@ -61,3 +61,33 @@ doc = false
 name = "fuzz_heston_bates"
 path = "fuzz_targets/fuzz_heston_bates.rs"
 doc = false
+
+[[bin]]
+name = "fuzz_american"
+path = "fuzz_targets/fuzz_american.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_asian"
+path = "fuzz_targets/fuzz_asian.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_exotic_equity"
+path = "fuzz_targets/fuzz_exotic_equity.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_multi_asset"
+path = "fuzz_targets/fuzz_multi_asset.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_merton_jd"
+path = "fuzz_targets/fuzz_merton_jd.rs"
+doc = false
+
+[[bin]]
+name = "fuzz_numerical"
+path = "fuzz_targets/fuzz_numerical.rs"
+doc = false
