@@ -94,12 +94,16 @@ pub enum YieldCurveScenario {
     ParallelShift(f64),
     /// Steepener: short end shifts by `short_shift`, long end by `long_shift`.
     SteepenerFlattener {
+        /// Field.
         short_shift: f64,
+        /// Field.
         long_shift: f64,
     },
     /// Custom shifts at specific tenors (linearly interpolated between).
     Custom {
+        /// Field.
         tenors: Vec<f64>,
+        /// Field.
         shifts: Vec<f64>,
     },
 }

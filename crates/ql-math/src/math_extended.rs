@@ -890,11 +890,15 @@ fn thomas_tridiag(a: &[f64], b: &[f64], c: &[f64], d: &[f64]) -> Vec<f64> {
 pub struct AbcdInterpolation {
     /// Calibrated ABCD parameters.
     pub a: f64,
+    /// B.
     pub b: f64,
+    /// C.
     pub c: f64,
+    /// D.
     pub d: f64,
     /// Original data.
     pub times: Vec<f64>,
+    /// Vols.
     pub vols: Vec<f64>,
 }
 

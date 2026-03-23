@@ -45,15 +45,19 @@ impl VasicekModel {
         }
     }
 
+    /// A.
     pub fn a(&self) -> f64 {
         self.a
     }
+    /// B.
     pub fn b(&self) -> f64 {
         self.b
     }
+    /// Sigma.
     pub fn sigma(&self) -> f64 {
         self.sigma
     }
+    /// R0.
     pub fn r0(&self) -> f64 {
         self.r0
     }

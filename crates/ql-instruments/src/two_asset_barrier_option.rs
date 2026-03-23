@@ -8,9 +8,13 @@ use serde::{Deserialize, Serialize};
 /// Barrier type for two-asset barrier options.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 pub enum TwoAssetBarrierType {
+    /// Down And Out.
     DownAndOut,
+    /// Down And In.
     DownAndIn,
+    /// Up And Out.
     UpAndOut,
+    /// Up And In.
     UpAndIn,
 }
 
@@ -53,8 +57,11 @@ pub struct TwoAssetBarrierOption {
 /// Result of pricing a two-asset barrier option.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TwoAssetBarrierResult {
+    /// Price.
     pub price: f64,
+    /// Delta1.
     pub delta1: f64,
+    /// Delta2.
     pub delta2: f64,
 }
 

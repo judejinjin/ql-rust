@@ -37,6 +37,7 @@ pub struct CmsCoupon {
 }
 
 impl CmsCoupon {
+    /// New.
     pub fn new(
         payment_date: Date,
         nominal: f64,

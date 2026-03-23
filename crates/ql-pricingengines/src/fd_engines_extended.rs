@@ -16,8 +16,11 @@ use ql_methods::fdm_operators::{build_bs_operator, crank_nicolson_step};
 /// Result of swing option FD pricing.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FdSwingResult {
+    /// Price.
     pub price: f64,
+    /// Delta.
     pub delta: f64,
+    /// Gamma.
     pub gamma: f64,
 }
 
@@ -167,8 +170,11 @@ pub fn fd_simple_bs_swing(
 /// Result of multi-period FD pricing.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FdMultiPeriodResult {
+    /// Price.
     pub price: f64,
+    /// Delta.
     pub delta: f64,
+    /// Gamma.
     pub gamma: f64,
     /// Per-period values (if available).
     pub period_values: Vec<f64>,

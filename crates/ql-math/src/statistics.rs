@@ -8,6 +8,7 @@ pub struct GeneralStatistics {
 }
 
 impl GeneralStatistics {
+    /// New.
     pub fn new() -> Self {
         Self {
             samples: Vec::new(),
@@ -15,26 +16,31 @@ impl GeneralStatistics {
         }
     }
 
+    /// Add.
     pub fn add(&mut self, value: f64) {
         self.samples.push(value);
         self.sorted = false;
     }
 
+    /// Add weighted.
     pub fn add_weighted(&mut self, value: f64, _weight: f64) {
         // For simplicity, treat as unweighted
         self.samples.push(value);
         self.sorted = false;
     }
 
+    /// Reset.
     pub fn reset(&mut self) {
         self.samples.clear();
         self.sorted = false;
     }
 
+    /// Count.
     pub fn count(&self) -> usize {
         self.samples.len()
     }
 
+    /// Mean.
     pub fn mean(&self) -> f64 {
         if self.samples.is_empty() {
             return 0.0;
@@ -42,6 +48,7 @@ impl GeneralStatistics {
         self.samples.iter().sum::<f64>() / self.samples.len() as f64
     }
 
+    /// Variance.
     pub fn variance(&self) -> f64 {
         let n = self.samples.len();
         if n < 2 {
@@ -52,10 +59,12 @@ impl GeneralStatistics {
         sum_sq / (n - 1) as f64
     }
 
+    /// Standard deviation.
     pub fn standard_deviation(&self) -> f64 {
         self.variance().sqrt()
     }
 
+    /// Skewness.
     pub fn skewness(&self) -> f64 {
         let n = self.samples.len();
         if n < 3 {
@@ -71,6 +80,7 @@ impl GeneralStatistics {
         sum * nf / ((nf - 1.0) * (nf - 2.0))
     }
 
+    /// Kurtosis.
     pub fn kurtosis(&self) -> f64 {
         let n = self.samples.len();
         if n < 4 {
@@ -88,10 +98,12 @@ impl GeneralStatistics {
             - 3.0 * (nf - 1.0) * (nf - 1.0) / ((nf - 2.0) * (nf - 3.0))
     }
 
+    /// Min.
     pub fn min(&self) -> f64 {
         self.samples.iter().cloned().fold(f64::INFINITY, f64::min)
     }
 
+    /// Max.
     pub fn max(&self) -> f64 {
         self.samples
             .iter()
@@ -153,6 +165,7 @@ pub struct IncrementalStatistics {
 }
 
 impl IncrementalStatistics {
+    /// New.
     pub fn new() -> Self {
         Self {
             n: 0,
@@ -165,6 +178,7 @@ impl IncrementalStatistics {
         }
     }
 
+    /// Add.
     pub fn add(&mut self, x: f64) {
         let n1 = self.n as f64;
         self.n += 1;
@@ -190,18 +204,22 @@ impl IncrementalStatistics {
         }
     }
 
+    /// Reset.
     pub fn reset(&mut self) {
         *self = Self::new();
     }
 
+    /// Count.
     pub fn count(&self) -> usize {
         self.n
     }
 
+    /// Mean.
     pub fn mean(&self) -> f64 {
         self.mean
     }
 
+    /// Variance.
     pub fn variance(&self) -> f64 {
         if self.n < 2 {
             return 0.0;
@@ -209,10 +227,12 @@ impl IncrementalStatistics {
         self.m2 / (self.n - 1) as f64
     }
 
+    /// Standard deviation.
     pub fn standard_deviation(&self) -> f64 {
         self.variance().sqrt()
     }
 
+    /// Skewness.
     pub fn skewness(&self) -> f64 {
         if self.n < 3 {
             return 0.0;
@@ -221,6 +241,7 @@ impl IncrementalStatistics {
         (n.sqrt() * self.m3) / self.m2.powf(1.5)
     }
 
+    /// Kurtosis.
     pub fn kurtosis(&self) -> f64 {
         if self.n < 4 {
             return 0.0;
@@ -229,10 +250,12 @@ impl IncrementalStatistics {
         (n * self.m4) / (self.m2 * self.m2) - 3.0
     }
 
+    /// Min.
     pub fn min(&self) -> f64 {
         self.min_val
     }
 
+    /// Max.
     pub fn max(&self) -> f64 {
         self.max_val
     }
@@ -251,32 +274,39 @@ pub struct RiskStatistics {
 }
 
 impl RiskStatistics {
+    /// New.
     pub fn new() -> Self {
         Self {
             inner: GeneralStatistics::new(),
         }
     }
 
+    /// Add.
     pub fn add(&mut self, value: f64) {
         self.inner.add(value);
     }
 
+    /// Reset.
     pub fn reset(&mut self) {
         self.inner.reset();
     }
 
+    /// Count.
     pub fn count(&self) -> usize {
         self.inner.count()
     }
 
+    /// Mean.
     pub fn mean(&self) -> f64 {
         self.inner.mean()
     }
 
+    /// Variance.
     pub fn variance(&self) -> f64 {
         self.inner.variance()
     }
 
+    /// Standard deviation.
     pub fn standard_deviation(&self) -> f64 {
         self.inner.standard_deviation()
     }
@@ -340,14 +370,18 @@ impl Default for RiskStatistics {
 /// Convergence tracker — records running mean/stderr for MC convergence checks.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ConvergenceStatistics {
+    /// Sample sizes.
     pub sample_sizes: Vec<usize>,
+    /// Means.
     pub means: Vec<f64>,
+    /// Std errors.
     pub std_errors: Vec<f64>,
     inner: IncrementalStatistics,
     next_checkpoint: usize,
 }
 
 impl ConvergenceStatistics {
+    /// New.
     pub fn new() -> Self {
         Self {
             sample_sizes: Vec::new(),
@@ -358,6 +392,7 @@ impl ConvergenceStatistics {
         }
     }
 
+    /// Add.
     pub fn add(&mut self, value: f64) {
         self.inner.add(value);
         if self.inner.count() >= self.next_checkpoint {
@@ -373,14 +408,17 @@ impl ConvergenceStatistics {
         }
     }
 
+    /// Count.
     pub fn count(&self) -> usize {
         self.inner.count()
     }
 
+    /// Mean.
     pub fn mean(&self) -> f64 {
         self.inner.mean()
     }
 
+    /// Standard error.
     pub fn standard_error(&self) -> f64 {
         if self.inner.count() > 1 {
             self.inner.standard_deviation() / (self.inner.count() as f64).sqrt()

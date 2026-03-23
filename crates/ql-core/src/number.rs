@@ -58,50 +58,83 @@ pub trait Number:
 
     // --- Transcendental functions ---
 
+    /// Exp.
     fn exp(self) -> Self;
+    /// Ln.
     fn ln(self) -> Self;
+    /// Sqrt.
     fn sqrt(self) -> Self;
+    /// Abs.
     fn abs(self) -> Self;
+    /// Powf.
     fn powf(self, n: Self) -> Self;
+    /// Powi.
     fn powi(self, n: i32) -> Self;
+    /// Sin.
     fn sin(self) -> Self;
+    /// Cos.
     fn cos(self) -> Self;
+    /// Max.
     fn max(self, other: Self) -> Self;
+    /// Min.
     fn min(self, other: Self) -> Self;
+    /// Recip.
     fn recip(self) -> Self;
+    /// Atan2.
     fn atan2(self, other: Self) -> Self;
+    /// Tan.
     fn tan(self) -> Self;
+    /// Asin.
     fn asin(self) -> Self;
+    /// Acos.
     fn acos(self) -> Self;
+    /// Atan.
     fn atan(self) -> Self;
+    /// Sinh.
     fn sinh(self) -> Self;
+    /// Cosh.
     fn cosh(self) -> Self;
+    /// Tanh.
     fn tanh(self) -> Self;
+    /// Log2.
     fn log2(self) -> Self;
+    /// Log10.
     fn log10(self) -> Self;
+    /// Floor.
     fn floor(self) -> Self;
+    /// Ceil.
     fn ceil(self) -> Self;
+    /// Fma.
     fn fma(self, a: Self, b: Self) -> Self {
         self * a + b
     }
 
     // --- Constants ---
 
+    /// Zero.
     fn zero() -> Self;
+    /// One.
     fn one() -> Self;
+    /// Two.
     fn two() -> Self {
         Self::from_f64(2.0)
     }
+    /// Half.
     fn half() -> Self {
         Self::from_f64(0.5)
     }
+    /// Pi.
     fn pi() -> Self;
+    /// Epsilon.
     fn epsilon() -> Self;
 
     // --- Comparisons (on value only for AD types) ---
 
+    /// Is positive.
     fn is_positive(self) -> bool;
+    /// Is negative.
     fn is_negative(self) -> bool;
+    /// Is zero.
     fn is_zero(self) -> bool {
         self.to_f64() == 0.0
     }

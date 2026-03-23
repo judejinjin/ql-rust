@@ -104,6 +104,7 @@ pub struct GaussianLHPLossModel {
 }
 
 impl GaussianLHPLossModel {
+    /// New.
     pub fn new(correlation: f64, default_prob: f64, recovery: f64) -> Self {
         Self { correlation, default_prob, recovery }
     }
@@ -178,6 +179,7 @@ pub struct BinomialLossModel {
 }
 
 impl BinomialLossModel {
+    /// New.
     pub fn new(n_names: usize, correlation: f64, default_prob: f64, recovery: f64) -> Self {
         Self { n_names, correlation, default_prob, recovery }
     }
@@ -286,6 +288,7 @@ pub struct RecursiveLossModel {
 }
 
 impl RecursiveLossModel {
+    /// New.
     pub fn new(default_probs: Vec<f64>, recovery_rates: Vec<f64>, notionals: Vec<f64>, correlation: f64) -> Self {
         let n = default_probs.len();
         assert_eq!(recovery_rates.len(), n);
@@ -401,6 +404,7 @@ pub struct SaddlepointLossModel {
 }
 
 impl SaddlepointLossModel {
+    /// New.
     pub fn new(n_names: usize, correlation: f64, default_prob: f64, recovery: f64) -> Self {
         Self { n_names, correlation, default_prob, recovery }
     }
@@ -497,6 +501,7 @@ pub struct RandomDefaultLossModel {
 }
 
 impl RandomDefaultLossModel {
+    /// New.
     pub fn new(
         default_probs: Vec<f64>,
         recovery_rates: Vec<f64>,
@@ -586,6 +591,7 @@ pub struct OneFactorGaussianCopula {
 }
 
 impl OneFactorGaussianCopula {
+    /// New.
     pub fn new(correlation: f64) -> Self {
         assert!((0.0..=1.0).contains(&correlation));
         Self { correlation }
@@ -635,6 +641,7 @@ pub struct OneFactorStudentCopula {
 }
 
 impl OneFactorStudentCopula {
+    /// New.
     pub fn new(nu: f64, correlation: f64) -> Self {
         assert!(nu > 2.0);
         assert!((0.0..=1.0).contains(&correlation));
@@ -686,6 +693,7 @@ pub struct OneFactorAffineSurvival {
 }
 
 impl OneFactorAffineSurvival {
+    /// New.
     pub fn new(correlation: f64, kappa: f64) -> Self {
         Self { correlation, kappa }
     }
@@ -714,6 +722,7 @@ pub struct DefaultProbabilityLatentModel {
 }
 
 impl DefaultProbabilityLatentModel {
+    /// New.
     pub fn new(factor_loadings: Vec<f64>) -> Self {
         let n = factor_loadings.len();
         Self { factor_loadings, n_names: n }
@@ -769,6 +778,7 @@ pub struct ConstantLossLatentModel {
 }
 
 impl ConstantLossLatentModel {
+    /// New.
     pub fn new(latent: DefaultProbabilityLatentModel, recovery: f64) -> Self {
         Self { latent, recovery }
     }
@@ -809,6 +819,7 @@ pub struct SpotLossLatentModel {
 }
 
 impl SpotLossLatentModel {
+    /// New.
     pub fn new(latent: DefaultProbabilityLatentModel, recovery_rates: Vec<f64>, notional_weights: Vec<f64>) -> Self {
         assert_eq!(recovery_rates.len(), latent.n_names);
         assert_eq!(notional_weights.len(), latent.n_names);
@@ -853,6 +864,7 @@ pub struct RandomLossLatentModel {
 }
 
 impl RandomLossLatentModel {
+    /// New.
     pub fn new(latent: DefaultProbabilityLatentModel, mean_recovery: f64, recovery_std: f64) -> Self {
         Self { latent, mean_recovery, recovery_std }
     }
@@ -890,6 +902,7 @@ pub struct RandomDefaultLatentModel {
 }
 
 impl RandomDefaultLatentModel {
+    /// New.
     pub fn new(latent: DefaultProbabilityLatentModel, n_paths: usize, seed: u64) -> Self {
         Self { latent, n_paths, seed }
     }
@@ -941,6 +954,7 @@ pub struct CorrelationStructure {
 }
 
 impl CorrelationStructure {
+    /// New.
     pub fn new(detachment_points: Vec<f64>, correlations: Vec<f64>) -> Self {
         assert_eq!(detachment_points.len(), correlations.len());
         Self { detachment_points, correlations }
@@ -982,6 +996,7 @@ pub struct BaseCorrelationStructure {
 }
 
 impl BaseCorrelationStructure {
+    /// New.
     pub fn new(maturities: Vec<f64>, correlation_structures: Vec<CorrelationStructure>) -> Self {
         assert_eq!(maturities.len(), correlation_structures.len());
         Self { maturities, correlation_structures }
@@ -1040,6 +1055,7 @@ pub struct BaseCorrelationLossModel {
 }
 
 impl BaseCorrelationLossModel {
+    /// New.
     pub fn new(
         bc_structure: BaseCorrelationStructure,
         default_prob: f64,
@@ -1187,10 +1203,15 @@ pub fn midpoint_cdo_engine(
 /// CDO engine result.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CdoEngineResult {
+    /// Npv.
     pub npv: f64,
+    /// Fair spread.
     pub fair_spread: f64,
+    /// Protection leg.
     pub protection_leg: f64,
+    /// Premium leg.
     pub premium_leg: f64,
+    /// Expected loss.
     pub expected_loss: f64,
 }
 
@@ -1262,11 +1283,17 @@ pub fn integral_ntd_engine(
 /// Nth-to-Default engine result.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NtdEngineResult {
+    /// Npv.
     pub npv: f64,
+    /// Fair spread.
     pub fair_spread: f64,
+    /// Protection leg.
     pub protection_leg: f64,
+    /// Premium leg.
     pub premium_leg: f64,
+    /// Prob nth default.
     pub prob_nth_default: f64,
+    /// Expected defaults.
     pub expected_defaults: f64,
 }
 

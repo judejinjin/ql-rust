@@ -185,10 +185,16 @@ pub enum ObservationShift {
     None,
     /// Lookback: shift observation dates backward by `days` business days.
     /// Each accrual date d observes the fixing from d − lookback_days.
-    Lookback { days: u32 },
+    Lookback {
+        /// Number of business days to look back.
+        days: u32,
+    },
     /// Lockout: freeze the last `days` fixings to match the fixing
     /// observed `days` business days before the accrual end.
-    Lockout { days: u32 },
+    Lockout {
+        /// Number of business days before accrual end.
+        days: u32,
+    },
 }
 
 /// Extended overnight indexed coupon pricer with lookback/lockout support.

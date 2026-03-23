@@ -39,6 +39,7 @@
 //! }
 //! assert!(safe_sqrt(-1.0).is_err());
 //! ```
+#![warn(missing_docs)]
 
 pub mod engine;
 pub mod errors;

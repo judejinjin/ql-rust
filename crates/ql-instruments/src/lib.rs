@@ -37,6 +37,7 @@
 //! - [`OptionType`] — `Call` or `Put`
 //! - [`Payoff`] — option payoff functions
 //! - [`Exercise`] — exercise style (European, American, Bermudan)
+#![warn(missing_docs)]
 
 pub mod payoff;
 pub mod instrument;

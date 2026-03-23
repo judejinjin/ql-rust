@@ -52,6 +52,7 @@ pub struct ConstantLocalVol {
 }
 
 impl ConstantLocalVol {
+    /// New.
     pub fn new(reference_date: Date, vol: f64, day_counter: DayCounter) -> Self {
         Self {
             reference_date,
@@ -211,6 +212,7 @@ pub struct GridModelLocalVolSurface {
 }
 
 impl GridModelLocalVolSurface {
+    /// New.
     pub fn new(
         reference_date: Date,
         day_counter: DayCounter,
@@ -259,6 +261,7 @@ pub struct ImpliedVolTermStructure {
 }
 
 impl ImpliedVolTermStructure {
+    /// New.
     pub fn new(
         underlying: Arc<dyn BlackVolTermStructure>,
         reference_date: Date,
@@ -315,6 +318,7 @@ pub struct InterpolatedHazardRateCurve {
 }
 
 impl InterpolatedHazardRateCurve {
+    /// New.
     pub fn new(
         reference_date: Date,
         day_counter: DayCounter,
@@ -406,6 +410,7 @@ pub struct InterpolatedSurvivalProbCurve {
 }
 
 impl InterpolatedSurvivalProbCurve {
+    /// New.
     pub fn new(
         reference_date: Date,
         day_counter: DayCounter,
@@ -501,6 +506,7 @@ pub struct CapFloorTermVolCurve {
 }
 
 impl CapFloorTermVolCurve {
+    /// New.
     pub fn new(
         reference_date: Date,
         day_counter: DayCounter,
@@ -534,6 +540,7 @@ impl CapFloorTermVolCurve {
         self.vols[i] * (1.0 - alpha) + self.vols[i + 1] * alpha
     }
 
+    /// Volatility type.
     pub fn volatility_type(&self) -> &VolatilityType {
         &self.vol_type
     }
@@ -585,6 +592,7 @@ pub struct ConstantOptionletVol {
 }
 
 impl ConstantOptionletVol {
+    /// New.
     pub fn new(
         reference_date: Date,
         vol: f64,
@@ -644,6 +652,7 @@ pub struct SpreadedOptionletVol {
 }
 
 impl SpreadedOptionletVol {
+    /// New.
     pub fn new(
         underlying: Arc<dyn OptionletVolatilityStructure>,
         spread: f64,
@@ -706,6 +715,7 @@ pub struct InterpolatedZeroInflationCurve {
 }
 
 impl InterpolatedZeroInflationCurve {
+    /// New.
     pub fn new(
         reference_date: Date,
         day_counter: DayCounter,
@@ -788,6 +798,7 @@ pub struct Gaussian1dSwaptionVol {
 }
 
 impl Gaussian1dSwaptionVol {
+    /// New.
     pub fn new(
         reference_date: Date,
         day_counter: DayCounter,

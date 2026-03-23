@@ -38,6 +38,7 @@
 //! );
 //! assert!(coupon.amount() > 0.0);
 //! ```
+#![warn(missing_docs)]
 
 pub mod cashflow;
 pub mod coupon;

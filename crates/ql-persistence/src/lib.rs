@@ -52,6 +52,7 @@
 //! let loaded = store.get_trade(&id).unwrap();
 //! assert_eq!(loaded.notional, 1_000_000.0);
 //! ```
+#![warn(missing_docs)]
 
 pub mod domain;
 #[cfg(feature = "redb")]

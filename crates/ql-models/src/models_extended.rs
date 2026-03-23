@@ -30,13 +30,19 @@ use crate::parameter::{Parameter, PositiveConstraint};
 pub struct HestonSlvFdmModel {
     /// Heston parameters
     pub v0: f64,
+    /// Kappa.
     pub kappa: f64,
+    /// Theta.
     pub theta: f64,
+    /// Sigma.
     pub sigma: f64,
+    /// Rho.
     pub rho: f64,
     /// Market parameters
     pub spot: f64,
+    /// Rate.
     pub rate: f64,
+    /// Dividend.
     pub dividend: f64,
     /// Time grid for leverage function
     pub time_grid: Vec<f64>,

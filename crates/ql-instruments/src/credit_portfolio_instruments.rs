@@ -58,7 +58,12 @@ pub enum RecoveryRateModel {
     /// Constant recovery.
     Constant(f64),
     /// Stochastic recovery: mean + std dev (normal).
-    Stochastic { mean: f64, std_dev: f64 },
+    Stochastic {
+        /// Mean recovery rate.
+        mean: f64,
+        /// Standard deviation of recovery rate.
+        std_dev: f64,
+    },
     /// Recovery depends on seniority.
     Seniority(Vec<(u32, f64)>),
 }
@@ -163,6 +168,7 @@ impl HomogeneousPoolDef {
         }
     }
 
+    /// Total notional.
     pub fn total_notional(&self) -> f64 {
         self.n_names as f64 * self.notional_per_name
     }
@@ -171,14 +177,17 @@ impl HomogeneousPoolDef {
 /// Inhomogeneous pool: each name has distinct parameters.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InhomogeneousPoolDef {
+    /// Pool.
     pub pool: Pool,
 }
 
 impl InhomogeneousPoolDef {
+    /// New.
     pub fn new(pool: Pool) -> Self {
         Self { pool }
     }
 
+    /// Total notional.
     pub fn total_notional(&self) -> f64 {
         self.pool.total_notional()
     }

@@ -49,6 +49,7 @@ impl HaltonSequence {
         (0..n).map(|_| self.next_point()).collect()
     }
 
+    /// Dimension.
     pub fn dimension(&self) -> usize {
         self.bases.len()
     }
@@ -132,6 +133,7 @@ impl SobolSequence {
         (0..n).map(|_| self.next_point()).collect()
     }
 
+    /// Dimension.
     pub fn dimension(&self) -> usize {
         self.dimension
     }
@@ -155,10 +157,13 @@ pub struct BrownianBridge {
     pub order: Vec<usize>,
     /// Left and right indices for bridge construction.
     pub left: Vec<usize>,
+    /// Right.
     pub right: Vec<usize>,
     /// Bridge weights.
     pub left_weight: Vec<f64>,
+    /// Right weight.
     pub right_weight: Vec<f64>,
+    /// Std dev.
     pub std_dev: Vec<f64>,
 }
 

@@ -17,9 +17,13 @@ use std::f64::consts::PI;
 /// Barrier type for Vanna-Volga engine.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 pub enum VvBarrierType {
+    /// Down And Out.
     DownAndOut,
+    /// Up And Out.
     UpAndOut,
+    /// Down And In.
     DownAndIn,
+    /// Up And In.
     UpAndIn,
 }
 

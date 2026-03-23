@@ -6,9 +6,13 @@ use std::fmt;
 /// Units for a time period.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum TimeUnit {
+    /// Days.
     Days,
+    /// Weeks.
     Weeks,
+    /// Months.
     Months,
+    /// Years.
     Years,
 }
 

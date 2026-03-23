@@ -27,6 +27,7 @@
 //! );
 //! assert!((result.npv - 10.45).abs() < 1.0); // approximate
 //! ```
+#![warn(missing_docs)]
 
 pub mod monte_carlo;
 pub mod mc_engines;

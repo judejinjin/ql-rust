@@ -17,9 +17,13 @@ use crate::optimization::{Simplex, CostFunction, EndCriteria};
 /// ABCD parametric volatility function: σ(t) = (a + b·t) · e^{−c·t} + d.
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct AbcdFunction {
+    /// A.
     pub a: f64,
+    /// B.
     pub b: f64,
+    /// C.
     pub c: f64,
+    /// D.
     pub d: f64,
 }
 

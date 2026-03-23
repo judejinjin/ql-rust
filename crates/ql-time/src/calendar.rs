@@ -55,6 +55,7 @@ pub enum BrazilMarket {
 /// higher-level methods like `advance()` and `adjust()` for date arithmetic.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Calendar {
+    /// Null Calendar.
     NullCalendar,
     /// Only weekends (Saturday + Sunday) are holidays.
     WeekendsOnly,

@@ -302,7 +302,9 @@ pub fn calibrate_slv(
 /// Result from SLV Monte Carlo pricing.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SlvMcResult {
+    /// Price.
     pub price: f64,
+    /// Std error.
     pub std_error: f64,
 }
 

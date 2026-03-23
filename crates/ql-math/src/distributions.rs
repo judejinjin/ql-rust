@@ -168,14 +168,17 @@ impl StudentTDistribution {
             .map_err(|e| QLError::InvalidArgument(format!("invalid Student-t params: {e}")))
     }
 
+    /// Cdf.
     pub fn cdf(&self, x: f64) -> f64 {
         ContinuousCDF::cdf(&self.inner, x)
     }
 
+    /// Pdf.
     pub fn pdf(&self, x: f64) -> f64 {
         self.inner.pdf(x)
     }
 
+    /// Inverse cdf.
     pub fn inverse_cdf(&self, p: f64) -> QLResult<f64> {
         if !(0.0..=1.0).contains(&p) {
             return Err(QLError::InvalidArgument(format!(
@@ -204,14 +207,17 @@ impl GammaDistribution {
             .map_err(|e| QLError::InvalidArgument(format!("invalid Gamma params: {e}")))
     }
 
+    /// Cdf.
     pub fn cdf(&self, x: f64) -> f64 {
         ContinuousCDF::cdf(&self.inner, x)
     }
 
+    /// Pdf.
     pub fn pdf(&self, x: f64) -> f64 {
         self.inner.pdf(x)
     }
 
+    /// Inverse cdf.
     pub fn inverse_cdf(&self, p: f64) -> QLResult<f64> {
         if !(0.0..=1.0).contains(&p) {
             return Err(QLError::InvalidArgument(format!(
@@ -233,6 +239,7 @@ pub struct BinomialDistribution {
 }
 
 impl BinomialDistribution {
+    /// New.
     pub fn new(n: u64, p: f64) -> QLResult<Self> {
         statrs::distribution::Binomial::new(p, n)
             .map(|inner| Self { inner })

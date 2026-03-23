@@ -136,24 +136,33 @@ impl VanillaStorageOption {
 /// Result from swing option pricing.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SwingOptionPricingResult {
+    /// Price.
     pub price: f64,
+    /// Delta.
     pub delta: f64,
+    /// Expected exercises.
     pub expected_exercises: f64,
 }
 
 /// Result from storage option pricing.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct StorageOptionPricingResult {
+    /// Value.
     pub value: f64,
+    /// Optimal initial action.
     pub optimal_initial_action: StorageAction,
+    /// Expected final level.
     pub expected_final_level: f64,
 }
 
 /// Possible storage actions.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum StorageAction {
+    /// Inject.
     Inject(f64),
+    /// Withdraw.
     Withdraw(f64),
+    /// Do Nothing.
     DoNothing,
 }
 

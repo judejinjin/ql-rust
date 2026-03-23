@@ -24,6 +24,7 @@
 //! let greeks = bs_greeks_forward_ad(100.0, 100.0, 0.05, 0.0, 0.20, 1.0, OptionKind::Call);
 //! assert!((greeks.delta - 0.6368).abs() < 0.01);
 //! ```
+#![warn(missing_docs)]
 
 pub mod number;
 pub mod dual;

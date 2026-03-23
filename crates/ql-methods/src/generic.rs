@@ -25,9 +25,13 @@ use ql_core::Number;
 ///   `lower[i] * u[i-1] + diag[i] * u[i] + upper[i] * u[i+1]`
 #[derive(Debug, Clone)]
 pub struct TripleBandOpGeneric<T: Number> {
+    /// N.
     pub n: usize,
+    /// Lower.
     pub lower: Vec<T>,
+    /// Diag.
     pub diag: Vec<T>,
+    /// Upper.
     pub upper: Vec<T>,
 }
 
@@ -253,7 +257,9 @@ pub struct Heston2dOpsGeneric<T: Number> {
     pub op_v: TripleBandOpGeneric<T>,
     /// Cross-derivative weights (n_x × n_v flat array).
     pub cross: Vec<T>,
+    /// N x.
     pub n_x: usize,
+    /// N v.
     pub n_v: usize,
 }
 
@@ -354,7 +360,9 @@ pub fn build_heston_ops_generic<T: Number>(
 pub struct Fd2dResultGeneric<T: Number> {
     /// Solution on 2D grid (row-major: v-index × x-index).
     pub values: Vec<T>,
+    /// Grid x.
     pub grid_x: Vec<f64>,
+    /// Grid v.
     pub grid_v: Vec<f64>,
 }
 
@@ -443,9 +451,13 @@ pub fn fd_2d_solve_generic<T: Number>(
 /// Result from generic binomial tree.
 #[derive(Debug, Clone, Copy)]
 pub struct LatticeResultGeneric<T: Number> {
+    /// Npv.
     pub npv: T,
+    /// Delta.
     pub delta: T,
+    /// Gamma.
     pub gamma: T,
+    /// Theta.
     pub theta: T,
 }
 

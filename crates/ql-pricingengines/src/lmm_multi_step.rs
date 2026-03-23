@@ -37,10 +37,15 @@ use crate::lmm_products::{LmmProduct, ExerciseType};
 /// Multi-step swap — fixed vs floating, accruing at each step.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MultiStepSwap {
+    /// Start step.
     pub start_step: usize,
+    /// End step.
     pub end_step: usize,
+    /// Fixed rate.
     pub fixed_rate: f64,
+    /// Notional.
     pub notional: f64,
+    /// Is payer.
     pub is_payer: bool,
 }
 
@@ -66,10 +71,15 @@ impl LmmProduct for MultiStepSwap {
 /// Multi-step swaption — exercisable at each step to enter a swap.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MultiStepSwaption {
+    /// Exercise start.
     pub exercise_start: usize,
+    /// Swap end.
     pub swap_end: usize,
+    /// Strike.
     pub strike: f64,
+    /// Is payer.
     pub is_payer: bool,
+    /// Notional.
     pub notional: f64,
 }
 
@@ -109,10 +119,15 @@ impl LmmProduct for MultiStepSwaption {
 /// Multi-step caplets/floorlets — pays max(f_i − K, 0) or max(K − f_i, 0).
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MultiStepOptionlets {
+    /// Start step.
     pub start_step: usize,
+    /// End step.
     pub end_step: usize,
+    /// Strike.
     pub strike: f64,
+    /// Is cap.
     pub is_cap: bool,
+    /// Notional.
     pub notional: f64,
 }
 
@@ -142,9 +157,13 @@ impl LmmProduct for MultiStepOptionlets {
 /// Multi-step forward rate agreements.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MultiStepForwards {
+    /// Start step.
     pub start_step: usize,
+    /// End step.
     pub end_step: usize,
+    /// Strike.
     pub strike: f64,
+    /// Notional.
     pub notional: f64,
 }
 
@@ -169,8 +188,11 @@ impl LmmProduct for MultiStepForwards {
 /// Coterminal swap portfolio — portfolio of swaps all maturing at the same date.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MultiStepCoterminalSwaps {
+    /// End step.
     pub end_step: usize,
+    /// Fixed rate.
     pub fixed_rate: f64,
+    /// Notional.
     pub notional: f64,
 }
 
@@ -195,10 +217,15 @@ impl LmmProduct for MultiStepCoterminalSwaps {
 /// Coterminal swaption – Bermudan on coterminal swap.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MultiStepCoterminalSwaptions {
+    /// Exercise start.
     pub exercise_start: usize,
+    /// End step.
     pub end_step: usize,
+    /// Strike.
     pub strike: f64,
+    /// Is payer.
     pub is_payer: bool,
+    /// Notional.
     pub notional: f64,
 }
 
@@ -239,9 +266,13 @@ impl LmmProduct for MultiStepCoterminalSwaptions {
 /// Coinitial swap portfolio — swaps all starting at the same date.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MultiStepCoinitialSwaps {
+    /// Start step.
     pub start_step: usize,
+    /// Maturities.
     pub maturities: Vec<usize>,
+    /// Fixed rate.
     pub fixed_rate: f64,
+    /// Notional.
     pub notional: f64,
 }
 
@@ -272,11 +303,17 @@ impl LmmProduct for MultiStepCoinitialSwaps {
 /// Inverse floater note — pays max(cap − f_i, 0) × leverage.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MultiStepInverseFloater {
+    /// Start step.
     pub start_step: usize,
+    /// End step.
     pub end_step: usize,
+    /// Cap rate.
     pub cap_rate: f64,
+    /// Leverage.
     pub leverage: f64,
+    /// Floor rate.
     pub floor_rate: f64,
+    /// Notional.
     pub notional: f64,
 }
 
@@ -302,10 +339,15 @@ impl LmmProduct for MultiStepInverseFloater {
 /// Ratchet product — strike ratchets to previous fixing.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MultiStepRatchet {
+    /// Start step.
     pub start_step: usize,
+    /// End step.
     pub end_step: usize,
+    /// Initial strike.
     pub initial_strike: f64,
+    /// Notional.
     pub notional: f64,
+    /// Spread.
     pub spread: f64,
 }
 
@@ -335,10 +377,15 @@ impl LmmProduct for MultiStepRatchet {
 /// Accrues coupons until a target level is reached, then redeems at par.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MultiStepTarn {
+    /// Start step.
     pub start_step: usize,
+    /// End step.
     pub end_step: usize,
+    /// Strike.
     pub strike: f64,
+    /// Target.
     pub target: f64,
+    /// Notional.
     pub notional: f64,
 }
 
@@ -365,6 +412,7 @@ impl LmmProduct for MultiStepTarn {
 /// Null product for benchmarking — produces zero cashflows.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MultiStepNothing {
+    /// N steps.
     pub n_steps: usize,
 }
 
@@ -385,8 +433,11 @@ impl LmmProduct for MultiStepNothing {
 /// One-step FRA portfolio — a single payment at one step.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct OneStepForwards {
+    /// Step.
     pub step: usize,
+    /// Strikes.
     pub strikes: Vec<f64>,
+    /// Notional.
     pub notional: f64,
 }
 
@@ -415,9 +466,13 @@ impl LmmProduct for OneStepForwards {
 /// One-step caplet/floorlet at a single step.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct OneStepOptionlets {
+    /// Step.
     pub step: usize,
+    /// Strikes.
     pub strikes: Vec<f64>,
+    /// Is cap.
     pub is_cap: bool,
+    /// Notional.
     pub notional: f64,
 }
 
@@ -447,8 +502,11 @@ impl LmmProduct for OneStepOptionlets {
 /// One-step coterminal swap values.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct OneStepCoterminalSwaps {
+    /// Step.
     pub step: usize,
+    /// Fixed rate.
     pub fixed_rate: f64,
+    /// Notional.
     pub notional: f64,
 }
 
@@ -478,9 +536,13 @@ impl LmmProduct for OneStepCoterminalSwaps {
 /// One-step coinitial swaps.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct OneStepCoinitialSwaps {
+    /// Step.
     pub step: usize,
+    /// Maturities.
     pub maturities: Vec<usize>,
+    /// Fixed rate.
     pub fixed_rate: f64,
+    /// Notional.
     pub notional: f64,
 }
 
@@ -520,11 +582,17 @@ impl LmmProduct for OneStepCoinitialSwaps {
 /// when the issuer/holder can exercise.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CallSpecifiedMultiProduct {
+    /// Start step.
     pub start_step: usize,
+    /// End step.
     pub end_step: usize,
+    /// Call steps.
     pub call_steps: Vec<usize>,
+    /// Call price.
     pub call_price: f64,
+    /// Is callable.
     pub is_callable: bool,
+    /// Notional.
     pub notional: f64,
 }
 
@@ -558,8 +626,11 @@ impl LmmProduct for CallSpecifiedMultiProduct {
 /// Cash rebate paid upon exercise.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CashRebate {
+    /// Exercise steps.
     pub exercise_steps: Vec<usize>,
+    /// Rebate amount.
     pub rebate_amount: f64,
+    /// Total steps.
     pub total_steps: usize,
 }
 
@@ -578,10 +649,15 @@ impl LmmProduct for CashRebate {
 /// Exercise adapter — wraps an existing product to add exercise functionality.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ExerciseAdapter {
+    /// Exercise start.
     pub exercise_start: usize,
+    /// Exercise end.
     pub exercise_end: usize,
+    /// Underlying end.
     pub underlying_end: usize,
+    /// Strike.
     pub strike: f64,
+    /// Notional.
     pub notional: f64,
 }
 

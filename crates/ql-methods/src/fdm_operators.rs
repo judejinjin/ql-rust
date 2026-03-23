@@ -15,9 +15,13 @@
 /// bands `lower[i]`, `diag[i]`, `upper[i]`.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TripleBandOp {
+    /// N.
     pub n: usize,
+    /// Lower.
     pub lower: Vec<f64>,
+    /// Diag.
     pub diag: Vec<f64>,
+    /// Upper.
     pub upper: Vec<f64>,
 }
 
@@ -187,6 +191,7 @@ pub struct Heston2dOps {
     pub v_ops: Vec<TripleBandOp>,
     /// Grid sizes.
     pub nx: usize,
+    /// Nv.
     pub nv: usize,
     /// Correlation mixing coefficients for explicit cross derivative.
     pub cross_coeffs: Vec<f64>,

@@ -61,12 +61,19 @@ pub fn svi_volatility(
 /// queries at arbitrary strikes.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SviSmileSection {
+    /// Forward.
     pub forward: f64,
+    /// Expiry.
     pub expiry: f64,
+    /// A.
     pub a: f64,
+    /// B.
     pub b: f64,
+    /// Rho.
     pub rho: f64,
+    /// M.
     pub m: f64,
+    /// Sigma.
     pub sigma: f64,
 }
 

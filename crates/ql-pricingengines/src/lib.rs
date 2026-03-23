@@ -32,6 +32,7 @@
 //! - [`callable_bond_engine`] — callable bond pricing
 //! - [`convertible_bond_engine`] — convertible bond pricing
 //! - [`credit_models`] — Gaussian copula, nth-to-default, CDS options
+#![warn(missing_docs)]
 
 pub mod american_engines;
 pub mod analytic_european;

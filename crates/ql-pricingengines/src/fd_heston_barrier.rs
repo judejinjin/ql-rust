@@ -63,7 +63,9 @@ pub struct FdHestonDoubleBarrierResult {
     pub delta: f64,
     /// Number of grid nodes.
     pub ns: usize,
+    /// Nv.
     pub nv: usize,
+    /// Nt.
     pub nt: usize,
 }
 

@@ -49,7 +49,10 @@ pub enum CatTrigger {
     /// Industry index (e.g., PCS).
     IndustryIndex,
     /// Parametric (physical measurement threshold).
-    Parametric { parameter_name: String },
+    Parametric {
+        /// Name of the physical parameter.
+        parameter_name: String,
+    },
     /// Modelled loss from a catastrophe model.
     ModelledLoss,
 }
@@ -67,13 +70,29 @@ pub struct CatLossModel {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum SeverityDistribution {
     /// Lognormal(μ, σ): loss = exp(μ + σ·Z)
-    Lognormal { mu: f64, sigma: f64 },
+    Lognormal {
+        /// Mean of the log-loss.
+        mu: f64,
+        /// Standard deviation of the log-loss.
+        sigma: f64,
+    },
     /// Pareto(α, x_min): P(L > x) = (x_min/x)^α for x ≥ x_min
-    Pareto { alpha: f64, x_min: f64 },
+    Pareto {
+        /// Tail index.
+        alpha: f64,
+        /// Minimum loss threshold.
+        x_min: f64,
+    },
     /// Exponential(λ): loss = Exp(λ)
-    Exponential { lambda: f64 },
+    Exponential {
+        /// Rate parameter.
+        lambda: f64,
+    },
     /// Fixed loss amount per event.
-    Fixed { amount: f64 },
+    Fixed {
+        /// Loss amount per event.
+        amount: f64,
+    },
 }
 
 /// Result from CAT bond pricing.

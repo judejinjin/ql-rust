@@ -8,7 +8,9 @@ use serde::{Deserialize, Serialize};
 /// Type of an inflation cap/floor.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum InflationCapFloorType {
+    /// Cap.
     Cap,
+    /// Floor.
     Floor,
 }
 

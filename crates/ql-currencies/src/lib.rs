@@ -29,6 +29,7 @@
 //! let converted = fx.exchange(&Money::new(100.0, Currency::eur())).unwrap();
 //! assert!((converted.amount - 110.0).abs() < 1e-10);
 //! ```
+#![warn(missing_docs)]
 
 pub mod currency;
 pub mod exchange_rate;

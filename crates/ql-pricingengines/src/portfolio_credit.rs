@@ -368,7 +368,9 @@ pub fn bilateral_cva(
 /// times the tranche survival probability.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CdoTrancheSpread {
+    /// Attachment.
     pub attachment: f64,
+    /// Detachment.
     pub detachment: f64,
     /// Expected loss of the tranche (0..1 of tranche notional).
     pub expected_loss: f64,

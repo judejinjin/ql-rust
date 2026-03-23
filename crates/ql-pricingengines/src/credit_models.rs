@@ -28,6 +28,7 @@ pub struct GaussianCopulaLHP {
 }
 
 impl GaussianCopulaLHP {
+    /// New.
     pub fn new(n_names: usize, correlation: f64, recovery: f64, default_prob: f64) -> Self {
         Self {
             n_names,
@@ -170,8 +171,11 @@ pub fn nth_to_default_mc(
 /// Result of n-th to default MC.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct NtdResult {
+    /// Price.
     pub price: f64,
+    /// Std error.
     pub std_error: f64,
+    /// Expected defaults.
     pub expected_defaults: f64,
 }
 

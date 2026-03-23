@@ -54,11 +54,14 @@ pub struct SubscriptionId(u64);
 /// Which price field to extract from a [`FeedEvent`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum FeedField {
+    /// Bid.
     Bid,
+    /// Ask.
     Ask,
     /// Average of bid and ask; falls back to `Last` if either is absent.
     #[default]
     Mid,
+    /// Last.
     Last,
 }
 

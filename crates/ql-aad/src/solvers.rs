@@ -35,14 +35,20 @@ use crate::number::Number;
 pub enum SolverError {
     /// Newton failed to converge within `max_iter` iterations.
     MaxIterationsExceeded {
+        /// Field.
         last_x: f64,
+        /// Field.
         last_fx: f64,
+        /// Field.
         iterations: usize,
     },
     /// Derivative was zero (or nearly zero), cannot proceed.
     ZeroDerivative {
+        /// Field.
         x: f64,
+        /// Field.
         fx: f64,
+        /// Field.
         iteration: usize,
     },
 }

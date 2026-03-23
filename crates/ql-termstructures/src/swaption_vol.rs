@@ -50,6 +50,7 @@ pub struct SwaptionConstantVol {
 }
 
 impl SwaptionConstantVol {
+    /// New.
     pub fn new(vol: f64) -> Self {
         Self { vol }
     }
@@ -213,10 +214,15 @@ impl SwaptionVolatilityStructure for SwaptionVolCube {
 /// SABR parameters for one (expiry, tenor) point.
 #[derive(Debug, Clone, Copy)]
 pub struct SabrParams {
+    /// Alpha.
     pub alpha: f64,
+    /// Beta.
     pub beta: f64,
+    /// Rho.
     pub rho: f64,
+    /// Nu.
     pub nu: f64,
+    /// Forward.
     pub forward: f64,
 }
 
@@ -281,10 +287,12 @@ pub trait CapFloorTermVolStructure {
 /// Constant cap/floor term vol.
 #[derive(Debug, Clone)]
 pub struct ConstantCapFloorTermVol {
+    /// Vol.
     pub vol: f64,
 }
 
 impl ConstantCapFloorTermVol {
+    /// New.
     pub fn new(vol: f64) -> Self {
         Self { vol }
     }
@@ -308,6 +316,7 @@ pub struct CapFloorTermVolSurface {
 }
 
 impl CapFloorTermVolSurface {
+    /// New.
     pub fn new(expiries: Vec<f64>, strikes: Vec<f64>, vols: Vec<Vec<f64>>) -> Self {
         Self {
             expiries,

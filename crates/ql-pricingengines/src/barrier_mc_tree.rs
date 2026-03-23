@@ -11,9 +11,13 @@ use rand_distr::StandardNormal;
 /// Barrier type.
 #[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
 pub enum McBarrierType {
+    /// Down And Out.
     DownAndOut,
+    /// Up And Out.
     UpAndOut,
+    /// Down And In.
     DownAndIn,
+    /// Up And In.
     UpAndIn,
 }
 

@@ -50,15 +50,19 @@ impl CIRModel {
         }
     }
 
+    /// Kappa.
     pub fn kappa(&self) -> f64 {
         self.kappa
     }
+    /// Theta.
     pub fn theta(&self) -> f64 {
         self.theta
     }
+    /// Sigma.
     pub fn sigma(&self) -> f64 {
         self.sigma
     }
+    /// R0.
     pub fn r0(&self) -> f64 {
         self.r0
     }

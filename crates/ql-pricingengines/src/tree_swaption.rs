@@ -13,6 +13,7 @@
 /// Result from a tree-based pricing engine.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TreeResult {
+    /// Npv.
     pub npv: f64,
 }
 
@@ -382,6 +383,7 @@ pub fn tree_cap_floor(
 /// Result from an FD-based pricing engine.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct FdResult {
+    /// Npv.
     pub npv: f64,
 }
 
@@ -769,7 +771,9 @@ fn interpolate_log_df(t: f64, dfs: &[f64], times: &[f64]) -> f64 {
 /// Result from MC Hull-White cap/floor pricing.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct McHwResult {
+    /// Npv.
     pub npv: f64,
+    /// Std error.
     pub std_error: f64,
 }
 

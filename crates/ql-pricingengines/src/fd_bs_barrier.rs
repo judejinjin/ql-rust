@@ -8,9 +8,13 @@
 /// Barrier type for FD barrier engine.
 #[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
 pub enum FdBsBarrierType {
+    /// Down And Out.
     DownAndOut,
+    /// Up And Out.
     UpAndOut,
+    /// Down And In.
     DownAndIn,
+    /// Up And In.
     UpAndIn,
 }
 

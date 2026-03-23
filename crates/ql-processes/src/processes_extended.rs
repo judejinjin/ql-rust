@@ -21,6 +21,7 @@ use serde::{Deserialize, Serialize};
 /// The state variable x = r - φ(t) is an Ornstein-Uhlenbeck process.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GsrProcess {
+    /// X0.
     pub x0: f64,
     /// Piecewise-constant mean reversion (κ) values.
     pub kappa: Vec<f64>,
@@ -33,6 +34,7 @@ pub struct GsrProcess {
 }
 
 impl GsrProcess {
+    /// New.
     pub fn new(x0: f64, kappa: Vec<f64>, sigma: Vec<f64>) -> Self {
         Self {
             x0,
@@ -113,6 +115,7 @@ impl StochasticProcess1D for GsrProcess {
 /// where f is calibrated to market instruments.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MarkovFunctionalStateProcess {
+    /// X0.
     pub x0: f64,
     /// Mean reversion.
     pub kappa: f64,
@@ -121,6 +124,7 @@ pub struct MarkovFunctionalStateProcess {
 }
 
 impl MarkovFunctionalStateProcess {
+    /// New.
     pub fn new(kappa: f64) -> Self {
         Self {
             x0: 0.0,
@@ -129,6 +133,7 @@ impl MarkovFunctionalStateProcess {
         }
     }
 
+    /// With vol.
     pub fn with_vol(mut self, vol: f64) -> Self {
         self.vol = vol;
         self
@@ -179,6 +184,7 @@ impl StochasticProcess1D for MarkovFunctionalStateProcess {
 /// This wrapper applies the measure change.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ForwardMeasureProcess {
+    /// X0.
     pub x0: f64,
     /// Underlying drift μ (constant approximation).
     pub base_drift: f64,
@@ -189,6 +195,7 @@ pub struct ForwardMeasureProcess {
 }
 
 impl ForwardMeasureProcess {
+    /// New.
     pub fn new(x0: f64, base_drift: f64, base_diffusion: f64, bond_volatility: f64) -> Self {
         Self {
             x0,

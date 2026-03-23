@@ -59,6 +59,7 @@ pub trait FdmLinearOpComposite: FdmLinearOp {
 pub struct NinePointLinearOp {
     /// Grid sizes.
     pub n1: usize,
+    /// N2.
     pub n2: usize,
     /// 9 weight arrays of length n1*n2: [(-1,-1), (-1,0), (-1,+1),
     ///   (0,-1), (0,0), (0,+1), (+1,-1), (+1,0), (+1,+1)]
@@ -122,6 +123,7 @@ impl NinePointLinearOp {
 /// Uses central differences: ∂u/∂x ≈ (u[i+1] − u[i−1]) / (x[i+1] − x[i−1]).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FirstDerivativeOp {
+    /// Inner.
     pub inner: TripleBandOp,
 }
 
@@ -163,6 +165,7 @@ impl FirstDerivativeOp {
 ///   ∂²u/∂x² ≈ 2 [ u[i+1]/(dx⁺(dx⁺+dx⁻)) − u[i]/(dx⁺ dx⁻) + u[i−1]/(dx⁻(dx⁺+dx⁻)) ]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SecondDerivativeOp {
+    /// Inner.
     pub inner: TripleBandOp,
 }
 
@@ -199,7 +202,9 @@ impl SecondDerivativeOp {
 ///              / [(x_{i+1}−x_{i−1})(y_{j+1}−y_{j−1})]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SecondOrderMixedDerivativeOp {
+    /// N1.
     pub n1: usize,
+    /// N2.
     pub n2: usize,
     /// Coefficients on the 4 corners (flat array, n1*n2).
     pub coeff: Vec<f64>,
@@ -249,12 +254,15 @@ impl SecondOrderMixedDerivativeOp {
 /// `2*half_width + 1`-point stencil via Fornberg's algorithm.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NthOrderDerivativeOp {
+    /// Order.
     pub order: usize,
     /// Stencil half-width.
     pub half_width: usize,
     /// Coefficients per interior point: `coeffs[i]` is the stencil for point i.
     pub n: usize,
+    /// Coeffs.
     pub coeffs: Vec<Vec<f64>>,
+    /// Offsets.
     pub offsets: Vec<Vec<i32>>,
 }
 
@@ -351,6 +359,7 @@ fn fornberg_weights(x0: f64, pts: &[f64], order: usize) -> Vec<f64> {
 /// (e.g., for Neumann or Robin conditions).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModTripleBandLinearOp {
+    /// Inner.
     pub inner: TripleBandOp,
     /// Override lower-boundary row: (lower, diag, upper) at i=0.
     pub lower_bc: Option<(f64, f64, f64)>,
@@ -359,6 +368,7 @@ pub struct ModTripleBandLinearOp {
 }
 
 impl ModTripleBandLinearOp {
+    /// New.
     pub fn new(inner: TripleBandOp) -> Self {
         Self {
             inner,
@@ -407,8 +417,11 @@ impl ModTripleBandLinearOp {
 /// Optionally supports local volatility σ(x).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FdmBlackScholesOp {
+    /// Grid.
     pub grid: Vec<f64>,
+    /// R.
     pub r: f64,
+    /// Q.
     pub q: f64,
     /// Local volatilities at grid points (or constant vol broadcast).
     pub vols: Vec<f64>,
@@ -479,13 +492,21 @@ impl FdmBlackScholesOp {
 /// Stores dimension-wise tridiagonal operators and cross-derivative stencil.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Fdm2dBlackScholesOp {
+    /// N1.
     pub n1: usize,
+    /// N2.
     pub n2: usize,
+    /// Op1.
     pub op1: TripleBandOp,
+    /// Op2.
     pub op2: TripleBandOp,
+    /// Rho.
     pub rho: f64,
+    /// Vol1.
     pub vol1: f64,
+    /// Vol2.
     pub vol2: f64,
+    /// Cross op.
     pub cross_op: SecondOrderMixedDerivativeOp,
 }
 
@@ -538,8 +559,11 @@ impl Fdm2dBlackScholesOp {
 /// and exposes per-direction operators plus cross-derivative handling.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FdmHestonOp {
+    /// Heston ops.
     pub heston_ops: crate::fdm_operators::Heston2dOps,
+    /// Rho.
     pub rho: f64,
+    /// Sigma.
     pub sigma: f64,
 }
 
@@ -576,7 +600,9 @@ impl FdmHestonOp {
 /// for evolving the probability density p(x, v, t) forward in time.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FdmHestonFwdOp {
+    /// Nx.
     pub nx: usize,
+    /// Nv.
     pub nv: usize,
     /// Forward operator in x direction.
     pub x_op: TripleBandOp,
@@ -584,10 +610,15 @@ pub struct FdmHestonFwdOp {
     pub v_op: TripleBandOp,
     /// Heston parameters.
     pub kappa: f64,
+    /// Theta.
     pub theta: f64,
+    /// Sigma.
     pub sigma: f64,
+    /// Rho.
     pub rho: f64,
+    /// R.
     pub r: f64,
+    /// Q.
     pub q: f64,
 }
 
@@ -664,6 +695,7 @@ pub struct FdmHestonHullWhiteOp {
     pub hw_op: TripleBandOp,
     /// HW parameters.
     pub a: f64,
+    /// Sigma hw.
     pub sigma_hw: f64,
     /// Correlation between S and r.
     pub rho_sr: f64,
@@ -712,6 +744,7 @@ impl FdmHestonHullWhiteOp {
 /// where ν is a log-normal jump-size distribution.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FdmBatesOp {
+    /// Heston op.
     pub heston_op: FdmHestonOp,
     /// Jump intensity λ.
     pub lambda: f64,
@@ -805,7 +838,9 @@ impl FdmBatesOp {
 /// Evolves the probability density forward in time.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FdmBlackScholesFwdOp {
+    /// Op.
     pub op: TripleBandOp,
+    /// Grid.
     pub grid: Vec<f64>,
 }
 
@@ -830,6 +865,7 @@ impl FdmBlackScholesFwdOp {
         }
     }
 
+    /// Apply.
     pub fn apply(&self, x: &[f64]) -> Vec<f64> {
         self.op.apply(x)
     }
@@ -838,8 +874,11 @@ impl FdmBlackScholesFwdOp {
 /// Local volatility forward operator: same structure but with per-point vol.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FdmLocalVolFwdOp {
+    /// Op.
     pub op: TripleBandOp,
+    /// Grid.
     pub grid: Vec<f64>,
+    /// Local vols.
     pub local_vols: Vec<f64>,
 }
 
@@ -867,6 +906,7 @@ impl FdmLocalVolFwdOp {
         }
     }
 
+    /// Apply.
     pub fn apply(&self, x: &[f64]) -> Vec<f64> {
         self.op.apply(x)
     }
@@ -881,13 +921,18 @@ impl FdmLocalVolFwdOp {
 /// PDE: ∂p/∂t = −∂/∂x[κ(θ−x)p] + ½ ∂²/∂x²[σ²x · p]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FdmSquareRootFwdOp {
+    /// Op.
     pub op: TripleBandOp,
+    /// Kappa.
     pub kappa: f64,
+    /// Theta.
     pub theta: f64,
+    /// Sigma.
     pub sigma: f64,
 }
 
 impl FdmSquareRootFwdOp {
+    /// New.
     pub fn new(grid: &[f64], kappa: f64, theta: f64, sigma: f64) -> Self {
         let n = grid.len();
         let mut op = TripleBandOp::zeros(n);
@@ -910,6 +955,7 @@ impl FdmSquareRootFwdOp {
         }
     }
 
+    /// Apply.
     pub fn apply(&self, x: &[f64]) -> Vec<f64> {
         self.op.apply(x)
     }
@@ -924,14 +970,20 @@ impl FdmSquareRootFwdOp {
 /// PDE: ∂V/∂t + μ(θ−x) ∂V/∂x + ½σ² ∂²V/∂x² − r V = 0
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FdmOrnsteinUhlenbeckOp {
+    /// Op.
     pub op: TripleBandOp,
+    /// Speed.
     pub speed: f64,
+    /// Level.
     pub level: f64,
+    /// Vol.
     pub vol: f64,
+    /// R.
     pub r: f64,
 }
 
 impl FdmOrnsteinUhlenbeckOp {
+    /// New.
     pub fn new(grid: &[f64], speed: f64, level: f64, vol: f64, r: f64) -> Self {
         let n = grid.len();
         let mut op = TripleBandOp::zeros(n);
@@ -957,6 +1009,7 @@ impl FdmOrnsteinUhlenbeckOp {
         }
     }
 
+    /// Apply.
     pub fn apply(&self, x: &[f64]) -> Vec<f64> {
         self.op.apply(x)
     }
@@ -993,6 +1046,7 @@ pub struct FdmSABROp {
 }
 
 impl FdmSABROp {
+    /// New.
     pub fn new(
         f_grid: &[f64],
         a_grid: &[f64],

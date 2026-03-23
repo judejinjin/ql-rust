@@ -10,17 +10,29 @@ use std::fmt;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[repr(u32)]
 pub enum Month {
+    /// January.
     January = 1,
+    /// February.
     February = 2,
+    /// March.
     March = 3,
+    /// April.
     April = 4,
+    /// May.
     May = 5,
+    /// June.
     June = 6,
+    /// July.
     July = 7,
+    /// August.
     August = 8,
+    /// September.
     September = 9,
+    /// October.
     October = 10,
+    /// November.
     November = 11,
+    /// December.
     December = 12,
 }
 
@@ -69,12 +81,19 @@ impl fmt::Display for Month {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[repr(u32)]
 pub enum Weekday {
+    /// Sunday.
     Sunday = 1,
+    /// Monday.
     Monday = 2,
+    /// Tuesday.
     Tuesday = 3,
+    /// Wednesday.
     Wednesday = 4,
+    /// Thursday.
     Thursday = 5,
+    /// Friday.
     Friday = 6,
+    /// Saturday.
     Saturday = 7,
 }
 

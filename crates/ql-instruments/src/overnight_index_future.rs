@@ -82,10 +82,15 @@ impl OvernightIndexFuture {
 /// Result of pricing an overnight index future.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct OvernightIndexFutureResult {
+    /// Fair price.
     pub fair_price: f64,
+    /// Implied rate.
     pub implied_rate: f64,
+    /// Convexity adjustment.
     pub convexity_adjustment: f64,
+    /// Adjusted rate.
     pub adjusted_rate: f64,
+    /// Pv.
     pub pv: f64,
 }
 

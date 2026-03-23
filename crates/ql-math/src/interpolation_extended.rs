@@ -20,6 +20,7 @@ pub struct BackwardFlatInterpolation {
 }
 
 impl BackwardFlatInterpolation {
+    /// New.
     pub fn new(xs: Vec<f64>, ys: Vec<f64>) -> QLResult<Self> {
         if xs.len() != ys.len() || xs.is_empty() {
             return Err(QLError::InvalidArgument(
@@ -29,6 +30,7 @@ impl BackwardFlatInterpolation {
         Ok(Self { xs, ys })
     }
 
+    /// Value.
     pub fn value(&self, x: f64) -> f64 {
         if x <= self.xs[0] {
             return self.ys[0];
@@ -57,6 +59,7 @@ pub struct ForwardFlatInterpolation {
 }
 
 impl ForwardFlatInterpolation {
+    /// New.
     pub fn new(xs: Vec<f64>, ys: Vec<f64>) -> QLResult<Self> {
         if xs.len() != ys.len() || xs.is_empty() {
             return Err(QLError::InvalidArgument(
@@ -66,6 +69,7 @@ impl ForwardFlatInterpolation {
         Ok(Self { xs, ys })
     }
 
+    /// Value.
     pub fn value(&self, x: f64) -> f64 {
         if x <= self.xs[0] {
             return self.ys[0];
@@ -113,6 +117,7 @@ impl BilinearInterpolation {
         Ok(Self { xs, ys, zs })
     }
 
+    /// Value.
     pub fn value(&self, x: f64, y: f64) -> f64 {
         let nx = self.xs.len();
         let ny = self.ys.len();
@@ -168,6 +173,7 @@ pub struct BicubicSplineInterpolation {
 }
 
 impl BicubicSplineInterpolation {
+    /// New.
     pub fn new(xs: Vec<f64>, ys: Vec<f64>, zs: Vec<f64>) -> QLResult<Self> {
         let ny = ys.len();
         if xs.len() * ny != zs.len() {
@@ -185,6 +191,7 @@ impl BicubicSplineInterpolation {
         Ok(Self { xs, ys, zs, ny })
     }
 
+    /// Value.
     pub fn value(&self, x: f64, y: f64) -> f64 {
         let nx = self.xs.len();
 

@@ -20,8 +20,11 @@ pub enum McDigitalType {
 /// Result from the MC digital engine.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct McDigitalResult {
+    /// Price.
     pub price: f64,
+    /// Std error.
     pub std_error: f64,
+    /// Delta.
     pub delta: f64,
 }
 

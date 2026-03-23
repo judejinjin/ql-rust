@@ -68,10 +68,12 @@ pub trait GenericYieldCurve<T: Number>: Send + Sync {
 ///
 /// `DF(t) = exp(-rate * t)` where `rate` is generic `T`.
 pub struct FlatCurve<T: Number> {
+    /// Rate.
     pub rate: T,
 }
 
 impl<T: Number> FlatCurve<T> {
+    /// New.
     pub fn new(rate: T) -> Self {
         Self { rate }
     }
@@ -169,6 +171,7 @@ pub struct InterpZeroCurve<T: Number> {
 }
 
 impl<T: Number> InterpZeroCurve<T> {
+    /// New.
     pub fn new(times: &[f64], rates: &[T]) -> Self {
         assert!(times.len() == rates.len() && times.len() >= 2, "need ≥ 2 pillars");
         Self {
@@ -238,6 +241,7 @@ pub struct YieldCurveAdapter<'a> {
 }
 
 impl<'a> YieldCurveAdapter<'a> {
+    /// New.
     pub fn new(inner: &'a dyn crate::yield_term_structure::YieldTermStructure) -> Self {
         Self { inner }
     }

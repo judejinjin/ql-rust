@@ -23,6 +23,7 @@ use serde::{Deserialize, Serialize};
 /// the other. Each period's inflation rate = CPI(end)/CPI(start) − 1.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct YearOnYearInflationSwap {
+    /// Notional.
     pub notional: f64,
     /// Schedule dates for both legs.
     pub schedule_dates: Vec<Date>,
@@ -32,12 +33,14 @@ pub struct YearOnYearInflationSwap {
     pub gearing: f64,
     /// Spread on the inflation leg.
     pub spread: f64,
+    /// Day counter.
     pub day_counter: DayCounter,
     /// True = payer of fixed, receiver of inflation.
     pub pay_fixed: bool,
 }
 
 impl YearOnYearInflationSwap {
+    /// New.
     pub fn new(
         notional: f64,
         schedule_dates: Vec<Date>,
@@ -101,17 +104,24 @@ impl YearOnYearInflationSwap {
 /// where K is the fixed breakeven rate.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ZeroCouponInflationSwap {
+    /// Notional.
     pub notional: f64,
+    /// Start date.
     pub start_date: Date,
+    /// Maturity date.
     pub maturity_date: Date,
+    /// Fixed rate.
     pub fixed_rate: f64,
+    /// Base cpi.
     pub base_cpi: f64,
+    /// Day counter.
     pub day_counter: DayCounter,
     /// True = payer of fixed, receiver of inflation.
     pub pay_fixed: bool,
 }
 
 impl ZeroCouponInflationSwap {
+    /// New.
     pub fn new(
         notional: f64,
         start_date: Date,
@@ -189,6 +199,7 @@ pub struct FloatFloatSwaption {
 }
 
 impl FloatFloatSwaption {
+    /// New.
     pub fn new(
         notional: f64,
         expiry: Date,
@@ -282,6 +293,7 @@ fn erf_approx(x: f64) -> f64 {
 /// gearing and spread.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CmsRateBond {
+    /// Notional.
     pub notional: f64,
     /// Schedule dates (accrual period boundaries).
     pub schedule_dates: Vec<Date>,
@@ -295,10 +307,12 @@ pub struct CmsRateBond {
     pub cap: Option<f64>,
     /// Optional floor on the coupon rate.
     pub floor: Option<f64>,
+    /// Day counter.
     pub day_counter: DayCounter,
 }
 
 impl CmsRateBond {
+    /// New.
     pub fn new(
         notional: f64,
         schedule_dates: Vec<Date>,
@@ -319,6 +333,7 @@ impl CmsRateBond {
         }
     }
 
+    /// With cap floor.
     pub fn with_cap_floor(mut self, cap: Option<f64>, floor: Option<f64>) -> Self {
         self.cap = cap;
         self.floor = floor;
@@ -367,19 +382,28 @@ impl CmsRateBond {
 /// amortization schedule.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AmortizingCmsRateBond {
+    /// Original notional.
     pub original_notional: f64,
     /// Remaining notional for each period (length = schedule_dates.len() - 1).
     pub notionals: Vec<f64>,
+    /// Schedule dates.
     pub schedule_dates: Vec<Date>,
+    /// Cms tenor.
     pub cms_tenor: f64,
+    /// Gearing.
     pub gearing: f64,
+    /// Spread.
     pub spread: f64,
+    /// Cap.
     pub cap: Option<f64>,
+    /// Floor.
     pub floor: Option<f64>,
+    /// Day counter.
     pub day_counter: DayCounter,
 }
 
 impl AmortizingCmsRateBond {
+    /// New.
     pub fn new(
         original_notional: f64,
         notionals: Vec<f64>,
@@ -402,12 +426,14 @@ impl AmortizingCmsRateBond {
         }
     }
 
+    /// With cap floor.
     pub fn with_cap_floor(mut self, cap: Option<f64>, floor: Option<f64>) -> Self {
         self.cap = cap;
         self.floor = floor;
         self
     }
 
+    /// Effective rate.
     pub fn effective_rate(&self, cms_fixing: f64) -> f64 {
         let mut r = self.gearing * cms_fixing + self.spread;
         if let Some(c) = self.cap {
@@ -459,6 +485,7 @@ impl AmortizingCmsRateBond {
 /// semi-annual coupons and Italian market conventions.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Btp {
+    /// Notional.
     pub notional: f64,
     /// Annual coupon rate.
     pub coupon_rate: f64,
@@ -471,6 +498,7 @@ pub struct Btp {
 }
 
 impl Btp {
+    /// New.
     pub fn new(
         notional: f64,
         coupon_rate: f64,
@@ -534,11 +562,17 @@ impl Btp {
 /// stores the dividend schedule alongside the standard option parameters.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DividendVanillaOption {
+    /// Spot.
     pub spot: f64,
+    /// Strike.
     pub strike: f64,
+    /// Risk free rate.
     pub risk_free_rate: f64,
+    /// Volatility.
     pub volatility: f64,
+    /// Expiry.
     pub expiry: f64,
+    /// Option type.
     pub option_type: OptionType,
     /// Discrete dividend schedule: (time to ex-date, amount or proportion).
     pub dividends: Vec<DividendEntry>,
@@ -558,11 +592,14 @@ pub struct DividendEntry {
 /// Option type (call/put).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum OptionType {
+    /// Call.
     Call,
+    /// Put.
     Put,
 }
 
 impl DividendVanillaOption {
+    /// New.
     pub fn new(
         spot: f64,
         strike: f64,
@@ -636,28 +673,43 @@ fn norm_cdf(x: f64) -> f64 {
 /// Extends barrier option analysis with a discrete dividend schedule.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DividendBarrierOption {
+    /// Spot.
     pub spot: f64,
+    /// Strike.
     pub strike: f64,
+    /// Barrier.
     pub barrier: f64,
+    /// Rebate.
     pub rebate: f64,
+    /// Barrier type.
     pub barrier_type: DividendBarrierType,
+    /// Option type.
     pub option_type: OptionType,
+    /// Risk free rate.
     pub risk_free_rate: f64,
+    /// Volatility.
     pub volatility: f64,
+    /// Expiry.
     pub expiry: f64,
+    /// Dividends.
     pub dividends: Vec<DividendEntry>,
 }
 
 /// Barrier type for dividend barrier options.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DividendBarrierType {
+    /// Down In.
     DownIn,
+    /// Down Out.
     DownOut,
+    /// Up In.
     UpIn,
+    /// Up Out.
     UpOut,
 }
 
 impl DividendBarrierOption {
+    /// New.
     pub fn new(
         spot: f64,
         strike: f64,
@@ -753,6 +805,7 @@ pub enum StickyRatchetType {
 }
 
 impl StickyRatchet {
+    /// New.
     pub fn new(
         schedule_dates: Vec<Date>,
         day_counter: DayCounter,

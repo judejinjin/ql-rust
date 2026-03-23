@@ -13,10 +13,15 @@ use ql_core::errors::{QLError, QLResult};
 /// Convergence criteria for optimizers.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct EndCriteria {
+    /// Max iterations.
     pub max_iterations: usize,
+    /// Max stationary iterations.
     pub max_stationary_iterations: usize,
+    /// Root epsilon.
     pub root_epsilon: f64,
+    /// Function epsilon.
     pub function_epsilon: f64,
+    /// Gradient epsilon.
     pub gradient_epsilon: f64,
 }
 
@@ -435,6 +440,7 @@ impl Default for Bfgs {
 }
 
 impl Bfgs {
+    /// New.
     pub fn new(fdeps: f64, h0: f64) -> Self {
         Self { fdeps, h0 }
     }
@@ -475,6 +481,7 @@ impl Bfgs {
         alpha
     }
 
+    /// Minimize.
     pub fn minimize<C: CostFunction>(
         &self,
         cost: &C,
@@ -590,6 +597,7 @@ impl Default for ConjugateGradient {
 }
 
 impl ConjugateGradient {
+    /// New.
     pub fn new(fdeps: f64) -> Self {
         Self { fdeps }
     }
@@ -598,6 +606,7 @@ impl ConjugateGradient {
         Bfgs::gradient(cost, params, eps)
     }
 
+    /// Minimize.
     pub fn minimize<C: CostFunction>(
         &self,
         cost: &C,
@@ -683,10 +692,12 @@ impl Default for SimulatedAnnealing {
 }
 
 impl SimulatedAnnealing {
+    /// New.
     pub fn new(t0: f64, alpha: f64, step_size: f64, seed: u64) -> Self {
         Self { t0, alpha, step_size, seed }
     }
 
+    /// Minimize.
     pub fn minimize<C: CostFunction>(
         &self,
         cost: &C,
@@ -771,10 +782,12 @@ pub struct DifferentialEvolution {
 }
 
 impl DifferentialEvolution {
+    /// New.
     pub fn new(bounds: Vec<(f64, f64)>, f_factor: f64, cr: f64, seed: u64) -> Self {
         Self { pop_size: None, f_factor, cr, bounds, seed }
     }
 
+    /// Minimize.
     pub fn minimize<C: CostFunction>(
         &self,
         cost: &C,

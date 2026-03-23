@@ -78,10 +78,15 @@ pub fn compute_averaged_rate(
 /// paid over an accrual period.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct YoYInflationCoupon {
+    /// Payment date.
     pub payment_date: Date,
+    /// Nominal.
     pub nominal: f64,
+    /// Accrual start.
     pub accrual_start: Date,
+    /// Accrual end.
     pub accrual_end: Date,
+    /// Day counter.
     pub day_counter: DayCounter,
     /// The CPI (or index) value at the start of the period.
     pub base_cpi: f64,
@@ -94,6 +99,7 @@ pub struct YoYInflationCoupon {
 }
 
 impl YoYInflationCoupon {
+    /// New.
     pub fn new(
         payment_date: Date,
         nominal: f64,
@@ -180,7 +186,9 @@ impl Coupon for YoYInflationCoupon {
 /// Amount = notional × (CPI_fixing / CPI_base) at maturity.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ZeroInflationCashFlow {
+    /// Payment date.
     pub payment_date: Date,
+    /// Notional.
     pub notional: f64,
     /// CPI at the base (start) date.
     pub base_cpi: f64,
@@ -189,6 +197,7 @@ pub struct ZeroInflationCashFlow {
 }
 
 impl ZeroInflationCashFlow {
+    /// New.
     pub fn new(
         payment_date: Date,
         notional: f64,
@@ -235,7 +244,9 @@ impl CashFlow for ZeroInflationCashFlow {
 /// Amount = notional × (S_end / S_start) at payment date.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct EquityCashFlow {
+    /// Payment date.
     pub payment_date: Date,
+    /// Notional.
     pub notional: f64,
     /// Equity index level at the start.
     pub equity_start: f64,
@@ -246,6 +257,7 @@ pub struct EquityCashFlow {
 }
 
 impl EquityCashFlow {
+    /// New.
     pub fn new(
         payment_date: Date,
         notional: f64,
@@ -295,10 +307,15 @@ impl CashFlow for EquityCashFlow {
 /// otherwise pays zero (or optionally a rebate).
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DigitalIborCoupon {
+    /// Payment date.
     pub payment_date: Date,
+    /// Nominal.
     pub nominal: f64,
+    /// Accrual start.
     pub accrual_start: Date,
+    /// Accrual end.
     pub accrual_end: Date,
+    /// Day counter.
     pub day_counter: DayCounter,
     /// IBOR fixing rate.
     pub fixing: f64,
@@ -315,6 +332,7 @@ pub struct DigitalIborCoupon {
 }
 
 impl DigitalIborCoupon {
+    /// New.
     pub fn new(
         payment_date: Date,
         nominal: f64,
@@ -406,10 +424,15 @@ impl Coupon for DigitalIborCoupon {
 /// otherwise pays the CMS rate (plus gearing/spread).
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DigitalCmsCoupon {
+    /// Payment date.
     pub payment_date: Date,
+    /// Nominal.
     pub nominal: f64,
+    /// Accrual start.
     pub accrual_start: Date,
+    /// Accrual end.
     pub accrual_end: Date,
+    /// Day counter.
     pub day_counter: DayCounter,
     /// CMS rate fixing.
     pub cms_rate: f64,
@@ -426,6 +449,7 @@ pub struct DigitalCmsCoupon {
 }
 
 impl DigitalCmsCoupon {
+    /// New.
     pub fn new(
         payment_date: Date,
         nominal: f64,
@@ -516,10 +540,15 @@ impl Coupon for DigitalCmsCoupon {
 /// The effective inflation rate is clamped: max(floor, min(cap, rate)).
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CapFlooredInflationCoupon {
+    /// Payment date.
     pub payment_date: Date,
+    /// Nominal.
     pub nominal: f64,
+    /// Accrual start.
     pub accrual_start: Date,
+    /// Accrual end.
     pub accrual_end: Date,
+    /// Day counter.
     pub day_counter: DayCounter,
     /// Inflation rate (e.g., YoY rate or zero-coupon inflation rate).
     pub inflation_rate: f64,
@@ -534,6 +563,7 @@ pub struct CapFlooredInflationCoupon {
 }
 
 impl CapFlooredInflationCoupon {
+    /// New.
     pub fn new(
         payment_date: Date,
         nominal: f64,
@@ -637,6 +667,7 @@ pub struct CpiCouponPricer {
 }
 
 impl CpiCouponPricer {
+    /// New.
     pub fn new(
         rate: f64,
         year_fraction: f64,

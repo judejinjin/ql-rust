@@ -73,9 +73,13 @@ pub struct KernelInterpolation2D {
 /// Kernel function type for 2D interpolation.
 #[derive(Clone, Debug, Copy, serde::Serialize, serde::Deserialize)]
 pub enum Kernel2D {
+    /// Gaussian.
     Gaussian(f64),
+    /// Multiquadric.
     Multiquadric(f64),
+    /// Inverse Multiquadric.
     InverseMultiquadric(f64),
+    /// Thin Plate Spline.
     ThinPlateSpline,
 }
 
@@ -266,6 +270,7 @@ pub struct FlatExtrapolation2D<I: Interpolation2D> {
 }
 
 impl<I: Interpolation2D> FlatExtrapolation2D<I> {
+    /// New.
     pub fn new(inner: I) -> Self {
         Self { inner }
     }
@@ -429,6 +434,7 @@ impl Default for ArmijoLineSearch {
 }
 
 impl ArmijoLineSearch {
+    /// New.
     pub fn new(alpha: f64, beta: f64) -> Self {
         Self { alpha, beta }
     }
@@ -510,6 +516,7 @@ impl Default for GoldsteinLineSearch {
 }
 
 impl GoldsteinLineSearch {
+    /// New.
     pub fn new(alpha: f64, beta: f64, extrapolation: f64) -> Self {
         Self {
             alpha,
@@ -611,13 +618,18 @@ impl Default for SteepestDescent {
 /// Result from an optimizer that uses gradient methods.
 #[derive(Clone, Debug)]
 pub struct GradientOptResult {
+    /// Parameters.
     pub parameters: Vec<f64>,
+    /// Value.
     pub value: f64,
+    /// Iterations.
     pub iterations: usize,
+    /// Converged.
     pub converged: bool,
 }
 
 impl SteepestDescent {
+    /// New.
     pub fn new(max_iterations: usize, f_tolerance: f64, g_tolerance: f64) -> Self {
         Self {
             max_iterations,
@@ -695,16 +707,24 @@ impl SteepestDescent {
 /// Cylinder: x1² + x2² = s² (centred at alpha on x1)
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct SphereCylinderOptimizer {
+    /// R.
     pub r: f64,
+    /// S.
     pub s: f64,
+    /// Alpha.
     pub alpha: f64,
+    /// Z1.
     pub z1: f64,
+    /// Z2.
     pub z2: f64,
+    /// Z3.
     pub z3: f64,
+    /// Z weight.
     pub z_weight: f64,
 }
 
 impl SphereCylinderOptimizer {
+    /// New.
     pub fn new(r: f64, s: f64, alpha: f64, z1: f64, z2: f64, z3: f64) -> Self {
         Self {
             r,
@@ -717,6 +737,7 @@ impl SphereCylinderOptimizer {
         }
     }
 
+    /// With z weight.
     pub fn with_z_weight(mut self, w: f64) -> Self {
         self.z_weight = w;
         self
@@ -800,6 +821,7 @@ pub struct Projection {
 }
 
 impl Projection {
+    /// New.
     pub fn new(parameter_values: Vec<f64>, fix_parameters: Vec<bool>) -> QLResult<Self> {
         if parameter_values.len() != fix_parameters.len() {
             return Err(QLError::InvalidArgument(
@@ -852,6 +874,7 @@ pub struct ProjectedCostFunction<F: Fn(&[f64]) -> f64> {
 }
 
 impl<F: Fn(&[f64]) -> f64> ProjectedCostFunction<F> {
+    /// New.
     pub fn new(cost_function: F, projection: Projection) -> Self {
         Self {
             cost_function,
@@ -873,6 +896,7 @@ pub struct ProjectedConstraint<C: Fn(&[f64]) -> bool> {
 }
 
 impl<C: Fn(&[f64]) -> bool> ProjectedConstraint<C> {
+    /// New.
     pub fn new(constraint: C, projection: Projection) -> Self {
         Self {
             constraint,
@@ -1048,10 +1072,12 @@ impl GaussianStatistics {
         })
     }
 
+    /// Mean.
     pub fn mean(&self) -> f64 {
         self.mean
     }
 
+    /// Standard deviation.
     pub fn standard_deviation(&self) -> f64 {
         self.std_dev
     }
@@ -1213,6 +1239,7 @@ const KNUTH_KK: usize = 100;
 const KNUTH_LL: usize = 37;
 
 impl KnuthUniformRng {
+    /// New.
     pub fn new(seed: u64) -> Self {
         let mut rng = Self {
             ran_u: vec![0.0; KNUTH_KK],
@@ -1316,6 +1343,7 @@ const LECUYER_BUF_SIZE: usize = 32;
 const LECUYER_NORMALIZER: f64 = 1.0 + LECUYER_M1 as f64;
 
 impl LecuyerUniformRng {
+    /// New.
     pub fn new(seed: u64) -> Self {
         let seed = seed.max(1) as i64;
         let mut temp1 = seed;
@@ -1407,6 +1435,7 @@ pub fn ranlux4_rng(seed: u64) -> RanluxUniformRng {
 }
 
 impl RanluxUniformRng {
+    /// New.
     pub fn new(seed: u64, block_size: usize, used_size: usize) -> Self {
         let len = 24;
         let mut state = vec![0u64; len];
@@ -1494,6 +1523,7 @@ pub struct Burley2020SobolRsg {
 }
 
 impl Burley2020SobolRsg {
+    /// New.
     pub fn new(dimensionality: usize, _seed: u64, scramble_seed: u64) -> Self {
         // Generate group seeds (one per group of 4 dimensions)
         let n_groups = dimensionality.div_ceil(4);
@@ -1619,6 +1649,7 @@ pub struct ZigguratGaussianRng<R: crate::rng_extended::UniformRng> {
 }
 
 impl<R: crate::rng_extended::UniformRng> ZigguratGaussianRng<R> {
+    /// New.
     pub fn new(uniform: R) -> Self {
         Self { uniform }
     }
@@ -1755,6 +1786,7 @@ pub struct CentralLimitGaussianRng<R: crate::rng_extended::UniformRng> {
 }
 
 impl<R: crate::rng_extended::UniformRng> CentralLimitGaussianRng<R> {
+    /// New.
     pub fn new(uniform: R) -> Self {
         Self { uniform }
     }

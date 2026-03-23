@@ -22,7 +22,9 @@ use crate::number::Number;
 /// Option type: Call or Put.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OptionKind {
+    /// Call.
     Call,
+    /// Put.
     Put,
 }
 

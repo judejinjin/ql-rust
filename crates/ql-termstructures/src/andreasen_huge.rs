@@ -75,8 +75,10 @@ fn bs_implied_vol(price: f64, forward: f64, strike: f64, t: f64, df: f64) -> Opt
 /// Created via [`andreasen_huge_calibrate`].
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AndreasenHugeVolSurface {
+    /// Reference date.
     #[serde(skip, default = "default_date")]
     pub reference_date: Date,
+    /// Day counter.
     #[serde(skip, default = "default_day_counter")]
     pub day_counter: DayCounter,
     /// Spot price.
@@ -132,6 +134,7 @@ impl Default for AndreasenHugeConfig {
 /// Calibration result with diagnostics.
 #[derive(Debug, Clone)]
 pub struct AndreasenHugeCalibrationResult {
+    /// Surface.
     pub surface: AndreasenHugeVolSurface,
     /// Max absolute error in implied vol (bps).
     pub max_error_bps: f64,

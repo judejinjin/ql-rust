@@ -41,6 +41,7 @@ pub struct PathwiseAccountingResult {
 }
 
 impl PathwiseAccountingEngine {
+    /// New.
     pub fn new(n_rates: usize, n_steps: usize) -> Self {
         Self { n_rates, n_steps }
     }
@@ -127,6 +128,7 @@ pub struct PathwiseDiscounter {
 }
 
 impl PathwiseDiscounter {
+    /// New.
     pub fn new(accruals: Vec<f64>) -> Self {
         Self { accruals }
     }
@@ -221,7 +223,9 @@ pub struct RatePseudoRootJacobian {
     /// n_rates × n_factors × n_rates tensor (flattened):
     /// `jacobian[i * n_factors * n_rates + j * n_rates + k]` = ∂A_{ij}/∂f_k.
     pub jacobian: Vec<f64>,
+    /// N rates.
     pub n_rates: usize,
+    /// N factors.
     pub n_factors: usize,
 }
 
@@ -278,6 +282,7 @@ impl RatePseudoRootJacobian {
 pub struct SwaptionPseudoJacobian {
     /// `jacobian[swaption_idx][pseudo_root_elem]`.
     pub jacobian: Vec<Vec<f64>>,
+    /// N swaptions.
     pub n_swaptions: usize,
 }
 
@@ -466,7 +471,9 @@ impl CapletCoterminalAlphaCalibration {
 /// G183: Caplet coterminal max-homogeneity calibration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CapletCoterminalMaxHomogeneity {
+    /// Pseudo root.
     pub pseudo_root: Vec<f64>,
+    /// Error.
     pub error: f64,
 }
 
@@ -503,8 +510,11 @@ impl CapletCoterminalMaxHomogeneity {
 /// G184: Caplet coterminal periodic calibration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CapletCoterminalPeriodic {
+    /// Pseudo root.
     pub pseudo_root: Vec<f64>,
+    /// Period.
     pub period: usize,
+    /// Error.
     pub error: f64,
 }
 
@@ -560,8 +570,11 @@ impl CapletCoterminalPeriodic {
 /// G185: Joint caplet-coterminal swaption calibration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CapletCoterminalSwaptionCalibration {
+    /// Pseudo root.
     pub pseudo_root: Vec<f64>,
+    /// Caplet error.
     pub caplet_error: f64,
+    /// Swaption error.
     pub swaption_error: f64,
 }
 
@@ -617,7 +630,9 @@ impl CapletCoterminalSwaptionCalibration {
 /// Coterminal swap market model calibration to caplet vols.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CTSMMCapletCalibration {
+    /// Pseudo root.
     pub pseudo_root: Vec<f64>,
+    /// Error.
     pub error: f64,
 }
 
@@ -671,11 +686,14 @@ impl CTSMMCapletCalibration {
 pub struct PseudoRootFacade {
     /// Pseudo-root matrix (row-major: n_rates × n_factors).
     pub data: Vec<f64>,
+    /// N rates.
     pub n_rates: usize,
+    /// N factors.
     pub n_factors: usize,
 }
 
 impl PseudoRootFacade {
+    /// New.
     pub fn new(n_rates: usize, n_factors: usize) -> Self {
         Self {
             data: vec![0.0; n_rates * n_factors],
@@ -684,6 +702,7 @@ impl PseudoRootFacade {
         }
     }
 
+    /// From flat vol.
     pub fn from_flat_vol(n_rates: usize, n_factors: usize, vol: f64) -> Self {
         let mut s = Self::new(n_rates, n_factors);
         for i in 0..n_rates {
@@ -692,10 +711,12 @@ impl PseudoRootFacade {
         s
     }
 
+    /// Get.
     pub fn get(&self, rate: usize, factor: usize) -> f64 {
         self.data[rate * self.n_factors + factor]
     }
 
+    /// Set.
     pub fn set(&mut self, rate: usize, factor: usize, val: f64) {
         self.data[rate * self.n_factors + factor] = val;
     }
@@ -749,7 +770,9 @@ impl PseudoRootFacade {
 /// G188: Coterminal swap rate → forward rate adapter.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CotSwapToFwdAdapter {
+    /// Forwards.
     pub forwards: Vec<f64>,
+    /// Accruals.
     pub accruals: Vec<f64>,
 }
 
@@ -792,6 +815,7 @@ impl CotSwapToFwdAdapter {
         }
     }
 
+    /// Forward rate.
     pub fn forward_rate(&self, i: usize) -> f64 {
         self.forwards[i]
     }
@@ -800,11 +824,14 @@ impl CotSwapToFwdAdapter {
 /// G189: Forward rate → coterminal swap rate adapter.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FwdToCotSwapAdapter {
+    /// Swap rates.
     pub swap_rates: Vec<f64>,
+    /// Accruals.
     pub accruals: Vec<f64>,
 }
 
 impl FwdToCotSwapAdapter {
+    /// New.
     pub fn new(forwards: &[f64], accruals: &[f64]) -> Self {
         let cs = CoterminalSwapCurveState::from_forwards(forwards, accruals);
         let n = forwards.len();
@@ -815,6 +842,7 @@ impl FwdToCotSwapAdapter {
         }
     }
 
+    /// Swap rate.
     pub fn swap_rate(&self, i: usize) -> f64 {
         self.swap_rates[i]
     }
@@ -874,6 +902,7 @@ impl FwdPeriodAdapter {
 pub struct CotSwapFromFwdCorrelation {
     /// Swap-rate correlation matrix (row-major, n × n).
     pub swap_correlations: Vec<f64>,
+    /// N rates.
     pub n_rates: usize,
 }
 
@@ -893,6 +922,7 @@ impl CotSwapFromFwdCorrelation {
         }
     }
 
+    /// Correlation.
     pub fn correlation(&self, i: usize, j: usize) -> f64 {
         self.swap_correlations[i * self.n_rates + j]
     }
@@ -1011,7 +1041,9 @@ pub struct HistoricalRatesAnalysis {
     pub skewness: Vec<f64>,
     /// Kurtosis of rate changes.
     pub kurtosis: Vec<f64>,
+    /// N rates.
     pub n_rates: usize,
+    /// N obs.
     pub n_obs: usize,
 }
 
@@ -1126,9 +1158,11 @@ pub struct BermudanSwaptionExerciseValue {
 }
 
 impl BermudanSwaptionExerciseValue {
+    /// New payer.
     pub fn new_payer(swap_starts: Vec<usize>, swap_end: usize, fixed_rate: f64, notional: f64) -> Self {
         Self { swap_starts, swap_end, fixed_rate, notional, payer_mult: 1.0 }
     }
+    /// New receiver.
     pub fn new_receiver(swap_starts: Vec<usize>, swap_end: usize, fixed_rate: f64, notional: f64) -> Self {
         Self { swap_starts, swap_end, fixed_rate, notional, payer_mult: -1.0 }
     }
@@ -1165,10 +1199,12 @@ impl ExerciseValue for BermudanSwaptionExerciseValue {
 /// G196: Nothing exercise value (always 0).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct NothingExerciseValue {
+    /// N exercises.
     pub n_exercises: usize,
 }
 
 impl NothingExerciseValue {
+    /// New.
     pub fn new(n_exercises: usize) -> Self {
         Self { n_exercises }
     }
@@ -1334,10 +1370,12 @@ pub trait MarketModelBasisSystem: Send + Sync {
 /// Monomial basis: 1, x, x², ..., x^degree.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MonomialBasis {
+    /// Degree.
     pub degree: usize,
 }
 
 impl MonomialBasis {
+    /// New.
     pub fn new(degree: usize) -> Self {
         Self { degree }
     }
@@ -1369,6 +1407,7 @@ pub struct MarketModelParametricExercise {
 }
 
 impl MarketModelParametricExercise {
+    /// New.
     pub fn new(parameters: Vec<Vec<f64>>, basis_degree: usize) -> Self {
         Self { parameters, basis_degree }
     }
@@ -1392,12 +1431,16 @@ impl MarketModelParametricExercise {
 /// G201: Swap-rate basis system.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SwapBasisSystem {
+    /// Degree.
     pub degree: usize,
+    /// Swap start.
     pub swap_start: usize,
+    /// Swap end.
     pub swap_end: usize,
 }
 
 impl SwapBasisSystem {
+    /// New.
     pub fn new(degree: usize, swap_start: usize, swap_end: usize) -> Self {
         Self { degree, swap_start, swap_end }
     }
@@ -1423,12 +1466,14 @@ impl MarketModelBasisSystem for SwapBasisSystem {
 /// G202: Swap-forward basis system.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SwapForwardBasisSystem {
+    /// Degree.
     pub degree: usize,
     /// Number of forward rates to include.
     pub n_forwards: usize,
 }
 
 impl SwapForwardBasisSystem {
+    /// New.
     pub fn new(degree: usize, n_forwards: usize) -> Self {
         Self { degree, n_forwards }
     }
@@ -1464,10 +1509,12 @@ pub struct SwapRateTrigger {
 }
 
 impl SwapRateTrigger {
+    /// New.
     pub fn new(trigger_levels: Vec<f64>, exercise_above: bool) -> Self {
         Self { trigger_levels, exercise_above }
     }
 
+    /// Should exercise.
     pub fn should_exercise(&self, step: usize, swap_rate: f64) -> bool {
         if step >= self.trigger_levels.len() {
             return false;
@@ -1483,11 +1530,14 @@ impl SwapRateTrigger {
 /// G204: Triggered swap exercise.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TriggeredSwapExercise {
+    /// Trigger.
     pub trigger: SwapRateTrigger,
+    /// Exercise value.
     pub exercise_value: BermudanSwaptionExerciseValue,
 }
 
 impl TriggeredSwapExercise {
+    /// New.
     pub fn new(trigger: SwapRateTrigger, exercise_value: BermudanSwaptionExerciseValue) -> Self {
         Self { trigger, exercise_value }
     }
@@ -1532,6 +1582,7 @@ pub struct NodeData {
 
 /// Node data provider trait.
 pub trait NodeDataProvider: Send + Sync {
+    /// Collect data.
     fn collect_data(
         &self,
         step: usize,
@@ -1554,6 +1605,7 @@ impl std::fmt::Debug for DefaultNodeDataProvider {
 }
 
 impl DefaultNodeDataProvider {
+    /// New.
     pub fn new(ev: impl ExerciseValue + 'static) -> Self {
         Self {
             exercise_value: Box::new(ev),
@@ -1589,6 +1641,7 @@ pub struct ParametricExerciseAdapter {
 }
 
 impl ParametricExerciseAdapter {
+    /// New.
     pub fn new(n_exercises: usize, strategy: MarketModelParametricExercise) -> Self {
         Self { n_exercises, strategy }
     }
@@ -1660,7 +1713,9 @@ pub struct SvdDFwdRatePC {
     pub u_matrix: Vec<f64>,
     /// Right singular vectors (n_factors × n_factors, row-major).
     pub v_matrix: Vec<f64>,
+    /// N rates.
     pub n_rates: usize,
+    /// N factors.
     pub n_factors: usize,
 }
 
@@ -1778,10 +1833,12 @@ fn compute_rate_drift(
 /// multiple times for higher accuracy.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogNormalFwdRateIBalland {
+    /// N iterations.
     pub n_iterations: usize,
 }
 
 impl LogNormalFwdRateIBalland {
+    /// New.
     pub fn new(n_iterations: usize) -> Self {
         Self { n_iterations: n_iterations.max(1) }
     }
@@ -1843,6 +1900,7 @@ pub struct MultiStepPeriodCapletSwaptions {
 }
 
 impl MultiStepPeriodCapletSwaptions {
+    /// New.
     pub fn new(
         caplet_strikes: Vec<f64>,
         swaption_strikes: Vec<f64>,
@@ -1895,13 +1953,18 @@ pub trait MarketModelVolProcess: Send + Sync {
 /// Uses the Andersen QE scheme for positivity preservation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SquareRootAndersen {
+    /// V.
     pub v: f64,
+    /// Kappa.
     pub kappa: f64,
+    /// Theta.
     pub theta: f64,
+    /// Xi.
     pub xi: f64,
 }
 
 impl SquareRootAndersen {
+    /// New.
     pub fn new(v0: f64, kappa: f64, theta: f64, xi: f64) -> Self {
         Self { v: v0, kappa, theta, xi }
     }
@@ -1961,6 +2024,7 @@ pub struct PiecewiseConstantAbcdVariance {
 }
 
 impl PiecewiseConstantAbcdVariance {
+    /// New.
     pub fn new(params: Vec<(f64, f64, f64, f64)>, times: Vec<f64>) -> Self {
         Self { params, times }
     }
@@ -2007,7 +2071,16 @@ pub enum VolatilityInterpolationSpecifier {
     /// Cubic spline interpolation.
     CubicSpline,
     /// ABCD parametric form.
-    Abcd { a: f64, b: f64, c: f64, d: f64 },
+    Abcd {
+        /// The `a` parameter of the ABCD function.
+        a: f64,
+        /// The `b` parameter of the ABCD function.
+        b: f64,
+        /// The `c` parameter of the ABCD function.
+        c: f64,
+        /// The `d` parameter of the ABCD function.
+        d: f64,
+    },
 }
 
 impl VolatilityInterpolationSpecifier {
@@ -2074,6 +2147,7 @@ pub struct MarketModelComposite {
 }
 
 impl MarketModelComposite {
+    /// New.
     pub fn new(weights: Vec<f64>) -> Self {
         let n_products = weights.len();
         Self { weights, n_products }

@@ -51,36 +51,57 @@ impl std::fmt::Display for ObjectId {
 /// Direction of a trade.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Direction {
+    /// Buy.
     Buy,
+    /// Sell.
     Sell,
 }
 
 /// Current status of a trade.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TradeStatus {
+    /// Active.
     Active,
+    /// Amended.
     Amended,
+    /// Novated.
     Novated,
+    /// Terminated.
     Terminated,
+    /// Matured.
     Matured,
+    /// Settled.
     Settled,
 }
 
 /// Type of instrument for query filtering.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum InstrumentType {
+    /// Bond.
     Bond,
+    /// Swap.
     Swap,
+    /// Option.
     Option,
+    /// Future.
     Future,
+    /// F R A.
     FRA,
+    /// Cap.
     Cap,
+    /// Floor.
     Floor,
+    /// Swaption.
     Swaption,
+    /// C D S.
     CDS,
+    /// Callable Bond.
     CallableBond,
+    /// Convertible Bond.
     ConvertibleBond,
+    /// Variance Swap.
     VarianceSwap,
+    /// Other.
     Other(String),
 }
 
@@ -165,13 +186,21 @@ impl Trade {
 /// Types of lifecycle events that can occur on a trade.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum EventType {
+    /// Executed.
     Executed,
+    /// Amended.
     Amended,
+    /// Novated.
     Novated,
+    /// Terminated.
     Terminated,
+    /// Matured.
     Matured,
+    /// Cash Settled.
     CashSettled,
+    /// Margin Call.
     MarginCall,
+    /// Custom.
     Custom(String),
 }
 

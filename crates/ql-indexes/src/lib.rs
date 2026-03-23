@@ -29,6 +29,7 @@
 //! let sofr = OvernightIndex::sofr();
 //! assert_eq!(sofr.name(), "SOFR");
 //! ```
+#![warn(missing_docs)]
 
 pub mod ibor_index;
 pub mod index;

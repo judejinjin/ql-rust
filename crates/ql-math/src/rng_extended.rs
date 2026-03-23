@@ -24,6 +24,7 @@ pub struct BoxMullerGaussianRng<R: UniformRng> {
 
 /// Trait for uniform [0,1) random number generators.
 pub trait UniformRng {
+    /// Next uniform.
     fn next_uniform(&mut self) -> f64;
 }
 
@@ -34,6 +35,7 @@ pub struct LcgRng {
 }
 
 impl LcgRng {
+    /// New.
     pub fn new(seed: u64) -> Self {
         Self {
             state: seed.wrapping_add(1),
@@ -59,6 +61,7 @@ pub struct StdUniformRng {
 }
 
 impl StdUniformRng {
+    /// New.
     pub fn new(seed: u64) -> Self {
         Self {
             lcg: LcgRng::new(seed),
@@ -73,6 +76,7 @@ impl UniformRng for StdUniformRng {
 }
 
 impl<R: UniformRng> BoxMullerGaussianRng<R> {
+    /// New.
     pub fn new(uniform: R) -> Self {
         Self {
             uniform,
@@ -118,6 +122,7 @@ pub struct InverseCumulativeRng<R: UniformRng> {
 }
 
 impl<R: UniformRng> InverseCumulativeRng<R> {
+    /// New.
     pub fn new(uniform: R) -> Self {
         Self { uniform }
     }
@@ -203,6 +208,7 @@ pub struct DiscrepancyStatistics {
 }
 
 impl DiscrepancyStatistics {
+    /// New.
     pub fn new(dimension: usize) -> Self {
         Self {
             dimension,

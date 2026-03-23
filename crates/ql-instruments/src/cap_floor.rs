@@ -9,8 +9,11 @@ use ql_time::Date;
 /// Cap/Floor type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CapFloorType {
+    /// Cap.
     Cap,
+    /// Floor.
     Floor,
+    /// Collar.
     Collar,
 }
 

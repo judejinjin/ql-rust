@@ -74,7 +74,9 @@ impl Integrator for SimpsonIntegral {
 /// Uses a 4-point Lobatto rule with adaptive subdivision for accuracy.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct GaussLobattoIntegral {
+    /// Max evaluations.
     pub max_evaluations: usize,
+    /// Absolute accuracy.
     pub absolute_accuracy: f64,
 }
 

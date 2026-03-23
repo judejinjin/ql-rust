@@ -36,9 +36,15 @@ pub enum LockoutMode {
     /// No adjustment — use each day's actual fixing.
     None,
     /// Freeze the fixing `days` business days before the period ends.
-    Lockout { days: u32 },
-    /// Obs erve the fixing shifted `days` back relative to the accrual date.
-    Lookback { days: u32 },
+    Lockout {
+        /// Number of business days before period end.
+        days: u32,
+    },
+    /// Observe the fixing shifted `days` back relative to the accrual date.
+    Lookback {
+        /// Number of business days to look back.
+        days: u32,
+    },
 }
 
 // =========================================================================

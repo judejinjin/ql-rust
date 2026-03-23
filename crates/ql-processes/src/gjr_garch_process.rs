@@ -34,13 +34,21 @@ use serde::{Deserialize, Serialize};
 /// Stationarity requires $\alpha + \beta + \gamma/2 < 1$.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GjrGarchProcess {
+    /// S0.
     pub s0: f64,
+    /// Risk free rate.
     pub risk_free_rate: f64,
+    /// Dividend yield.
     pub dividend_yield: f64,
+    /// H0.
     pub h0: f64,
+    /// Omega.
     pub omega: f64,
+    /// Alpha.
     pub alpha: f64,
+    /// Beta.
     pub beta: f64,
+    /// Gamma.
     pub gamma: f64,
 }
 

@@ -111,12 +111,19 @@ fn sabr_vol_core(
 /// ZABR smile section for a single expiry.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ZabrSmileSection {
+    /// Forward.
     pub forward: f64,
+    /// Expiry.
     pub expiry: f64,
+    /// Alpha.
     pub alpha: f64,
+    /// Beta.
     pub beta: f64,
+    /// Rho.
     pub rho: f64,
+    /// Nu.
     pub nu: f64,
+    /// Gamma.
     pub gamma: f64,
 }
 

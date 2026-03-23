@@ -121,10 +121,15 @@ impl FraOisBasisModel {
 /// Currency pair for a cross-currency basis swap.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CcyPair {
+    /// Eur Usd.
     EurUsd,
+    /// Gbp Usd.
     GbpUsd,
+    /// Jpy Usd.
     JpyUsd,
+    /// Aud Usd.
     AudUsd,
+    /// Other.
     Other,
 }
 

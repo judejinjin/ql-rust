@@ -12,6 +12,7 @@ use ql_core::errors::{QLError, QLResult};
 ///
 /// Finds `x` such that `f(x) = target` within the bracket `[x_min, x_max]`.
 pub trait Solver1D {
+    /// Solve.
     #[allow(clippy::too_many_arguments)]
     fn solve<F: Fn(f64) -> f64>(
         &self,

@@ -75,15 +75,20 @@ pub trait CurveState {
 /// Forward LIBOR curve state — wraps core [`LmmCurveState`] with owned accruals.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct LMMCurveState {
+    /// Forwards.
     pub forwards: Vec<f64>,
+    /// Accruals.
     pub accruals: Vec<f64>,
+    /// Alive.
     pub alive: usize,
 }
 
 impl LMMCurveState {
+    /// New.
     pub fn new(forwards: Vec<f64>, accruals: Vec<f64>) -> Self {
         Self { forwards, accruals, alive: 0 }
     }
+    /// With alive.
     pub fn with_alive(mut self, alive: usize) -> Self {
         self.alive = alive;
         self
@@ -114,8 +119,11 @@ impl CurveState for LMMCurveState {
 /// S_i = swap rate from T_i to T_N.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CoterminalSwapCurveState {
+    /// Coterminal rates.
     pub coterminal_rates: Vec<f64>,
+    /// Accruals.
     pub accruals: Vec<f64>,
+    /// Alive.
     pub alive: usize,
 }
 
@@ -178,9 +186,13 @@ impl CurveState for CoterminalSwapCurveState {
 /// Constant-maturity swap curve state — stores CMS rates of a fixed tenor.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CMSwapCurveState {
+    /// Cms rates.
     pub cms_rates: Vec<f64>,
+    /// Tenor periods.
     pub tenor_periods: usize,
+    /// Accruals.
     pub accruals: Vec<f64>,
+    /// Alive.
     pub alive: usize,
 }
 
@@ -230,13 +242,18 @@ impl CurveState for CMSwapCurveState {
 /// Log-normal LMM drift calculator (terminal measure).
 #[derive(Clone, Debug)]
 pub struct LMMDriftCalculator {
+    /// N rates.
     pub n_rates: usize,
+    /// Volatilities.
     pub volatilities: Vec<f64>,
+    /// Correlation.
     pub correlation: Vec<f64>,
+    /// Accruals.
     pub accruals: Vec<f64>,
 }
 
 impl LMMDriftCalculator {
+    /// New.
     pub fn new(config: &LmmConfig) -> Self {
         Self {
             n_rates: config.n_rates,
@@ -271,13 +288,18 @@ impl LMMDriftCalculator {
 /// Normal (Bachelier) LMM drift calculator.
 #[derive(Clone, Debug)]
 pub struct LMMNormalDriftCalculator {
+    /// N rates.
     pub n_rates: usize,
+    /// Volatilities.
     pub volatilities: Vec<f64>,
+    /// Correlation.
     pub correlation: Vec<f64>,
+    /// Accruals.
     pub accruals: Vec<f64>,
 }
 
 impl LMMNormalDriftCalculator {
+    /// New.
     pub fn new(config: &LmmConfig) -> Self {
         Self {
             n_rates: config.n_rates,
@@ -307,13 +329,18 @@ impl LMMNormalDriftCalculator {
 /// Swap Market Model (SMM) drift calculator for coterminal swap rates.
 #[derive(Clone, Debug)]
 pub struct SMMDriftCalculator {
+    /// N rates.
     pub n_rates: usize,
+    /// Volatilities.
     pub volatilities: Vec<f64>,
+    /// Correlation.
     pub correlation: Vec<f64>,
+    /// Accruals.
     pub accruals: Vec<f64>,
 }
 
 impl SMMDriftCalculator {
+    /// New.
     pub fn new(n_rates: usize, volatilities: Vec<f64>, correlation: Vec<f64>, accruals: Vec<f64>) -> Self {
         Self { n_rates, volatilities, correlation, accruals }
     }
@@ -336,14 +363,20 @@ impl SMMDriftCalculator {
 /// CMS SMM drift calculator.
 #[derive(Clone, Debug)]
 pub struct CmSMMDriftCalculator {
+    /// N rates.
     pub n_rates: usize,
+    /// Tenor periods.
     pub tenor_periods: usize,
+    /// Volatilities.
     pub volatilities: Vec<f64>,
+    /// Correlation.
     pub correlation: Vec<f64>,
+    /// Accruals.
     pub accruals: Vec<f64>,
 }
 
 impl CmSMMDriftCalculator {
+    /// New.
     pub fn new(
         n_rates: usize,
         tenor_periods: usize,
@@ -378,22 +411,28 @@ impl CmSMMDriftCalculator {
 /// Flat volatility for all forward rates.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FlatVol {
+    /// Vol.
     pub vol: f64,
+    /// N rates.
     pub n_rates: usize,
 }
 
 impl FlatVol {
+    /// New.
     pub fn new(vol: f64, n_rates: usize) -> Self { Self { vol, n_rates } }
+    /// Volatilities.
     pub fn volatilities(&self) -> Vec<f64> { vec![self.vol; self.n_rates] }
 }
 
 /// Piecewise constant variance: each rate has its own vol, constant in time.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PiecewiseConstantVariance {
+    /// Volatilities.
     pub volatilities: Vec<f64>,
 }
 
 impl PiecewiseConstantVariance {
+    /// New.
     pub fn new(volatilities: Vec<f64>) -> Self { Self { volatilities } }
 
     /// Integrated variance for rate i from 0 to T.
@@ -413,13 +452,18 @@ impl PiecewiseConstantVariance {
 /// τ = time-to-expiry of the forward rate.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AbcdVol {
+    /// A.
     pub a: f64,
+    /// B.
     pub b: f64,
+    /// C.
     pub c: f64,
+    /// D.
     pub d: f64,
 }
 
 impl AbcdVol {
+    /// New.
     pub fn new(a: f64, b: f64, c: f64, d: f64) -> Self { Self { a, b, c, d } }
 
     /// Instantaneous vol at time-to-expiry τ.
@@ -458,11 +502,14 @@ impl AbcdVol {
 /// Exponentially decaying correlation: ρ_{ij} = exp(−β|T_i − T_j|).
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ExponentialCorrelation {
+    /// Decay.
     pub decay: f64,
+    /// N rates.
     pub n_rates: usize,
 }
 
 impl ExponentialCorrelation {
+    /// New.
     pub fn new(decay: f64, n_rates: usize) -> Self { Self { decay, n_rates } }
 
     /// Generate full correlation matrix (row-major).
@@ -479,6 +526,7 @@ impl ExponentialCorrelation {
         corr
     }
 
+    /// Correlation.
     pub fn correlation(&self, i: usize, j: usize, accrual: f64) -> f64 {
         let ti = (i + 1) as f64 * accrual;
         let tj = (j + 1) as f64 * accrual;
@@ -491,10 +539,12 @@ impl ExponentialCorrelation {
 pub struct TimeHomogeneousForwardCorrelation {
     /// Correlation matrix (n × n, row-major).
     pub correlations: Vec<f64>,
+    /// N rates.
     pub n_rates: usize,
 }
 
 impl TimeHomogeneousForwardCorrelation {
+    /// New.
     pub fn new(correlations: Vec<f64>, n_rates: usize) -> Self {
         Self { correlations, n_rates }
     }
@@ -569,6 +619,7 @@ pub struct MTBrownianGenerator {
 }
 
 impl MTBrownianGenerator {
+    /// New.
     pub fn new(dimension: usize, seed: u64) -> Self {
         Self { rng: SmallRng::seed_from_u64(seed), dimension }
     }
@@ -594,6 +645,7 @@ pub struct SobolBrownianGenerator {
 }
 
 impl SobolBrownianGenerator {
+    /// New.
     pub fn new(dimension: usize, _seed: u64) -> Self {
         // Joe-Kuo direction numbers (simplified — first 40 dimensions)
         let mut direction_numbers = Vec::with_capacity(dimension);
@@ -731,11 +783,14 @@ pub trait Evolver: Send + Sync {
 /// Log-normal forward rate Euler evolver.
 #[derive(Clone, Debug)]
 pub struct LogNormalFwdRateEuler {
+    /// Config.
     pub config: LmmConfig,
+    /// Cholesky.
     pub cholesky: Vec<f64>,
 }
 
 impl LogNormalFwdRateEuler {
+    /// New.
     pub fn new(config: LmmConfig) -> Self {
         let cholesky = config.cholesky();
         Self { config, cholesky }
@@ -774,11 +829,14 @@ impl Evolver for LogNormalFwdRateEuler {
 /// Log-normal predictor-corrector evolver (Glasserman scheme).
 #[derive(Clone, Debug)]
 pub struct LogNormalFwdRatePC {
+    /// Config.
     pub config: LmmConfig,
+    /// Cholesky.
     pub cholesky: Vec<f64>,
 }
 
 impl LogNormalFwdRatePC {
+    /// New.
     pub fn new(config: LmmConfig) -> Self {
         let cholesky = config.cholesky();
         Self { config, cholesky }
@@ -826,11 +884,14 @@ impl Evolver for LogNormalFwdRatePC {
 /// Balland-Tran evolver — variance-preserving drift correction.
 #[derive(Clone, Debug)]
 pub struct LogNormalFwdRateBalland {
+    /// Config.
     pub config: LmmConfig,
+    /// Cholesky.
     pub cholesky: Vec<f64>,
 }
 
 impl LogNormalFwdRateBalland {
+    /// New.
     pub fn new(config: LmmConfig) -> Self {
         let cholesky = config.cholesky();
         Self { config, cholesky }
@@ -875,11 +936,14 @@ impl Evolver for LogNormalFwdRateBalland {
 /// Constrained Euler evolver — ensures positive forward rates.
 #[derive(Clone, Debug)]
 pub struct LogNormalFwdRateConstrainedEuler {
+    /// Config.
     pub config: LmmConfig,
+    /// Cholesky.
     pub cholesky: Vec<f64>,
 }
 
 impl LogNormalFwdRateConstrainedEuler {
+    /// New.
     pub fn new(config: LmmConfig) -> Self {
         let cholesky = config.cholesky();
         Self { config, cholesky }
@@ -918,12 +982,16 @@ impl Evolver for LogNormalFwdRateConstrainedEuler {
 /// Iterative predictor-corrector — applies PC correction multiple times.
 #[derive(Clone, Debug)]
 pub struct LogNormalFwdRateIPC {
+    /// Config.
     pub config: LmmConfig,
+    /// Cholesky.
     pub cholesky: Vec<f64>,
+    /// N iterations.
     pub n_iterations: usize,
 }
 
 impl LogNormalFwdRateIPC {
+    /// New.
     pub fn new(config: LmmConfig, n_iterations: usize) -> Self {
         let cholesky = config.cholesky();
         Self { config, cholesky, n_iterations }
@@ -974,12 +1042,16 @@ impl Evolver for LogNormalFwdRateIPC {
 /// Log-normal coterminal swap rate predictor-corrector evolver.
 #[derive(Clone, Debug)]
 pub struct LogNormalCotSwapRatePC {
+    /// Config.
     pub config: LmmConfig,
+    /// Cholesky.
     pub cholesky: Vec<f64>,
+    /// Swap vols.
     pub swap_vols: Vec<f64>,
 }
 
 impl LogNormalCotSwapRatePC {
+    /// New.
     pub fn new(config: LmmConfig, swap_vols: Vec<f64>) -> Self {
         let cholesky = config.cholesky();
         Self { config, cholesky, swap_vols }
@@ -1042,11 +1114,14 @@ impl Evolver for LogNormalCotSwapRatePC {
 /// Normal (Bachelier) forward rate predictor-corrector evolver.
 #[derive(Clone, Debug)]
 pub struct NormalFwdRatePC {
+    /// Config.
     pub config: LmmConfig,
+    /// Cholesky.
     pub cholesky: Vec<f64>,
 }
 
 impl NormalFwdRatePC {
+    /// New.
     pub fn new(config: LmmConfig) -> Self {
         let cholesky = config.cholesky();
         Self { config, cholesky }
@@ -1095,13 +1170,18 @@ impl Evolver for NormalFwdRatePC {
 /// Log-normal CMS measure predictor-corrector evolver.
 #[derive(Clone, Debug)]
 pub struct LogNormalCMSwapRatePC {
+    /// Config.
     pub config: LmmConfig,
+    /// Cholesky.
     pub cholesky: Vec<f64>,
+    /// Cms vols.
     pub cms_vols: Vec<f64>,
+    /// Tenor periods.
     pub tenor_periods: usize,
 }
 
 impl LogNormalCMSwapRatePC {
+    /// New.
     pub fn new(config: LmmConfig, cms_vols: Vec<f64>, tenor_periods: usize) -> Self {
         let cholesky = config.cholesky();
         Self { config, cholesky, cms_vols, tenor_periods }
@@ -1243,11 +1323,14 @@ pub trait AlphaForm {
 /// Linear-hyperbolic alpha form: α(i) = 1 − (1−a)·i/(n−1).
 #[derive(Clone, Debug)]
 pub struct AlphaFormLinearHyperbolic {
+    /// N rates.
     pub n_rates: usize,
+    /// Alpha 0.
     pub alpha_0: f64,
 }
 
 impl AlphaFormLinearHyperbolic {
+    /// New.
     pub fn new(n_rates: usize, alpha_0: f64) -> Self { Self { n_rates, alpha_0 } }
 }
 
@@ -1268,12 +1351,16 @@ impl AlphaForm for AlphaFormLinearHyperbolic {
 /// (mean PV, standard error, quantiles).
 #[derive(Clone, Debug)]
 pub struct AccountingEngine {
+    /// Config.
     pub config: LmmConfig,
+    /// N paths.
     pub n_paths: usize,
+    /// Seed.
     pub seed: u64,
 }
 
 impl AccountingEngine {
+    /// New.
     pub fn new(config: LmmConfig, n_paths: usize, seed: u64) -> Self {
         Self { config, n_paths, seed }
     }
@@ -1315,8 +1402,11 @@ impl AccountingEngine {
 /// Result of an accounting engine run.
 #[derive(Clone, Debug)]
 pub struct AccountingResult {
+    /// Mean pv.
     pub mean_pv: f64,
+    /// Std error.
     pub std_error: f64,
+    /// Path pvs.
     pub path_pvs: Vec<f64>,
 }
 
@@ -1342,12 +1432,16 @@ impl AccountingResult {
 /// Proxy Greek engine — computes parameter sensitivities via bump-and-revalue.
 #[derive(Clone, Debug)]
 pub struct ProxyGreekEngine {
+    /// Config.
     pub config: LmmConfig,
+    /// N paths.
     pub n_paths: usize,
+    /// Seed.
     pub seed: u64,
 }
 
 impl ProxyGreekEngine {
+    /// New.
     pub fn new(config: LmmConfig, n_paths: usize, seed: u64) -> Self {
         Self { config, n_paths, seed }
     }

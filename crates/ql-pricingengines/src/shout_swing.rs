@@ -18,8 +18,11 @@ use serde::{Deserialize, Serialize};
 /// Result from the shout option engine.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ShoutOptionResult {
+    /// Price.
     pub price: f64,
+    /// Delta.
     pub delta: f64,
+    /// Gamma.
     pub gamma: f64,
 }
 

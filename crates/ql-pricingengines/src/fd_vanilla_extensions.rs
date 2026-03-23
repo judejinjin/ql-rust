@@ -11,9 +11,13 @@ use serde::{Deserialize, Serialize};
 /// Result for FD vanilla extension engines.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FdExtVanillaResult {
+    /// Price.
     pub price: f64,
+    /// Delta.
     pub delta: f64,
+    /// Gamma.
     pub gamma: f64,
+    /// Theta.
     pub theta: f64,
 }
 

@@ -104,6 +104,7 @@ pub struct DerivedQuote<F: Fn(f64) -> f64 + Send + Sync> {
 }
 
 impl<F: Fn(f64) -> f64 + Send + Sync> DerivedQuote<F> {
+    /// New.
     pub fn new(source: Arc<dyn Quote>, transform: F) -> Self {
         Self {
             source,
@@ -152,6 +153,7 @@ pub struct CompositeQuote<F: Fn(f64, f64) -> f64 + Send + Sync> {
 }
 
 impl<F: Fn(f64, f64) -> f64 + Send + Sync> CompositeQuote<F> {
+    /// New.
     pub fn new(lhs: Arc<dyn Quote>, rhs: Arc<dyn Quote>, combine: F) -> Self {
         Self {
             lhs,
@@ -207,6 +209,7 @@ pub struct DeltaVolQuote {
 }
 
 impl DeltaVolQuote {
+    /// New.
     pub fn new(delta: f64, vol: Arc<dyn Quote>, maturity: f64, delta_type: DeltaType) -> Self {
         Self {
             delta,
@@ -217,8 +220,11 @@ impl DeltaVolQuote {
         }
     }
 
+    /// Delta.
     pub fn delta(&self) -> f64 { self.delta }
+    /// Maturity.
     pub fn maturity(&self) -> f64 { self.maturity }
+    /// Delta type.
     pub fn delta_type(&self) -> DeltaType { self.delta_type }
 }
 
@@ -244,6 +250,7 @@ pub struct EurodollarFuturesQuote {
 }
 
 impl EurodollarFuturesQuote {
+    /// New.
     pub fn new(price: Arc<dyn Quote>) -> Self {
         Self { price, state: RwLock::new(ObservableState::new()) }
     }
@@ -278,6 +285,7 @@ pub struct FuturesConvAdjustmentQuote {
 }
 
 impl FuturesConvAdjustmentQuote {
+    /// New.
     pub fn new(futures: Arc<dyn Quote>, convexity_adj: Arc<dyn Quote>) -> Self {
         Self { futures, convexity_adj, state: RwLock::new(ObservableState::new()) }
     }
@@ -315,6 +323,7 @@ pub struct ForwardValueQuote {
 }
 
 impl ForwardValueQuote {
+    /// New.
     pub fn new(spot: Arc<dyn Quote>, growth: Arc<dyn Quote>, discount: Arc<dyn Quote>) -> Self {
         Self { spot, growth, discount, state: RwLock::new(ObservableState::new()) }
     }

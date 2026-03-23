@@ -32,9 +32,15 @@ pub enum MountainType {
     /// Payoff = min(return_i) over all assets.
     Everest,
     /// Average return after removing `n_remove` best and `n_remove` worst.
-    Atlas { n_remove: usize },
+    Atlas {
+        /// Number of assets to remove from best and worst.
+        n_remove: usize,
+    },
     /// Accumulated positive returns, each capped at a local cap.
-    Pagoda { local_cap: f64 },
+    Pagoda {
+        /// Maximum return per observation.
+        local_cap: f64,
+    },
 }
 
 /// Price a mountain-range exotic option via Monte Carlo.

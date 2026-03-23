@@ -14,7 +14,9 @@ use crate::number::Number;
 /// complex arithmetic and transcendental operations.
 #[derive(Clone, Copy, Debug)]
 pub struct Complex<T: Number> {
+    /// Re.
     pub re: T,
+    /// Im.
     pub im: T,
 }
 

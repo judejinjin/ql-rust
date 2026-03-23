@@ -48,9 +48,13 @@ fn norm_pdf(x: f64) -> f64 {
 /// Result from quanto option pricing.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct QuantoResult {
+    /// Price.
     pub price: f64,
+    /// Delta.
     pub delta: f64,
+    /// Gamma.
     pub gamma: f64,
+    /// Vega.
     pub vega: f64,
 }
 
@@ -120,6 +124,7 @@ pub fn quanto_european(
 /// Result from power option pricing.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PowerResult {
+    /// Price.
     pub price: f64,
 }
 
@@ -172,6 +177,7 @@ pub fn power_option(
 /// Result from forward-start option pricing.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ForwardStartResult {
+    /// Price.
     pub price: f64,
 }
 
@@ -229,6 +235,7 @@ pub fn forward_start_option(
 /// Result from digital barrier option pricing.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DigitalBarrierResult {
+    /// Price.
     pub price: f64,
 }
 

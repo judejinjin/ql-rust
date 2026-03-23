@@ -21,10 +21,15 @@ use crate::coupon::Coupon;
 /// is above (call) or below (put) the strike.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DigitalCoupon {
+    /// Payment date.
     pub payment_date: Date,
+    /// Nominal.
     pub nominal: f64,
+    /// Accrual start.
     pub accrual_start: Date,
+    /// Accrual end.
     pub accrual_end: Date,
+    /// Day counter.
     pub day_counter: DayCounter,
     /// The reference rate observed at fixing.
     pub reference_rate: f64,
@@ -37,6 +42,7 @@ pub struct DigitalCoupon {
 }
 
 impl DigitalCoupon {
+    /// New.
     pub fn new(
         payment_date: Date,
         nominal: f64,
@@ -151,6 +157,7 @@ pub struct CapFlooredCoupon {
 }
 
 impl CapFlooredCoupon {
+    /// New.
     pub fn new(
         payment_date: Date,
         nominal: f64,
@@ -177,6 +184,7 @@ impl CapFlooredCoupon {
         }
     }
 
+    /// Effective rate.
     pub fn effective_rate(&self) -> f64 {
         let raw = self.gearing * self.reference_rate + self.spread;
         let floored = match self.floor {
@@ -262,6 +270,7 @@ pub struct RangeAccrualCoupon {
 }
 
 impl RangeAccrualCoupon {
+    /// New.
     pub fn new(
         payment_date: Date,
         nominal: f64,
@@ -380,6 +389,7 @@ pub struct SubPeriodCoupon {
 }
 
 impl SubPeriodCoupon {
+    /// New.
     pub fn new(
         payment_date: Date,
         nominal: f64,

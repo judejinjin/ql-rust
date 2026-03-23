@@ -217,8 +217,11 @@ pub fn partial_time_barrier(
 /// Result of a two-asset correlation option.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct TwoAssetCorrelationResult {
+    /// Npv.
     pub npv: f64,
+    /// Delta1.
     pub delta1: f64,
+    /// Delta2.
     pub delta2: f64,
 }
 
@@ -299,6 +302,7 @@ pub fn two_asset_correlation(
 /// Result of extensible option pricing.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct ExtensibleOptionResult {
+    /// Npv.
     pub npv: f64,
 }
 

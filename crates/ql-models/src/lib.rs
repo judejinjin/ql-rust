@@ -23,6 +23,7 @@
 //!
 //! ### LIBOR Market Model
 //! - [`lmm`] — LMM framework for forward rates (caps, swaptions)
+#![warn(missing_docs)]
 
 pub mod parameter;
 pub mod calibrated_model;

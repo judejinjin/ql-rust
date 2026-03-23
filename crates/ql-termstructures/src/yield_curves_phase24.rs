@@ -224,6 +224,7 @@ impl CubicBSplinesFitting {
 pub struct SpreadFittingMethod {
     /// Reference discount factors at sample times.
     pub ref_times: Vec<f64>,
+    /// Ref dfs.
     pub ref_dfs: Vec<f64>,
     /// Polynomial spread coefficients [s₁, s₂, …, sₙ].
     /// Spread s(t) = s₁·t + s₂·t² + …

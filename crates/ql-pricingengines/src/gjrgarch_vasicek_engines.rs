@@ -193,7 +193,9 @@ pub fn vasicek_bond_option(
 /// Result from the Vasicek European equity option engine.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct VasicekEquityResult {
+    /// Price.
     pub price: f64,
+    /// Effective vol.
     pub effective_vol: f64,
 }
 

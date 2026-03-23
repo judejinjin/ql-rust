@@ -69,6 +69,7 @@ impl LatticeRsg {
         result
     }
 
+    /// Dimension.
     pub fn dimension(&self) -> usize {
         self.dimensionality
     }
@@ -155,6 +156,7 @@ impl RandomizedLDS {
         self.counter = 0;
     }
 
+    /// Dimension.
     pub fn dimension(&self) -> usize {
         self.dimensionality
     }
@@ -267,14 +269,18 @@ pub fn get_covariance(std_devs: &[f64], corr: &[f64], n: usize) -> QLResult<Vec<
 /// Decompose a covariance matrix into standard deviations and a correlation matrix.
 #[derive(Clone, Debug)]
 pub struct CovarianceDecomposition {
+    /// Variances.
     pub variances: Vec<f64>,
+    /// Std devs.
     pub std_devs: Vec<f64>,
+    /// Correlation matrix.
     pub correlation_matrix: Vec<f64>,
     #[allow(dead_code)]
     n: usize,
 }
 
 impl CovarianceDecomposition {
+    /// New.
     pub fn new(covariance: &[f64], n: usize) -> QLResult<Self> {
         if covariance.len() != n * n {
             return Err(QLError::InvalidArgument(
@@ -313,6 +319,7 @@ pub struct BasisIncompleteOrdered {
 }
 
 impl BasisIncompleteOrdered {
+    /// New.
     pub fn new(euclidean_dim: usize) -> Self {
         Self {
             euclidean_dim,
@@ -352,10 +359,12 @@ impl BasisIncompleteOrdered {
         true
     }
 
+    /// Basis size.
     pub fn basis_size(&self) -> usize {
         self.basis.len()
     }
 
+    /// Euclidean dimension.
     pub fn euclidean_dimension(&self) -> usize {
         self.euclidean_dim
     }
@@ -530,6 +539,7 @@ impl Default for PrimeNumbers {
 }
 
 impl PrimeNumbers {
+    /// New.
     pub fn new() -> Self {
         Self {
             primes: vec![2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47],
@@ -623,6 +633,7 @@ impl TransformedGrid {
         Self::with_transform(grid, f64::ln)
     }
 
+    /// Size.
     pub fn size(&self) -> usize {
         self.grid.len()
     }
@@ -924,10 +935,12 @@ impl DiscreteSimpsonIntegral {
 /// Discrete trapezoid integrator (wraps a function, not tabulated data).
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct DiscreteTrapezoidIntegrator {
+    /// Evaluations.
     pub evaluations: usize,
 }
 
 impl DiscreteTrapezoidIntegrator {
+    /// New.
     pub fn new(evaluations: usize) -> Self {
         Self { evaluations }
     }
@@ -947,10 +960,12 @@ impl DiscreteTrapezoidIntegrator {
 /// Discrete Simpson integrator (wraps a function).
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct DiscreteSimpsonIntegrator {
+    /// Evaluations.
     pub evaluations: usize,
 }
 
 impl DiscreteSimpsonIntegrator {
+    /// New.
     pub fn new(evaluations: usize) -> Self {
         Self { evaluations }
     }
@@ -1136,6 +1151,7 @@ pub struct GaussLaguerreCosinePolynomial {
 }
 
 impl GaussLaguerreCosinePolynomial {
+    /// New.
     pub fn new(u: f64) -> Self {
         let u2 = u * u;
         let denom = 1.0 + u2;
@@ -1180,6 +1196,7 @@ pub struct GaussLaguerreSinePolynomial {
 }
 
 impl GaussLaguerreSinePolynomial {
+    /// New.
     pub fn new(u: f64) -> Self {
         let u2 = u * u;
         let denom = 1.0 + u2;

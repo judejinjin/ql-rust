@@ -411,9 +411,13 @@ fn solve_3x3(a: &[[f64; 3]; 3], b: &[f64; 3]) -> [f64; 3] {
 /// Rebonato four-parameter form used widely in practice.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RebonatVolSurface {
+    /// A.
     pub a: f64,
+    /// B.
     pub b: f64,
+    /// C.
     pub c: f64,
+    /// D.
     pub d: f64,
 }
 

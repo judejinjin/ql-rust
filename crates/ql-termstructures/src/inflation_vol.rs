@@ -128,12 +128,16 @@ impl YoYOptionletVolSurface {
 /// Constant CPI volatility (flat across all maturities and strikes).
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ConstantCpiVol {
+    /// Reference date.
     pub reference_date: Date,
+    /// Volatility.
     pub volatility: f64,
+    /// Is normal.
     pub is_normal: bool,
 }
 
 impl ConstantCpiVol {
+    /// Vol.
     pub fn vol(&self, _t: f64, _strike: f64) -> f64 {
         self.volatility
     }
@@ -142,12 +146,16 @@ impl ConstantCpiVol {
 /// Constant YoY optionlet volatility.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ConstantYoYVol {
+    /// Reference date.
     pub reference_date: Date,
+    /// Volatility.
     pub volatility: f64,
+    /// Is normal.
     pub is_normal: bool,
 }
 
 impl ConstantYoYVol {
+    /// Vol.
     pub fn vol(&self, _t: f64, _strike: f64) -> f64 {
         self.volatility
     }

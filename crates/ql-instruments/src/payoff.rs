@@ -12,7 +12,9 @@ use serde::{Deserialize, Serialize};
 /// Call or put.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum OptionType {
+    /// Call.
     Call,
+    /// Put.
     Put,
 }
 
@@ -35,24 +37,34 @@ impl OptionType {
 pub enum Payoff {
     /// Standard European/American payoff: max(omega*(S-K), 0).
     PlainVanilla {
+        /// Field.
         option_type: OptionType,
+        /// Field.
         strike: f64,
     },
     /// Digital (binary): pays a fixed cash amount if in-the-money.
     CashOrNothing {
+        /// Field.
         option_type: OptionType,
+        /// Field.
         strike: f64,
+        /// Field.
         cash: f64,
     },
     /// Pays the asset price if in-the-money.
     AssetOrNothing {
+        /// Field.
         option_type: OptionType,
+        /// Field.
         strike: f64,
     },
     /// Gap payoff: pays (S - K2) if omega*(S-K1) > 0.
     Gap {
+        /// Field.
         option_type: OptionType,
+        /// Field.
         strike: f64,
+        /// Field.
         second_strike: f64,
     },
 }
@@ -128,11 +140,22 @@ impl Payoff {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Exercise {
     /// European exercise: only at expiry.
-    European { expiry: Date },
+    European {
+        /// Expiry date.
+        expiry: Date,
+    },
     /// American exercise: any time between earliest and expiry.
-    American { earliest: Date, expiry: Date },
+    American {
+        /// Earliest exercise date.
+        earliest: Date,
+        /// Expiry date.
+        expiry: Date,
+    },
     /// Bermudan exercise: on specific dates.
-    Bermudan { dates: Vec<Date> },
+    Bermudan {
+        /// Allowed exercise dates.
+        dates: Vec<Date>,
+    },
 }
 
 impl Exercise {

@@ -163,6 +163,7 @@ pub fn clayton_theta_from_tau(tau: f64) -> QLResult<f64> {
     Ok(2.0 * tau / (1.0 - tau))
 }
 
+/// Gumbel theta from tau.
 pub fn gumbel_theta_from_tau(tau: f64) -> QLResult<f64> {
     if tau <= 0.0 || tau >= 1.0 {
         return Err(ql_core::QLError::InvalidArgument(

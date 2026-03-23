@@ -36,6 +36,7 @@
 //! | `ql-pricingengines` | Analytic, MC, FD, and tree pricing engines |
 //! | `ql-persistence` | Trade storage, lifecycle events, market snapshots |
 //! | `ql-cli` | Command-line interface for pricing and curve ops |
+#![warn(missing_docs)]
 
 // Core types and errors
 pub use ql_core::{QLError, QLResult};

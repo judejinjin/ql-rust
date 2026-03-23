@@ -8,19 +8,24 @@ use std::f64::consts::PI;
 /// Complex number (simple implementation to avoid extra dependency).
 #[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Complex {
+    /// Re.
     pub re: f64,
+    /// Im.
     pub im: f64,
 }
 
 impl Complex {
+    /// New.
     pub fn new(re: f64, im: f64) -> Self {
         Self { re, im }
     }
 
+    /// Zero.
     pub fn zero() -> Self {
         Self { re: 0.0, im: 0.0 }
     }
 
+    /// From polar.
     pub fn from_polar(r: f64, theta: f64) -> Self {
         Self {
             re: r * theta.cos(),
@@ -28,14 +33,17 @@ impl Complex {
         }
     }
 
+    /// Norm sq.
     pub fn norm_sq(self) -> f64 {
         self.re * self.re + self.im * self.im
     }
 
+    /// Norm.
     pub fn norm(self) -> f64 {
         self.norm_sq().sqrt()
     }
 
+    /// Conj.
     pub fn conj(self) -> Self {
         Self {
             re: self.re,
@@ -43,6 +51,7 @@ impl Complex {
         }
     }
 
+    /// Exp.
     pub fn exp(self) -> Self {
         let r = self.re.exp();
         Self {

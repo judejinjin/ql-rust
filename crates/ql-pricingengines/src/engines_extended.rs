@@ -365,10 +365,15 @@ impl BondFunctions {
 /// then applies standard Black-Scholes.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AnalyticDividendEuropeanResult {
+    /// Price.
     pub price: f64,
+    /// Delta.
     pub delta: f64,
+    /// Gamma.
     pub gamma: f64,
+    /// Vega.
     pub vega: f64,
+    /// Theta.
     pub theta: f64,
 }
 
@@ -433,7 +438,9 @@ pub fn analytic_dividend_european(
 /// Uses the Brigo-Mercurio analytic approximation for European swaptions.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct G2SwaptionResult {
+    /// Price.
     pub price: f64,
+    /// Annuity.
     pub annuity: f64,
 }
 
@@ -538,7 +545,9 @@ pub fn g2_swaption_price(
 /// Simple trinomial tree swap pricing result (G12).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TreeSwapResult {
+    /// Price.
     pub price: f64,
+    /// Swap rate.
     pub swap_rate: f64,
 }
 
@@ -624,6 +633,7 @@ pub fn tree_swap_engine(
 /// Analytic performance (cliquet) option result (G13).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AnalyticPerformanceResult {
+    /// Price.
     pub price: f64,
 }
 
@@ -700,6 +710,7 @@ fn capped_floored_lognormal_return(mu: f64, sigma: f64, cap: f64, floor: f64) ->
 /// Forward-start performance option result (G17).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ForwardPerformanceResult {
+    /// Price.
     pub price: f64,
 }
 

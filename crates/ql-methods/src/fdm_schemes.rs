@@ -168,6 +168,7 @@ impl RunningExtremeCondition {
     pub fn new_max(n_grid: usize, initial: f64) -> Self {
         Self { is_max: true, extremum: vec![initial; n_grid] }
     }
+    /// New min.
     pub fn new_min(n_grid: usize, initial: f64) -> Self {
         Self { is_max: false, extremum: vec![initial; n_grid] }
     }

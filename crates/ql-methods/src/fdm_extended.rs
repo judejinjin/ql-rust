@@ -190,7 +190,9 @@ pub struct Fdm3dResult {
     pub values: Vec<f64>,
     /// Grid sizes.
     pub n1: usize,
+    /// N2.
     pub n2: usize,
+    /// N3.
     pub n3: usize,
 }
 

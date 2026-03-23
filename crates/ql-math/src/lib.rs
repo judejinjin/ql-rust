@@ -36,6 +36,7 @@
 //! let root = Brent.solve(|x| x * x, 2.0, 1.5, 1.0, 2.0, 1e-12, 100).unwrap();
 //! assert!((root - std::f64::consts::SQRT_2).abs() < 1e-10);
 //! ```
+#![warn(missing_docs)]
 
 pub mod copulas;
 pub mod distributions;

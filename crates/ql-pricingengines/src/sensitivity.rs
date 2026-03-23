@@ -90,10 +90,15 @@ impl RiskFactor {
 /// Market parameters for equity / option sensitivity computation.
 #[derive(Debug, Clone)]
 pub struct EquityMarketParams {
+    /// Spot.
     pub spot: f64,
+    /// Risk free rate.
     pub risk_free_rate: f64,
+    /// Dividend yield.
     pub dividend_yield: f64,
+    /// Volatility.
     pub volatility: f64,
+    /// Time to expiry.
     pub time_to_expiry: f64,
 }
 

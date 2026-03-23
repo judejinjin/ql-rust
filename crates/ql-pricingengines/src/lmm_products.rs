@@ -150,9 +150,11 @@ pub struct CmsSpreadOption {
     pub observation_step: usize,
     /// CMS1: swap rate from `cms1_start` to `cms1_end`.
     pub cms1_start: usize,
+    /// Cms1 end.
     pub cms1_end: usize,
     /// CMS2: swap rate from `cms2_start` to `cms2_end`.
     pub cms2_start: usize,
+    /// Cms2 end.
     pub cms2_end: usize,
     /// Strike on the spread.
     pub strike: f64,

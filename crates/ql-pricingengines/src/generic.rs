@@ -3910,8 +3910,11 @@ pub fn mc_asian_arithmetic_generic<T: Number>(
 /// MC variance swap result, generic over `T`.
 #[derive(Debug, Clone, Copy)]
 pub struct McVarianceSwapResultGeneric<T: Number> {
+    /// Fair variance.
     pub fair_variance: T,
+    /// Fair volatility.
     pub fair_volatility: T,
+    /// Pv.
     pub pv: T,
 }
 
@@ -4853,7 +4856,9 @@ pub fn fd_vanilla_generic<T: Number>(
 /// Result of generic commodity forward valuation.
 #[derive(Debug, Clone)]
 pub struct CommodityForwardResultGeneric<T> {
+    /// Npv.
     pub npv: T,
+    /// Forward price.
     pub forward_price: T,
 }
 
@@ -4875,8 +4880,11 @@ pub fn commodity_forward_generic<T: Number>(
 /// Result of generic commodity swap valuation.
 #[derive(Debug, Clone)]
 pub struct CommoditySwapResultGeneric<T> {
+    /// Npv.
     pub npv: T,
+    /// Average forward.
     pub average_forward: T,
+    /// Fair fixed price.
     pub fair_fixed_price: T,
 }
 
@@ -4932,8 +4940,11 @@ pub fn commodity_swap_generic<T: Number>(
 /// Result of generic asset swap pricing.
 #[derive(Debug, Clone)]
 pub struct AssetSwapResultGeneric<T> {
+    /// Asset swap spread.
     pub asset_swap_spread: T,
+    /// Bond leg npv.
     pub bond_leg_npv: T,
+    /// Floating annuity.
     pub floating_annuity: T,
 }
 
@@ -4984,9 +4995,13 @@ pub fn asset_swap_generic<T: Number>(
 /// Result of generic equity TRS pricing.
 #[derive(Debug, Clone)]
 pub struct EquityTrsResultGeneric<T> {
+    /// Equity leg npv.
     pub equity_leg_npv: T,
+    /// Funding leg npv.
     pub funding_leg_npv: T,
+    /// Npv.
     pub npv: T,
+    /// Equity return.
     pub equity_return: T,
 }
 
@@ -5040,9 +5055,13 @@ pub fn equity_trs_fair_spread_generic<T: Number>(
 /// Result of generic CDO tranche pricing.
 #[derive(Debug, Clone)]
 pub struct CdoTrancheResultGeneric<T> {
+    /// Expected loss.
     pub expected_loss: T,
+    /// Fair spread.
     pub fair_spread: T,
+    /// Protection leg.
     pub protection_leg: T,
+    /// Premium leg.
     pub premium_leg: T,
 }
 
@@ -5873,9 +5892,13 @@ pub fn price_european_generic<T: Number>(
 /// Type of partial-time barrier.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PartialBarrierTypeGeneric {
+    /// B1 Down Out.
     B1DownOut,
+    /// B1 Down In.
     B1DownIn,
+    /// B1 Up Out.
     B1UpOut,
+    /// B1 Up In.
     B1UpIn,
 }
 
@@ -6486,7 +6509,10 @@ pub enum MountainTypeGeneric {
     /// Payoff = min return over all assets.
     Everest,
     /// Accumulated positive returns, capped.
-    Pagoda { local_cap: f64 },
+    Pagoda {
+        /// Maximum return per observation.
+        local_cap: f64,
+    },
 }
 
 /// Multi-asset MC for mountain-range options, generic.

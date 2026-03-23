@@ -119,6 +119,7 @@ pub struct FdmBackwardSolver {
 }
 
 impl FdmBackwardSolver {
+    /// New.
     pub fn new(n_steps: usize, total_time: f64, theta: f64) -> Self {
         Self {
             n_steps,
@@ -169,6 +170,7 @@ pub struct FdmSolverDesc {
 }
 
 impl FdmSolverDesc {
+    /// New.
     pub fn new(mesher: FdmMesherComposite, n_time_steps: usize, maturity: f64) -> Self {
         Self {
             mesher,
@@ -187,11 +189,14 @@ impl FdmSolverDesc {
 /// 1D finite difference solver.
 #[derive(Debug, Clone)]
 pub struct Fdm1DimSolver {
+    /// Desc.
     pub desc: FdmSolverDesc,
+    /// Op.
     pub op: TripleBandOp,
 }
 
 impl Fdm1DimSolver {
+    /// New.
     pub fn new(desc: FdmSolverDesc, op: TripleBandOp) -> Self {
         Self { desc, op }
     }
@@ -215,12 +220,16 @@ impl Fdm1DimSolver {
 /// 2D finite difference solver with ADI splitting.
 #[derive(Debug, Clone)]
 pub struct Fdm2DimSolver {
+    /// Desc.
     pub desc: FdmSolverDesc,
+    /// Op1.
     pub op1: TripleBandOp,
+    /// Op2.
     pub op2: TripleBandOp,
 }
 
 impl Fdm2DimSolver {
+    /// New.
     pub fn new(desc: FdmSolverDesc, op1: TripleBandOp, op2: TripleBandOp) -> Self {
         Self { desc, op1, op2 }
     }
@@ -246,11 +255,14 @@ impl Fdm2DimSolver {
 /// Uses recursive operator splitting for N > 2 dimensions.
 #[derive(Debug, Clone)]
 pub struct FdmNDimSolver {
+    /// Desc.
     pub desc: FdmSolverDesc,
+    /// Ops.
     pub ops: Vec<TripleBandOp>,
 }
 
 impl FdmNDimSolver {
+    /// New.
     pub fn new(desc: FdmSolverDesc, ops: Vec<TripleBandOp>) -> Self {
         Self { desc, ops }
     }
@@ -319,6 +331,7 @@ pub struct FdmQuantoHelper {
 }
 
 impl FdmQuantoHelper {
+    /// New.
     pub fn new(rho_sx: f64, sigma_s: f64, sigma_x: f64, r_foreign: f64, r_domestic: f64) -> Self {
         Self {
             rho_sx,
@@ -364,6 +377,7 @@ pub struct FdmDividendHandler {
 }
 
 impl FdmDividendHandler {
+    /// New.
     pub fn new(dividends: Vec<f64>, dividend_times: Vec<f64>) -> Self {
         assert_eq!(dividends.len(), dividend_times.len());
         Self {
@@ -419,7 +433,9 @@ pub trait FdmInnerValueCalculator {
 /// Plain-vanilla option inner value calculator.
 #[derive(Debug, Clone)]
 pub struct VanillaInnerValue {
+    /// Strike.
     pub strike: f64,
+    /// Is call.
     pub is_call: bool,
     /// If true, grid is log-spot.
     pub log_grid: bool,
@@ -464,6 +480,7 @@ pub struct FdmAffineModelTermStructure {
 }
 
 impl FdmAffineModelTermStructure {
+    /// New.
     pub fn new(a: f64, b: f64, t: f64, big_t: f64) -> Self {
         Self { a, b, t, big_t }
     }
@@ -581,14 +598,20 @@ impl FdmIndicesOnBoundary {
 /// from Heston via Gyöngy's theorem.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FdmHestonGreensFct {
+    /// Kappa.
     pub kappa: f64,
+    /// Theta.
     pub theta: f64,
+    /// Sigma.
     pub sigma: f64,
+    /// V0.
     pub v0: f64,
+    /// T.
     pub t: f64,
 }
 
 impl FdmHestonGreensFct {
+    /// New.
     pub fn new(kappa: f64, theta: f64, sigma: f64, v0: f64, t: f64) -> Self {
         Self {
             kappa,
@@ -709,6 +732,7 @@ pub struct FdmSimpleStorageCondition {
 }
 
 impl FdmSimpleStorageCondition {
+    /// New.
     pub fn new(max_injection: f64, max_withdrawal: f64, capacity: f64, inventory: f64) -> Self {
         Self {
             max_injection,
@@ -763,6 +787,7 @@ pub struct FdmSimpleSwingCondition {
 }
 
 impl FdmSimpleSwingCondition {
+    /// New.
     pub fn new(rights_remaining: usize, min_exercises: usize, max_exercises: usize) -> Self {
         Self {
             rights_remaining,
@@ -802,6 +827,7 @@ pub struct FdmSnapshotCondition {
 }
 
 impl FdmSnapshotCondition {
+    /// New.
     pub fn new(snapshot_time: f64) -> Self {
         Self {
             snapshot_time,
@@ -827,10 +853,12 @@ impl FdmSnapshotCondition {
 /// Each condition is represented as a boxed closure: `Fn(&mut [f64], f64)`.
 #[allow(clippy::type_complexity)]
 pub struct FdmStepConditionComposite {
+    /// Conditions.
     pub conditions: Vec<Box<dyn Fn(&mut [f64], f64)>>,
 }
 
 impl FdmStepConditionComposite {
+    /// New.
     pub fn new() -> Self {
         Self {
             conditions: Vec::new(),
@@ -878,6 +906,7 @@ pub struct FdmArithmeticAverageCondition {
 }
 
 impl FdmArithmeticAverageCondition {
+    /// New.
     pub fn new(averaging_times: Vec<f64>) -> Self {
         Self {
             n_avg: 0,
@@ -928,13 +957,18 @@ pub trait RndCalculator {
 /// G156: BSM risk-neutral density calculator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BSMRndCalculator {
+    /// R.
     pub r: f64,
+    /// Q.
     pub q: f64,
+    /// Vol.
     pub vol: f64,
+    /// Spot.
     pub spot: f64,
 }
 
 impl BSMRndCalculator {
+    /// New.
     pub fn new(spot: f64, r: f64, q: f64, vol: f64) -> Self {
         Self { r, q, vol, spot }
     }
@@ -977,17 +1011,26 @@ impl RndCalculator for BSMRndCalculator {
 /// G157: Heston risk-neutral density calculator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HestonRndCalculator {
+    /// Spot.
     pub spot: f64,
+    /// R.
     pub r: f64,
+    /// Q.
     pub q: f64,
+    /// V0.
     pub v0: f64,
+    /// Kappa.
     pub kappa: f64,
+    /// Theta.
     pub theta: f64,
+    /// Sigma.
     pub sigma: f64,
+    /// Rho.
     pub rho: f64,
 }
 
 impl HestonRndCalculator {
+    /// New.
     pub fn new(
         spot: f64,
         r: f64,
@@ -1050,14 +1093,18 @@ impl RndCalculator for HestonRndCalculator {
 /// G158: Local vol risk-neutral density calculator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LocalVolRndCalculator {
+    /// Spot.
     pub spot: f64,
+    /// R.
     pub r: f64,
+    /// Q.
     pub q: f64,
     /// Local vol at discrete strikes: (strike, vol) pairs.
     pub vol_grid: Vec<(f64, f64)>,
 }
 
 impl LocalVolRndCalculator {
+    /// New.
     pub fn new(spot: f64, r: f64, q: f64, vol_grid: Vec<(f64, f64)>) -> Self {
         Self { spot, r, q, vol_grid }
     }
@@ -1104,14 +1151,20 @@ impl RndCalculator for LocalVolRndCalculator {
 /// G159: CEV risk-neutral density calculator.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CEVRndCalculator {
+    /// Spot.
     pub spot: f64,
+    /// R.
     pub r: f64,
+    /// Q.
     pub q: f64,
+    /// Sigma.
     pub sigma: f64,
+    /// Beta.
     pub beta: f64,
 }
 
 impl CEVRndCalculator {
+    /// New.
     pub fn new(spot: f64, r: f64, q: f64, sigma: f64, beta: f64) -> Self {
         Self { spot, r, q, sigma, beta }
     }
@@ -1144,14 +1197,18 @@ impl RndCalculator for CEVRndCalculator {
 /// G160: Generalised BSM risk-neutral density (with time-dependent vol).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GBSMRndCalculator {
+    /// Spot.
     pub spot: f64,
+    /// R.
     pub r: f64,
+    /// Q.
     pub q: f64,
     /// Piecewise-constant vol: (time, vol). Must be sorted by time.
     pub vol_term: Vec<(f64, f64)>,
 }
 
 impl GBSMRndCalculator {
+    /// New.
     pub fn new(spot: f64, r: f64, q: f64, vol_term: Vec<(f64, f64)>) -> Self {
         Self { spot, r, q, vol_term }
     }
@@ -1202,13 +1259,18 @@ impl RndCalculator for GBSMRndCalculator {
 /// G161: Square-root (CIR) process risk-neutral density.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SquareRootProcessRndCalculator {
+    /// X0.
     pub x0: f64,
+    /// Kappa.
     pub kappa: f64,
+    /// Theta.
     pub theta: f64,
+    /// Sigma.
     pub sigma: f64,
 }
 
 impl SquareRootProcessRndCalculator {
+    /// New.
     pub fn new(x0: f64, kappa: f64, theta: f64, sigma: f64) -> Self {
         Self { x0, kappa, theta, sigma }
     }
@@ -1259,13 +1321,18 @@ impl RndCalculator for SquareRootProcessRndCalculator {
 /// Enforces V(boundary, t) = value · exp(−r·(T − t)).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FdmDiscountDirichletBoundary {
+    /// Side.
     pub side: crate::fdm_extended::BoundarySide,
+    /// Value.
     pub value: f64,
+    /// R.
     pub r: f64,
+    /// Maturity.
     pub maturity: f64,
 }
 
 impl FdmDiscountDirichletBoundary {
+    /// New.
     pub fn new(side: crate::fdm_extended::BoundarySide, value: f64, r: f64, maturity: f64) -> Self {
         Self {
             side,
@@ -1303,7 +1370,9 @@ impl FdmDiscountDirichletBoundary {
 /// Boundary value is given by an arbitrary function of time.
 #[derive(Clone)]
 pub struct FdmTimeDependentDirichletBoundary {
+    /// Side.
     pub side: crate::fdm_extended::BoundarySide,
+    /// Value fn.
     pub value_fn: std::sync::Arc<dyn Fn(f64) -> f64 + Send + Sync>,
 }
 
@@ -1317,6 +1386,7 @@ impl std::fmt::Debug for FdmTimeDependentDirichletBoundary {
 }
 
 impl FdmTimeDependentDirichletBoundary {
+    /// New.
     pub fn new(
         side: crate::fdm_extended::BoundarySide,
         value_fn: impl Fn(f64) -> f64 + Send + Sync + 'static,
@@ -1327,6 +1397,7 @@ impl FdmTimeDependentDirichletBoundary {
         }
     }
 
+    /// Apply.
     pub fn apply(&self, values: &mut [f64], t: f64) {
         let v = (self.value_fn)(t);
         match self.side {
@@ -1347,11 +1418,14 @@ impl FdmTimeDependentDirichletBoundary {
 /// G164: Boundary condition set — collection of boundary conditions.
 #[derive(Debug, Clone)]
 pub struct FdmBoundaryConditionSet {
+    /// Dirichlet.
     pub dirichlet: Vec<crate::fdm_extended::FdmDirichletBoundary>,
+    /// Discount dirichlet.
     pub discount_dirichlet: Vec<FdmDiscountDirichletBoundary>,
 }
 
 impl FdmBoundaryConditionSet {
+    /// New.
     pub fn new() -> Self {
         Self {
             dirichlet: Vec::new(),
@@ -1359,10 +1433,12 @@ impl FdmBoundaryConditionSet {
         }
     }
 
+    /// Add dirichlet.
     pub fn add_dirichlet(&mut self, bc: crate::fdm_extended::FdmDirichletBoundary) {
         self.dirichlet.push(bc);
     }
 
+    /// Add discount dirichlet.
     pub fn add_discount_dirichlet(&mut self, bc: FdmDiscountDirichletBoundary) {
         self.discount_dirichlet.push(bc);
     }

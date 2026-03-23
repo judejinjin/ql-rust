@@ -23,6 +23,7 @@ pub struct TrapezoidIntegral {
 }
 
 impl TrapezoidIntegral {
+    /// New.
     pub fn new(intervals: usize) -> Self {
         Self {
             intervals: intervals.max(1),
@@ -61,6 +62,7 @@ pub struct SegmentIntegral {
 }
 
 impl SegmentIntegral {
+    /// New.
     pub fn new(intervals: usize) -> Self {
         Self {
             intervals: intervals.max(1),
@@ -99,6 +101,7 @@ pub struct TwoDimensionalIntegral<I: Integrator + Clone> {
 }
 
 impl<I: Integrator + Clone> TwoDimensionalIntegral<I> {
+    /// New.
     pub fn new(integrator: I) -> Self {
         Self { integrator }
     }
@@ -155,6 +158,7 @@ pub enum FilonKind {
 }
 
 impl FilonIntegral {
+    /// New.
     pub fn new(intervals: usize, kind: FilonKind) -> Self {
         let intervals = if intervals.is_multiple_of(2) {
             intervals.max(2)
@@ -245,8 +249,11 @@ impl FilonIntegral {
 /// or backward difference schemes.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub enum DifferenceScheme {
+    /// Central.
     Central,
+    /// Forward.
     Forward,
+    /// Backward.
     Backward,
 }
 

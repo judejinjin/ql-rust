@@ -44,6 +44,7 @@
 //!     .unwrap();
 //! assert!(schedule.len() >= 2);
 //! ```
+#![warn(missing_docs)]
 
 pub mod business_day_convention;
 pub mod calendar;

@@ -19,6 +19,7 @@
 //!
 //! - [`StochasticProcess`] — multi-dimensional process interface
 //! - [`StochasticProcess1D`] — single-factor convenience trait
+#![warn(missing_docs)]
 
 pub mod process;
 pub mod black_scholes_process;

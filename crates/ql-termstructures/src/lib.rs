@@ -30,6 +30,7 @@
 //! let df = curve.discount(today + 365);
 //! assert!((df - (-0.05_f64).exp()).abs() < 0.01);
 //! ```
+#![warn(missing_docs)]
 
 pub mod term_structure;
 pub mod yield_term_structure;
