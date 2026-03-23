@@ -4,6 +4,7 @@ A modern Rust reimplementation of the [QuantLib](https://www.quantlib.org/) quan
 
 [![Build](https://img.shields.io/badge/build-passing-brightgreen)]()
 [![Tests](https://img.shields.io/badge/tests-3119_passing-brightgreen)]()
+[![Docs](https://img.shields.io/badge/docs-missing__docs_clean-brightgreen)]()
 [![Rust](https://img.shields.io/badge/rust-2021_edition-orange)]()
 [![License](https://img.shields.io/badge/license-MIT-blue)]()
 
@@ -298,7 +299,7 @@ cargo bench -p ql-rust
 | AD integration tests | 33 | AD types (Dual, DualVec, AReal) through generic engines + higher-order Greeks (gamma, vanna, volga, charm) |
 | Property-based tests | 11 | Mathematical invariants via proptest (put-call parity, bounds, monotonicity) |
 | Python integration tests | 319 | End-to-end PyO3 binding tests — equity, rates, credit, exotics, MC, FD, tree, HW, Bates, risk, vol surfaces |
-| Doc-tests | 50+ | Verified examples on public APIs |
+| Doc-tests | 77 | Verified examples on public APIs |
 | Calendar validation | 124 | Holiday verification (TARGET, NYSE, UK) against known dates |
 | Golden cross-validation | 36 | BS, American, Nelson-Siegel, short-rate, FD, credit, LMM, CMS, advanced curves |
 
@@ -322,6 +323,18 @@ cargo bench -p ql-rust
 | `interpolation_cubic_spline_lookup` | Cubic spline interpolation point lookup |
 | `date_add_days` | Date + integer days arithmetic |
 | `day_counter_year_fraction` | Year fraction calculation |
+| `american_baw_put` | Barone-Adesi-Whaley American put |
+| `american_bjerksund_stensland_put` | Bjerksund-Stensland American put |
+| `american_qd_plus_put` | QD+ high-precision American put |
+| `nelson_siegel_fit_11_points` | Nelson-Siegel 4-param curve fitting |
+| `vasicek_bond_5y` | Vasicek analytic bond price (5Y) |
+| `g2_swaption_10y` | G2 two-factor swaption pricing |
+| `fft_8192` | In-place FFT on 8192-point complex array |
+| `cholesky_50x50` | Cholesky decomposition (50×50 matrix) |
+| `cms_caplet_pricing` | CMS caplet via linear TSR model |
+| `lmm_cap_10k_paths` | LMM cap pricing (10K MC paths) |
+| `gaussian_copula_cdo_tranche` | CDO equity tranche expected loss (LHP) |
+| `cds_option_black` | CDS option via Black's formula |
 
 ### Fuzz Testing
 
@@ -335,18 +348,6 @@ cargo fuzz list
 # Run a specific target (e.g. American engines)
 cargo fuzz run fuzz_american -- -max_total_time=60
 ```
-| `american_baw_put` | Barone-Adesi-Whaley American put |
-| `american_bjerksund_stensland_put` | Bjerksund-Stensland American put |
-| `american_qd_plus_put` | QD+ high-precision American put |
-| `nelson_siegel_fit_11_points` | Nelson-Siegel 4-param curve fitting |
-| `vasicek_bond_5y` | Vasicek analytic bond price (5Y) |
-| `g2_swaption_10y` | G2 two-factor swaption pricing |
-| `fft_8192` | In-place FFT on 8192-point complex array |
-| `cholesky_50x50` | Cholesky decomposition (50×50 matrix) |
-| `cms_caplet_pricing` | CMS caplet via linear TSR model |
-| `lmm_cap_10k_paths` | LMM cap pricing (10K MC paths) |
-| `gaussian_copula_cdo_tranche` | CDO equity tranche expected loss (LHP) |
-| `cds_option_black` | CDS option via Black's formula |
 
 ### AD Performance Benchmarks
 

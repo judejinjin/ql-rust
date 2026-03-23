@@ -2,7 +2,23 @@
 
 All notable changes to the ql-rust project are documented in this file.
 
-## [0.3.8] — 2025-07-14
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [0.3.9] — 2026-03-22
+
+### Cargo Doc Audit & Bachelier Fix
+
+#### Documentation
+- Enabled `#![warn(missing_docs)]` in all 15 crate `lib.rs` files
+- Added ~1,100 doc comments across 101 files — every public item now documented
+- Expanded inline enum variant struct fields to multi-line for per-field documentation
+- Zero `missing_docs` warnings across the entire workspace
+
+#### Bug Fixes
+- Fixed Bachelier `test_call_put_symmetry` — test had wrong formula: used `(S−K)·e^{−rT}` instead of `S·e^{−qT} − K·e^{−rT}`
+- All 319 Python tests now passing (was 318/319)
+
+## [0.3.8] — 2026-03-22
 
 ### Performance Hardening — 6–23% faster across yield curve, pricing, and AD paths
 
@@ -36,10 +52,8 @@ All notable changes to the ql-rust project are documented in this file.
 | `mc_basket_3_asset_50k` | **−6%** (3.14 → 2.96 ms) |
 
 - 3,119 tests passing, zero clippy warnings
-- Fixed Bachelier put-call parity test (wrong expected formula: used `(S−K)·e^{−rT}` instead of `S·e^{−qT} − K·e^{−rT}`)
-- All 319 Python tests now passing (was 318/319)
 
-## [0.3.7] — 2025-06-20
+## [0.3.7] — 2026-03-22
 
 ### Python Integration Tests — 319 pytest cases covering all 84 bindings
 
@@ -50,7 +64,7 @@ All notable changes to the ql-rust project are documented in this file.
 - **Total**: 319 pytest items (318 passing, 1 Bachelier tolerance issue — fixed in v0.3.8)
 - README updated with Python test instructions and counts
 
-## [0.3.6] — 2025-06-20
+## [0.3.6] — 2026-03-22
 
 ### Python Binding Expansion — Fixed Income, Credit, Models, Risk
 
@@ -77,7 +91,62 @@ All notable changes to the ql-rust project are documented in this file.
 - **84 Python functions** (was 59), **38 result types** (was 30)
 - 3,119 tests passing, zero clippy warnings
 
-## [0.3.1] — 2025-06-19
+## [0.3.5] — 2026-03-22
+
+### Integration Test Expansion — 84 new tests across 5 files
+
+- **test_asian_pricing_pipeline** (18 tests): geometric continuous/discrete, Turnbull-Wakeman, Levy, MC Asian engines
+- **test_barrier_pricing_pipeline** (14 tests): double barrier KO/KI, digital barriers, MC barriers, in-out parity
+- **test_exotic_equity_pipeline** (20 tests): chooser, forward-start, power, compound, lookback, cliquet, variance swap
+- **test_advanced_models_pipeline** (16 tests): quanto European, Merton JD, Heston expansion, CEV, COS-Heston
+- **test_serde_results_extended** (16 tests): round-trip JSON serialization for all recently added result types
+- Added serde derives to `DoubleBarrierResult`, `ChooserResult`, `CliquetResult`
+- 3,119 tests passing, clippy-clean
+
+## [0.3.4] — 2026-03-22
+
+### Fuzz Testing Expansion — 14 targets (was 8)
+
+- **fuzz_american**: BAW, Bjerksund-Stensland, QD+ American engines
+- **fuzz_asian**: geometric continuous avg price/strike, Turnbull-Wakeman, Levy
+- **fuzz_exotic_equity**: chooser, forward-start, power, digital-barrier, double-barrier-KO
+- **fuzz_multi_asset**: Margrabe exchange, Stulz max/min call, quanto European
+- **fuzz_merton_jd**: Merton jump-diffusion with fuzzed jump parameters
+- **fuzz_numerical**: MC European, FD Black-Scholes, binomial CRR
+- All 14 fuzz targets use bounded Arbitrary inputs, `catch_unwind`, and assert finite/non-negative results
+
+## [0.3.3] — 2026-03-21
+
+### Python Binding Expansion — 21 new pricing engines (59 → 80 functions)
+
+- Black-76 forward pricing, Bachelier normal model
+- QD+ American option (highest-accuracy approximation)
+- Merton jump-diffusion, simple chooser, compound option
+- Lookback floating-strike, forward-start, power option
+- Digital American (cash/asset-or-nothing), digital barrier (one-touch/no-touch)
+- Double barrier knock-out
+- Margrabe exchange, Stulz max/min of two assets
+- Variance swap, Black swaption, Bachelier swaption
+- Equity risk ladder (delta, gamma, vega, rho bumps)
+- SABR and SVI implied vol smile functions
+- 8 new Python result types
+
+## [0.3.2] — 2026-03-21
+
+### f64 → Generic Deduplication (batch 2) — 8 more functions
+
+- `quanto_vanilla` → `quanto_vanilla_generic`
+- `black_swaption` → `black_swaption_generic`
+- `bachelier_swaption` → `bachelier_swaption_generic`
+- `asian_geometric_continuous` → `asian_geometric_continuous_generic`
+- `asian_geometric_discrete` → `asian_geometric_discrete_generic`
+- `digital_american` → `digital_american_generic`
+- `bjerksund_stensland` → `bjerksund_stensland_generic`
+- `kirk_spread_call` → `kirk_spread_generic`
+- Eliminates 131 lines of duplicated pricing logic
+- Total deduplicated functions: 15 (9 prior + 6 new)
+
+## [0.3.1] — 2026-03-21
 
 ### Code Quality: Clippy-Clean Workspace + Further Deduplication
 
@@ -93,7 +162,7 @@ All notable changes to the ql-rust project are documented in this file.
 - `sabr_volatility` now delegates to `sabr_vol_generic::<f64>` (keeps input assertions)
 - Total deduplicated: 9 functions (6 prior + 3 new)
 
-## [0.3.0] — 2026-03-03
+## [0.3.0] — 2026-03-20
 
 ### AAD-Complete: 94 Generic Engines + Full AD Integration
 
