@@ -6179,8 +6179,8 @@ pub fn hw_jamshidian_swaption_generic<T: Number>(
     let mut total = T::zero();
     for i in 0..n {
         let res = hw_bond_option_generic(
-            a, sigma, p_option, discount_factors[i],
-            option_expiry, swap_tenors[i], bond_strikes[i], is_bond_call,
+            a, sigma, swap_tenors[i], option_expiry,
+            discount_factors[i], bond_strikes[i], f_s, is_bond_call,
         );
         total += coupons[i] * res;
     }
